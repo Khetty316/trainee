@@ -1,0 +1,106 @@
+<?php
+
+use yii\helpers\Html;
+use yii\grid\GridView;
+use common\models\myTools\MyFormatter;
+use frontend\models\bom\StockDispatchMaster;
+
+$this->title = ($action === 'adjust' ? 'Adjust Dispatch Quantity' : 'Return Dispatched Quantity');
+$production = $bomMaster->productionPanel->projProdMaster;
+$this->params['breadcrumbs'][] = ['label' => 'Stock Outbound', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => $production->project_production_code, 'url' => ['view-panels', 'id' => $production->id]];
+$this->params['breadcrumbs'][] = $this->title;
+?>
+<div class="stock-outbound-master-index">
+    <div class="table-responsive">
+        <h4>Panel's Code: <?= $bomMaster->productionPanel->project_production_panel_code ?></h4>
+
+        <p>
+            <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?productionPanelId=' . $productionPanelId, ['class' => 'btn btn-primary']) ?>    
+        </p>
+        <?=
+        GridView::widget([
+            'dataProvider' => $dataProvider,
+            'filterModel' => $searchModel,
+            'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+            'headerRowOptions' => ['class' => 'my-thead'],
+            'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+            'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
+            'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
+            'columns' => [
+                ['class' => 'yii\grid\SerialColumn'],
+                [
+                    'attribute' => 'dispatch_no',
+                    'format' => 'raw',
+                    'value' => function ($model) use ($action) {
+                        return Html::a($model->dispatch_no, ['dispatch-item-list', 'productionPanelId' => $model->production_panel_id, 'dispatchId' => $model->id, 'action' => $action]);
+                    }
+                ],
+                [
+                    'attribute' => 'created_at',
+                    'label' => 'Dispatch At',
+                    'format' => 'html',
+                    'value' => function ($model) {
+                        return MyFormatter::asDateTime_ReaddmYHi($model->created_at);
+                    },
+                    'filter' => yii\jui\DatePicker::widget([
+                        'model' => $searchModel,
+                        'attribute' => 'created_at',
+                        'language' => 'en',
+                        'dateFormat' => "yyyy-MM-dd",
+                        'options' => ['class' => 'form-control'],
+                    ]),
+                ],
+                [
+                    'attribute' => 'created_by',
+                    'label' => 'Dispatch By',
+                    'value' => function ($model) {
+                        return ($model->createdBy->fullname);
+                    }
+                ],
+                [
+                    'attribute' => 'received_by',
+                    'value' => function ($model) {
+                        return ($model->receivedBy->fullname);
+                    }
+                ],
+                        [
+                    'attribute' => 'status',
+                    'contentOptions' => ['style' => 'white-space:normal!important'],
+                    'filter' => Html::activeDropDownList(
+                            $searchModel,
+                            'status',
+                            StockDispatchMaster::all_status,
+                            ['class' => 'form-control', 'prompt' => 'All']
+                    ),
+                    'format' => 'raw',
+                    'value' => function ($model) {
+                        if ($model->status == StockDispatchMaster::TO_BE_COLLECTED || $model->status == StockDispatchMaster::TO_BE_ACKNOWLEDGED) {
+                            $message = '<span class="text-warning">' . ($model->status == StockDispatchMaster::TO_BE_COLLECTED ? 'To Be Collected' : 'To Be Acknowledged') . '</span>';
+                        } else {
+                            $message = '<span class="text-success">Has Been Acknowledged</span>';
+                        }
+
+                        return $message;
+                    }
+                ],
+                [
+                    'attribute' => 'status_updated_at',
+                    'format' => 'html',
+                    'value' => function ($model) {
+                        return MyFormatter::asDateTime_ReaddmYHi($model->status_updated_at);
+                    },
+                    'filter' => yii\jui\DatePicker::widget([
+                        'model' => $searchModel,
+                        'attribute' => 'status_updated_at',
+                        'language' => 'en',
+                        'dateFormat' => "yyyy-MM-dd",
+                        'options' => ['class' => 'form-control'],
+                    ]),
+                ],
+
+            ],
+        ]);
+        ?>
+    </div>
+</div>

@@ -1,0 +1,14 @@
+{
+    "name": "TKMS",
+    "short_name": "TKMS",
+    "theme_color": "#303030",
+    "background_color": "#303030",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": ".",
+    "description": "TKMS", 
+    "orientation": "any",
+    "icons": [
+  
+    ]
+}

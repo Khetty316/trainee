@@ -1,0 +1,52 @@
+# Yii2 specific directories
+/vendor/
+runtime/
+web/assets/
+frontend/web/assets/
+backend/web/assets/
+console/runtime/
+frontend/runtime/
+backend/runtime/
+frontend/.svn
+
+# Uploads and generated files
+frontend/web/uploads/
+frontend/uploads/
+frontend/web/reports/
+reports/
+*.pdf
+*.zip
+*.rar
+*.bak
+*.tmp
+
+# Large file types
+*.mp4
+*.mov
+*.avi
+*.iso
+
+# IDE / Editor folders
+.idea/
+nbproject/
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Composer and npm cache
+composer.phar
+/node_modules/
+
+# Environment and config files
+/.env
+
+/Redis-*/
+
+# Database and Large File Exclusions
+# Excludes ALL files ending with .sql in the entire project
+*.sql 

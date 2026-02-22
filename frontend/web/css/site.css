@@ -1,0 +1,510 @@
+html,
+body {
+    height: 100%;
+}
+
+.wrap {
+    min-height: 100%;
+    height: auto;
+    margin: 0 auto -60px;
+    padding: 0 0 60px;
+}
+
+.wrap > .container {
+    padding: 70px 15px 20px;
+}
+
+.footer {
+    height: 60px;
+    background-color: #f5f5f5;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+}
+
+.jumbotron {
+    text-align: center;
+    background-color: transparent;
+}
+
+.jumbotron .btn {
+    font-size: 21px;
+    padding: 14px 24px;
+}
+
+.not-set {
+    color: #c55;
+    font-style: italic;
+}
+
+/* add sorting icons to gridview sort links */
+a.asc:after, a.desc:after {
+    /*    position: relative;
+        top: 1px;
+        display: inline-block;
+        font-family: 'Glyphicons Halflings';
+        font-family: "Font Awesome 4 Free";
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        padding-left: 5px;*/
+
+
+    font-family: 'Font Awesome 5 Free';
+    /*       src: url('../fonts/fontawesome-webfont.eot?v=4.7.0');
+           src: url('../fonts/fontawesome-webfont.eot?#iefix&v=4.7.0') format('embedded-opentype'), url('../fonts/fontawesome-webfont.woff2?v=4.7.0') format('woff2'), url('../fonts/fontawesome-webfont.woff?v=4.7.0') format('woff'), url('../fonts/fontawesome-webfont.ttf?v=4.7.0') format('truetype'), url('../fonts/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular') format('svg');
+     src: url('../webfonts/fa-regular-400.eot');
+    src: url('../webfonts/fa-regular-400.eot') format('embedded-opentype'),
+        url('../webfonts/fa-regular-400.woff2') format('woff2'), 
+        url('../webfonts/fa-regular-400.woff') format('woff'), 
+        url('../webfonts/fa-regular-400.ttf') format('truetype'), 
+        url('../webfonts/fa-regular-400.svg') format('svg');
+    font-weight: normal;
+    font-style: normal;*/
+}
+
+a.asc:after {
+    /*content: "\e151";*/
+    content: "\f15d";
+}
+
+a.desc:after {
+    /*content: "\e152";*/
+    content: "\f15e";
+}
+
+.sort-numerical a.asc:after {
+    /*content: "\e153";*/
+    content: "\f162";
+}
+
+.sort-numerical a.desc:after {
+    /*content: "\e154";*/
+    content: "\f163";
+}
+
+.sort-ordinal a.asc:after {
+    /*content: "\e155";*/
+    content: "\f161";
+}
+
+.sort-ordinal a.desc:after {
+    /*content: "\e156";*/
+    content: "\f160";
+}
+
+.grid-view td {
+    white-space: nowrap;
+}
+
+.grid-view .filters input,
+.grid-view .filters select {
+    min-width: 50px;
+}
+
+.hint-block {
+    display: block;
+    margin-top: 5px;
+    color: #999;
+}
+
+.error-summary {
+    color: #a94442;
+    background: #fdf7f7;
+    border-left: 3px solid #eed3d7;
+    padding: 10px 20px;
+    margin: 0 0 15px 0;
+}
+
+
+
+.text-wrap {
+    white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap!important;      /* Opera 4-6 */
+    white-space: -o-pre-wrap!important;   /* Opera 7 */
+    white-space: pre-wrap!important;       /* css-3 */
+    word-wrap: break-word!important;       /* Internet Explorer 5.5+ */
+    white-space: -webkit-pre-wrap!important; /* Newer versions of Chrome/Safari*/
+    /*   word-break: break-all;
+        white-space: normal;*/
+}
+
+.isRed{
+    background-color: red;
+}
+
+.isYellow{
+    background-color: yellow;
+}
+
+.isBlue{
+    background-color:blue;
+}
+
+.isBlack{
+    background-color:black;
+}
+
+.text-red{
+    color: red;
+}
+
+
+.marginbottom{
+    margin-bottom: 10px;
+}
+
+.hidden{
+    display: none;
+}
+
+
+
+.cursor-pointer{
+    cursor: pointer;
+}
+
+.breadcrumb > li + li:before {
+    color: #ccc;
+    content: "     / ";
+    padding: 0 5px;
+}
+
+.mainContainer{
+    padding: 50px 0px 0px 0px;
+    margin-top: 0;
+    margin-left: 10px;
+    margin-right: 10px;
+    padding-right: 0px;
+}
+
+/*
+.my-thead{
+    text-align:center;
+    background-color: #e8e8e8;
+}
+
+.my-thead  th, .my-thead th a{
+    font-weight: bold;
+    color:#0056b3;
+    font-size: large;
+    font-weight: inherit;
+}*/
+
+.bold {
+    font-weight: bold;
+}
+
+
+
+.glyphicon {
+    /*font-family: "Font Awesome 4 Free";*/
+    font-family: 'Font Awesome 5 Free';
+}
+.glyphicon-eye-open:before {
+    content: "\f06e";
+    color: var(--success);
+}
+.glyphicon-pencil:before {
+    content: "\f044";
+    color: var(--primary);
+}
+.glyphicon-trash:before {
+    content: "\f2ed";
+    color: var(--danger);
+}
+.dropdown-menu{
+    /*background-color: rgb;*/
+
+}
+
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu>.dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -6px;
+    margin-left: -1px;
+    -webkit-border-radius: 0 6px 6px 6px;
+    -moz-border-radius: 0 6px 6px;
+    border-radius: 0 6px 6px 6px;
+}
+
+.dropdown-submenu:hover>.dropdown-menu {
+    display: block;
+}
+.dropdown-item:hover{
+    background-color:  rgba(0, 0, 0, 0.0);
+}
+
+.dropdown-submenu>a:after {
+    display: block;
+    content: " ";
+    float: right;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 5px 0 5px 5px;
+    border-left-color: #ccc;
+    margin-top: 5px;
+    margin-right: -10px;
+}
+
+.dropdown-submenu:hover>a:after {
+    border-left-color: #fff;
+}
+
+.dropdown-submenu.pull-left {
+    float: none;
+}
+
+.dropdown-submenu.pull-left>.dropdown-menu {
+    left: 0%;
+    margin-left: 10px;
+    -webkit-border-radius: 6px 0 6px 6px;
+    -moz-border-radius: 6px 0 6px 6px;
+    border-radius: 6px 0 6px 6px;
+}
+
+
+.hoverItem{
+    cursor: pointer;
+}
+
+
+.help-block-error {
+    color: red;
+}
+
+.invalid-feedback-show {
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 80%;
+    color: #dc3545;
+}
+
+
+.nav-item{
+    background-color: #f1f1f1;
+    border-radius:  5px 5px 0px 0px;
+    border-left: 1px solid #dddddd;
+    border-top: 1px solid #dddddd;
+    border-right: 1px solid #dddddd;
+
+}
+.nav-item:hover{
+    background-color:#cccccc;
+}
+
+.hoverDarker:hover{
+    background-color:#eeeeee;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+
+div.required label:not(.toggle-off):not(.toggle-on):after{
+    /*div.required label:not([class^="toggle-"]):after{*/
+
+    content:" * ";
+
+    color:red;
+
+}
+
+/*
+form div.required label.control-label:after {
+
+    content:" * ";
+
+    color:red;
+
+}*/
+
+.accordionHeader{
+    font-weight: bold;
+    color: #0275d8;
+}
+
+.btn-header-link.collapsed:after {
+    font-family: 'Font Awesome 5 Free';
+    content: "\f107";
+
+}
+
+.btn-header-link:after {
+    font-family: 'Font Awesome 5 Free';
+    content: "\f106";    /*up*/
+    font-weight: 900;
+    float: right;
+}
+/*
+.btn-header-link.collapsed:after {
+    content: "\f106";
+
+}
+
+.btn-header-link:after {
+    content: "\f107";
+    font-family: 'Font Awesome 5 Free';
+    float: right;
+}*/
+
+.form-control::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    opacity: 0.5; /* Firefox */
+}
+
+.form-control:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: red;
+}
+
+.form-control::-ms-input-placeholder { /* Microsoft Edge */
+    color: red;
+}
+
+
+/*Borders*/
+.bl{
+    border-left: 1px solid black!important;
+}
+.br{
+    border-right: 1px solid black!important;
+}
+.bt{
+    border-top: 1px solid black!important;
+}
+.btt{
+    border-top:2px solid black!important;
+}
+.brt{
+    border-right:2px solid black!important;
+}
+.blt{
+    border-left:2px solid black!important;
+}
+.bb{
+    border-bottom: 1px solid black!important;
+}
+.b{
+    border:1px solid black!important;
+}
+
+
+/*Custom Tag*/
+.req:after{
+    color: red;
+    content: " *";
+}
+
+.fc-day-today {
+    background: #ccccff !important;
+    border: none !important;
+    border-top: 1px solid #ddd !important;
+    font-weight: bold;
+    color: black!important;
+}
+
+.fc-day-today .fc-daygrid-day-number{
+    color:black;
+}
+
+.no-text-deco{
+    text-decoration: none !important ;
+}
+
+.tdnowrap{
+    width:1px !important;
+    white-space: nowrap !important;
+}
+/*
+Stripped deco for bootstrap list
+ul.list-group.list-group-striped li:nth-of-type(odd){
+    background: grey;
+}
+ul.list-group.list-group-striped li:nth-of-type(even){
+    background: white;
+}
+ul.list-group.list-group-hover li:hover{
+    background: red;
+}*/
+
+.vtop{
+    vertical-align: top !important;
+}
+
+.vmiddle{
+    vertical-align: middle !important;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/*
+ * Scales up checkboxes to 1.5 times their original size, making them larger and more visible.
+ * It also adjusts their display and alignment within the layout.
+ */
+.big-checkbox {
+    transform: scale(1.5);
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0px; /* Optional: for spacing if you have multiple inline elements */
+}
+
+/*
+ * Defines styles for elements that are intended to be interactive when hovered over.
+ * It changes the cursor to a pointing hand and adds an underline to the text when the element is hovered.
+ */
+.search-hover {
+    cursor: pointer;
+    text-decoration: none;
+
+    /* Define styles for when hovered over */
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+/*
+ * Defines styles for form disabled input but without greying out.
+ */
+.custom-disabled {
+    pointer-events: none;
+    opacity: 1;
+}
+
+#newPunchlistBtn {
+    position: fixed;
+    top: 50vh;
+    right: 20px;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: green;
+    color: #fff;
+    border: none;
+    outline: none;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#newPunchlistBtn:hover {
+    opacity: 1;
+    text-transform: none;
+}

@@ -1,0 +1,1020 @@
+array(5) {
+  ["_csrf-frontend"]=>
+  string(88) "8FPxLkY6ytk_HiPlF0zrwPXWDyJ14vkaZPj9Au3xGBu2CqtZdAmQrk5tc5QkOt6IsYZaVEKzukpRu5cwrL98Kw=="
+  ["tasks"]=>
+  array(9) {
+    [1892]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1892"
+        }
+      }
+    }
+    [1893]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1893"
+        }
+      }
+    }
+    [1894]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1894"
+        }
+      }
+    }
+    [1895]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1895"
+        }
+      }
+    }
+    [1896]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1896"
+        }
+      }
+    }
+    [1897]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1897"
+        }
+      }
+    }
+    [1898]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(2) "10"
+          ["id"]=>
+          string(4) "1898"
+        }
+      }
+    }
+    [1899]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1899"
+        }
+      }
+    }
+    [1900]=>
+    array(2) {
+      ["fab"]=>
+      array(5) {
+        ["cutnpunch"]=>
+        array(3) {
+          ["code"]=>
+          string(9) "cutnpunch"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["bend"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "bend"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["weldngrind"]=>
+        array(3) {
+          ["code"]=>
+          string(10) "weldngrind"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["powcoat"]=>
+        array(3) {
+          ["code"]=>
+          string(7) "powcoat"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["assemble"]=>
+        array(3) {
+          ["code"]=>
+          string(8) "assemble"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+      }
+      ["elec"]=>
+      array(4) {
+        ["busbar"]=>
+        array(3) {
+          ["code"]=>
+          string(6) "busbar"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["mount"]=>
+        array(3) {
+          ["code"]=>
+          string(5) "mount"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["test"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "test"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+        ["wire"]=>
+        array(3) {
+          ["code"]=>
+          string(4) "wire"
+          ["quantity"]=>
+          string(1) "1"
+          ["id"]=>
+          string(4) "1900"
+        }
+      }
+    }
+  }
+  ["allTask"]=>
+  array(9) {
+    [0]=>
+    string(1) "1"
+    [1]=>
+    string(1) "1"
+    [2]=>
+    string(1) "1"
+    [3]=>
+    string(1) "1"
+    [4]=>
+    string(1) "1"
+    [5]=>
+    string(1) "1"
+    [6]=>
+    string(1) "1"
+    [7]=>
+    string(1) "1"
+    [8]=>
+    string(1) "1"
+  }
+  ["ProdFabPanelWeight"]=>
+  array(9) {
+    [1892]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1893]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1894]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1895]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1896]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1897]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1898]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1899]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1900]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+  }
+  ["ProdElecPanelWeight"]=>
+  array(9) {
+    [1892]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1893]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1894]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1895]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1896]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1897]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1898]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1899]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+    [1900]=>
+    array(1) {
+      ["panel_type_weight"]=>
+      array(1) {
+        ["weight"]=>
+        string(4) "0.00"
+      }
+    }
+  }
+}
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(29) "Error at checkAndUpdateAssign"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 2"
+string(13) "Wrong again 1"
+string(31) "Error at checkAndUpdateComplete"
+string(13) "Wrong again 1"
+string(31) "Error at checkAndUpdateComplete"
+string(13) "Wrong again 1"
+string(31) "Error at checkAndUpdateComplete"
+string(13) "Wrong again 1"
+string(31) "Error at checkAndUpdateComplete"

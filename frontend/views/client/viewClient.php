@@ -44,6 +44,45 @@ $this->params['breadcrumbs'][] = $this->title;
             'company_tin',
             'payment_term',
             [
+                'attribute' => 'ac_no_tk',
+                'label' => 'A/C No. TK',
+                'value' => function ($model) {
+                    return $model->ac_no_tk;
+                },
+            ],
+            [
+                'attribute' => 'ac_no_tke',
+                'label' => 'A/C No. TKE',
+                'value' => function ($model) {
+                    return $model->ac_no_tke;
+                }
+            ],
+            [
+                'attribute' => 'ac_no_tkm',
+                'label' => 'A/C No. TKM',
+                'value' => function ($model) {
+                    return $model->ac_no_tkm;
+                }
+            ],
+            [
+                'attribute' => 'tk_balance',
+                'value' => function ($model) {
+                    return number_format($model->tk_balance, 2);
+                }
+            ],
+            [
+                'attribute' => 'tke_balance',
+                'value' => function ($model) {
+                    return number_format($model->tke_balance, 2);
+                }
+            ],
+            [
+                'attribute' => 'tkm_balance',
+                'value' => function ($model) {
+                    return number_format($model->tkm_balance, 2);
+                }
+            ],
+            [
                 'attribute' => 'current_outstanding_balance',
                 'value' => function ($model) {
                     return number_format($model->current_outstanding_balance, 2);

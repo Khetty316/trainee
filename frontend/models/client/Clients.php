@@ -13,10 +13,16 @@ use frontend\models\common\RefState;
  *
  * @property int $id
  * @property string $client_code
+ * @property string|null $ac_no_tk
+ * @property string|null $ac_no_tke
+ * @property string|null $ac_no_tkm
  * @property string $company_name
  * @property string $company_registration_no
  * @property string $company_tin
  * @property string|null $payment_term
+ * @property float|null $tk_balance
+ * @property float|null $tke_balance
+ * @property float|null $tkm_balance
  * @property float|null $current_outstanding_balance
  * @property string|null $contact_person
  * @property string|null $contact_position
@@ -35,11 +41,15 @@ use frontend\models\common\RefState;
  * @property int|null $updated_by
  *
  * @property RefArea $area0
+ * @property ClientContact[] $clientContacts
+ * @property ClientDebt[] $clientDebts
+ * @property ClientEmails[] $clientEmails
  * @property RefCountries $country0
  * @property User $createdBy
  * @property RefState $state0
  * @property ProjectProductionMaster[] $projectProductionMasters
  * @property ProjectQClients[] $projectQClients
+ * @property RefState $state0
  */
 class Clients extends \yii\db\ActiveRecord {
 
@@ -67,15 +77,19 @@ class Clients extends \yii\db\ActiveRecord {
             [['area', 'state', 'created_by', 'updated_by'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
             [['client_code'], 'string', 'max' => 10],
-            [['company_name', 'company_registration_no', 'company_tin', 'payment_term', 'contact_person', 'contact_position', 'address_1', 'address_2'], 'string', 'max' => 255],
+            [['ac_no_tk', 'ac_no_tke', 'ac_no_tkm', 'company_name', 'company_registration_no', 'company_tin', 'payment_term', 'contact_person', 'contact_position', 'address_1', 'address_2'], 'string', 'max' => 255],
             [['contact_number', 'contact_fax', 'postcode'], 'string', 'max' => 50],
             [['areaName', 'stateName', 'countryName'], 'string', 'max' => 100],
             [['country'], 'string', 'max' => 5],
             [['client_code'], 'unique'],
+            [['ac_no_tk'], 'unique'],
+            [['ac_no_tke'], 'unique'],
+            [['ac_no_tkm'], 'unique'],
             [['area'], 'exist', 'skipOnError' => true, 'targetClass' => RefArea::className(), 'targetAttribute' => ['area' => 'area_id']],
             [['country'], 'exist', 'skipOnError' => true, 'targetClass' => RefCountries::className(), 'targetAttribute' => ['country' => 'country_code']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['state'], 'exist', 'skipOnError' => true, 'targetClass' => RefState::className(), 'targetAttribute' => ['state' => 'state_id']],
+            [['tk_balance', 'tke_balance', 'tkm_balance'], 'string', 'max' => 50],
 //            [['emails'], 'each', 'rule' => ['email']],
 //            [['emails'], 'safe'],
 //            [['emails'], 'validateEmails']
@@ -89,11 +103,14 @@ class Clients extends \yii\db\ActiveRecord {
         return [
             'id' => 'ID',
             'client_code' => 'Client Code',
+            'ac_no_tk' => 'A/C No. TK',
+            'ac_no_tke' => 'A/C No. TKE',
+            'ac_no_tkm' => 'A/C No. TKM',
             'company_name' => 'Company Name',
             'company_registration_no' => 'Company Registration No',
             'company_tin' => 'Company TIN',
             'payment_term' => 'Payment Term',
-            'current_outstanding_balance' => 'Current Outstanding Balance (RM)',
+            'current_outstanding_balance' => 'Total Outstanding Balance',
             'contact_person' => 'Contact Person',
             'contact_position' => 'Contact Position',
             'contact_number' => 'Contact Number',
@@ -108,6 +125,9 @@ class Clients extends \yii\db\ActiveRecord {
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
+            'tk_balance' => 'Current Outstanding Balance (TK)',
+            'tke_balance' => 'Current Outstanding Balance (TKE)',
+            'tkm_balance' => 'Current Outstanding Balance (TKM)',
         ];
     }
 
@@ -130,6 +150,15 @@ class Clients extends \yii\db\ActiveRecord {
     }
 
     /**
+     * Gets query for [[ClientDebts]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClientDebts() {
+        return $this->hasMany(ClientDebt::className(), ['client_id' => 'id']);
+    }
+
+    /**
      * Gets query for [[CreatedBy]].
      *
      * @return \yii\db\ActiveQuery
@@ -146,6 +175,26 @@ class Clients extends \yii\db\ActiveRecord {
     public function getState0() {
         return $this->hasOne(RefState::className(), ['state_id' => 'state']);
     }
+
+    /**
+     * Gets query for [[Country0]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+//    public function getCountry0()
+//    {
+//        return $this->hasOne(RefCountries::className(), ['country_code' => 'country']);
+//    }
+
+    /**
+     * Gets query for [[CreatedBy]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+//    public function getCreatedBy()
+//    {
+//        return $this->hasOne(User::className(), ['id' => 'created_by']);
+//    }
 
     /**
      * Gets query for [[ProjectProductionMasters]].

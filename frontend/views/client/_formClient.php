@@ -57,12 +57,43 @@ if ($model->country) {
         <div class="col-sm-12 col-md-6 col-lg-6">
             <?= $form->field($model, 'company_tin')->textInput(['maxlength' => true]) ?>
         </div>
-        <div class="col-sm-12 col-md-6 col-lg-6">
+
+        <div class="col-sm-12 col-lg-3">
             <?= $form->field($model, 'payment_term')->textInput(['maxlength' => true]) ?>
         </div>
-        <div class="col-sm-12 col-md-6 col-lg-6">
-            <?= $form->field($model, 'current_outstanding_balance')->textInput(['maxlength' => true, 'type' => 'number', 'step' => '0.01', 'value' => number_format($model->current_outstanding_balance, 2, '.', ''), 'class' => 'text-right form-control']) ?>
+
+        <div class="col-sm-12 col-md-3">
+            <?=
+            $form->field($model, 'ac_no_tk')->textInput([
+                
+                'class' => 'text-right form-control'
+            ])
+            ?>
         </div>
+
+        <div class="col-sm-12 col-md-3">
+            <?=
+            $form->field($model, 'ac_no_tke')->textInput([
+               
+                'class' => 'text-right form-control'
+            ])
+            ?>
+        </div>
+
+        <div class="col-sm-12 col-md-3">
+            <?=
+            $form->field($model, 'ac_no_tkm')->textInput([
+                
+                'class' => 'text-right form-control'
+            ])
+            ?>
+        </div>
+
+        <!--hidden--!>
+        <!--        <div class="col-sm-12 col-md-6 col-lg-6">
+        <?= $form->field($model, 'current_outstanding_balance')->textInput(['maxlength' => true, 'type' => 'number', 'step' => '0.01', 'value' => number_format($model->current_outstanding_balance, 2, '.', ''), 'class' => 'text-right form-control']) ?>
+                </div>-->
+
     </div>
     <div class="form-row">
         <div class="col-sm-12">
@@ -160,7 +191,8 @@ if ($model->country) {
             <?php else : ?>
                 <?=
                 $this->render('_formClient_row', [
-                    'contact' => $contactModel,
+                    'contacts' => $contacts,
+                    'contactModels' => $contacts,
                     'index' => 0,
                     'isUpdate' => $isUpdate
                 ])

@@ -10,6 +10,8 @@ use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use common\models\myTools\FlashHandler;
 use yii\helpers\VarDumper;
+use frontend\models\common\RefCompanyGroupList;
+use frontend\models\client\ClientDebt;
 
 /**
  * ClientController implements the CRUD actions for Clients model.
@@ -61,6 +63,90 @@ class ClientController extends Controller {
         return $this->render('viewClient', [
                     'model' => $this->findModel($id),
                     'contacts' => $contacts,
+        ]);
+    }
+
+    public function actionAddByTemplateClients() {
+        $model = new Clients();
+        $clientDebt = new \frontend\models\client\ClientDebt();
+
+        if (Yii::$app->request->isPost) {
+
+            $clientDebt->load(Yii::$app->request->post());
+
+            $excelFile = \yii\web\UploadedFile::getInstanceByName('excelTemplate');
+
+            if ($excelFile && $excelFile->tempName) {
+                $extension = strtolower(pathinfo($excelFile->name, PATHINFO_EXTENSION));
+
+                if (!in_array($extension, ['xls', 'xlsx'])) {
+                    ii::$app->session->setFlash('error', 'Please upload only Excel files (.xls or .xlsx).');
+                    return $this->redirect(['add-by-template-clients']);
+                }
+
+                try {
+                    $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($excelFile->tempName);
+                    $spreadsheet = $reader->load($excelFile->tempName);
+                    $worksheet = $spreadsheet->getActiveSheet();
+
+                    $buffer = []; // Buffer to store data temporarily
+
+                    foreach ($worksheet->getRowIterator(4) as $row) {
+
+                        $cells = $row->getCellIterator();
+                        $cells->setIterateOnlyExistingCells(false);
+
+                        $data = [];
+
+                        foreach ($cells as $cell) {
+                            $data[] = $cell->getValue();
+                        }
+
+                        $custNo = $data[0];     // Column A
+                        $name = $data[1];       // Column B
+                        $balance = $data[15];    // Column C
+                        // Skip header row
+                        if ($custNo == 'Cust.No.' || empty($custNo)) {
+                            continue;
+                        }
+
+                        if (empty($custNo)) {
+                            break;
+                        }
+
+                        $buffer[] = [
+                            'cust_no' => $custNo,
+                            'name' => $name,
+                            'balance' => $balance,
+                        ];
+                    }
+
+
+                    $group = $clientDebt->tk_group_code;
+                    $month = $clientDebt->month;
+                    $year = $clientDebt->year;
+
+                    if (!empty($buffer)) {
+                        return $this->render('uploadToConfirmClients', [
+                                    'buffer' => $buffer,
+                                    'companyGroup' => $clientDebt->tk_group_code,
+                                    'month' => $clientDebt->month,
+                                    'year' => $clientDebt->year,
+                        ]);
+                    } else {
+                        \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the 'Name' column in your Excel file is not left blank.");
+                        return $this->redirect(['add-by-template-clients']);
+                    }
+                } catch (\Exception $e) {
+                    Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
+                    return $this->redirect(['add-by-template-clients']);
+                }
+            }
+        }
+
+        return $this->render('addByTemplateClients', [
+                    'model' => $model,
+                    'clientDebt' => $clientDebt
         ]);
     }
 
@@ -325,6 +411,14 @@ class ClientController extends Controller {
                 ->all();
 
         if ($model->load(Yii::$app->request->post())) {
+
+            if ($model->save()) {
+                return $this->redirect(['view-client', 'id' => $model->id]);
+            } else {
+                var_dump($model->errors);
+                exit;
+            }
+
             $oldIDs = array_keys($existingContacts);
             $contacts = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContact::class, $existingContacts
@@ -606,5 +700,108 @@ class ClientController extends Controller {
                     'index' => $key,
                     'isUpdate' => $isUpdate
         ]);
+    }
+
+    //testing
+    public function actionSaveClientDetails() {
+
+        //test debug
+//        echo "<pre>";
+//        print_r(Yii::$app->request->post());
+//        exit;
+
+        $postClients = Yii::$app->request->post('Clients');
+
+        $companyGroup = Yii::$app->request->post('companyGroup');
+        $month = Yii::$app->request->post('month');
+        $year = Yii::$app->request->post('year');
+
+        if (!$postClients) {
+            return $this->redirect(['client-list']);
+        }
+
+        $custNos = $postClients['cust_no'];
+        $balances = $postClients['balance'];
+
+        $columnMap = [
+            RefCompanyGroupList::CODE_TK => 'ac_no_tk',
+            RefCompanyGroupList::CODE_TKE => 'ac_no_tke',
+            RefCompanyGroupList::CODE_TKM => 'ac_no_tkm',
+        ];
+
+        $clientColumn = $columnMap[$companyGroup] ?? null;
+
+        foreach ($custNos as $index => $custNo) {
+
+            $balance = floatval($balances[$index]);
+
+            //testing
+            echo "Cust No: " . $custNo . "<br>";
+            echo "Balance: " . $balance . "<br>";
+
+            // detect which column to search
+            $columnMap = [
+                RefCompanyGroupList::CODE_TK => 'ac_no_tk',
+                RefCompanyGroupList::CODE_TKE => 'ac_no_tke',
+                RefCompanyGroupList::CODE_TKM => 'ac_no_tkm',
+            ];
+
+            $clientColumn = $columnMap[$companyGroup];
+
+            // find client
+            $client = Clients::find()
+                    ->where([$clientColumn => trim($custNo)])
+                    ->one();
+
+            if (!$client) {
+                continue;
+            }
+
+            // save debt
+            $debt = new ClientDebt();
+            $debt->client_id = $client->id;
+            $debt->tk_group_code = $companyGroup;
+            $debt->month = $month;
+            $debt->year = $year;
+            $debt->balance = $balance;
+
+//            $debt->created_at = time(); // declare in clientDebt model in beforeSave() function
+//            $debt->created_by = Yii::$app->user->id; // declare in clientDebt model in beforeSave() function
+
+            $debt->save();
+
+            //last step update client table balance (tk_balance, tke_balance, tkm_balance) and total current balance(tk_balance + tke_balance + tkm_balance)
+
+//            $client = Clients::findOne($debt->client_id);
+
+            $client = Clients::find()
+                    ->where([$clientColumn => $custNo])
+                    ->one();
+
+            if ($client) {
+
+                if ($companyGroup == RefCompanyGroupList::CODE_TK) {
+                    $client->tk_balance = $balance;
+                }
+
+                if ($companyGroup == RefCompanyGroupList::CODE_TKE) {
+                    $client->tke_balance = $balance;
+                }
+
+                if ($companyGroup == RefCompanyGroupList::CODE_TKM) {
+                    $client->tkm_balance = $balance;
+                }
+
+                $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
+                        ($client->tke_balance ?? 0) +
+                        ($client->tkm_balance ?? 0);
+
+                $client->save(false);
+            }
+        }
+
+        Yii::$app->session->setFlash('success', 'Outstanding balance successfully imported.');
+
+        return $this->redirect(['index']);
     }
 }

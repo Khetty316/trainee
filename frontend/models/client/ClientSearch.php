@@ -19,6 +19,8 @@ class ClientSearch extends Clients {
             [['id', 'created_by', 'updated_by'], 'integer'],
             [['company_registration_no', 'company_tin', 'payment_term', 'client_code', 'area', 'state', 'company_name', 'contact_person', 'contact_position', 'contact_number', 'email', 'address_1', 'address_2', 'postcode', 'country', 'created_at', 'updated_at'], 'safe'],
             [['current_outstanding_balance'], 'number'],
+            [['tk_balance', 'tke_balance' ,'tkm_balance'], 'integer'],
+            
         ];
     }
 
@@ -70,7 +72,14 @@ class ClientSearch extends Clients {
                 ->andFilterWhere(['like', 'company_registration_no', $this->company_registration_no])
                 ->andFilterWhere(['like', 'company_tin', $this->company_tin])
                 ->andFilterWhere(['like', 'payment_term', $this->payment_term])
-                ->andFilterWhere(['like', 'current_outstanding_balance', $this->current_outstanding_balance])
+                
+                ->andFilterWhere([
+                        'tk_balance' => $this->tk_balance,
+                        'tke_balance'=> $this->tke_balance,
+                        'tkm_balance'=> $this->tkm_balance,
+                        'current_outstanding_balance' => $this->current_outstanding_balance,
+                    ])
+                
                 ->andFilterWhere(['like', 'ref_area.area_name', $this->area])
                 ->andFilterWhere(['like', 'ref_state.state_name', $this->state])
                 ->andFilterWhere(['like', 'ref_countries.country_name', $this->country])

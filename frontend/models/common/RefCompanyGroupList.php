@@ -27,6 +27,15 @@ use Yii;
  */
 class RefCompanyGroupList extends \yii\db\ActiveRecord {
 
+    CONST CODE_TK = 'TK';
+    CONST CODE_TKE = 'TKE';
+    CONST CODE_TKM = 'TKM';
+    CONST COMPANYGROUP3 = [
+        self::CODE_TK => 'Tenaga Kenari Sdn. Bhd.',
+        self::CODE_TKE => 'Tenaga Kenari Engineering Sdn. Bhd.',
+        self::CODE_TKM => 'Tenaga Kenari Marketing Sdn. Bhd.',
+    ];
+
     /**
      * {@inheritdoc}
      */
@@ -77,7 +86,7 @@ class RefCompanyGroupList extends \yii\db\ActiveRecord {
      */
     public function getProjectQMasters() {
         return $this->hasMany(ProjectQMasters::class, ['company_group_code' => 'code']);
-}
+    }
 
     /**
      * Gets query for [[Users]].
@@ -91,5 +100,4 @@ class RefCompanyGroupList extends \yii\db\ActiveRecord {
     public static function getDropDownList() {
         return \yii\helpers\ArrayHelper::map(RefCompanyGroupList::find()->orderBy(['company_name' => SORT_ASC])->all(), "code", "company_name");
     }
-
 }

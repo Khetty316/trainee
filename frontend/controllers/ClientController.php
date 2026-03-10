@@ -12,6 +12,8 @@ use common\models\myTools\FlashHandler;
 use yii\helpers\VarDumper;
 use frontend\models\common\RefCompanyGroupList;
 use frontend\models\client\ClientDebt;
+use yii\data\ActiveDataProvider;
+use frontend\models\client\ClientDebtSearch;
 
 /**
  * ClientController implements the CRUD actions for Clients model.
@@ -56,13 +58,29 @@ class ClientController extends Controller {
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionViewClient($id) {
+
+    
+        $model = $this->findModel($id);
+
         $contacts = \frontend\models\client\ClientContact::find()
                 ->where(['client_id' => $id])
                 ->indexBy('id')
                 ->all();
+
+        $searchModel = new ClientDebtSearch();
+
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        // limit results to this client
+        $dataProvider->query->andWhere(['client_id' => $model->id]);
+        
+//        $dataProvider->sort = false;
+
         return $this->render('viewClient', [
-                    'model' => $this->findModel($id),
+                    'model' => $model,
                     'contacts' => $contacts,
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
         ]);
     }
 
@@ -411,6 +429,7 @@ class ClientController extends Controller {
                 ->all();
 
         if ($model->load(Yii::$app->request->post())) {
+            
 
             if ($model->save()) {
                 return $this->redirect(['view-client', 'id' => $model->id]);
@@ -771,7 +790,6 @@ class ClientController extends Controller {
             $debt->save();
 
             //last step update client table balance (tk_balance, tke_balance, tkm_balance) and total current balance(tk_balance + tke_balance + tkm_balance)
-
 //            $client = Clients::findOne($debt->client_id);
 
             $client = Clients::find()

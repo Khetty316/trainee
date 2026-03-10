@@ -261,4 +261,12 @@ DetailView::widget([
 ])
 ?>-->
 
+    <!-- ClientDebt table -->
+    <?=
+    $this->render('indexClientDebt', [
+        'dataProvider' => $dataProvider,
+        'searchModel' => $searchModel
+    ])
+    ?>
+
 </div>

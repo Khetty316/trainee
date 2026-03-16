@@ -23,25 +23,23 @@ use common\models\User;
  * @property User $createdBy
  * @property User $updatedBy
  */
-class ClientDebt extends \yii\db\ActiveRecord
-{
+class ClientDebt extends \yii\db\ActiveRecord {
+
     /**
      * {@inheritdoc}
      */
-    public static function tableName()
-    {
+    public static function tableName() {
         return 'client_debt';
     }
 
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
-            [['client_id', 'month', 'year', 'created_by', 'updated_by'], 'integer'],
+            [['client_id', 'year', 'created_by', 'updated_by'], 'integer'],
             [['balance'], 'number'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['created_at', 'updated_at', 'month'], 'safe'],
             [['tk_group_code'], 'string', 'max' => 10],
             [['client_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clients::className(), 'targetAttribute' => ['client_id' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
@@ -52,15 +50,14 @@ class ClientDebt extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
-    {
+    public function attributeLabels() {
         return [
             'id' => 'ID',
             'client_id' => 'Client ID',
             'tk_group_code' => 'Company Group',
             'month' => 'Month',
             'year' => 'Year',
-            'balance' => 'Balance',
+            'balance' => 'Balance (RM)',
             'created_at' => 'Created At',
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
@@ -68,13 +65,19 @@ class ClientDebt extends \yii\db\ActiveRecord
         ];
     }
 
+    public function getCompanyGroup() {
+        return $this->hasOne(
+                        \frontend\models\common\RefCompanyGroupList::class,
+                        ['code' => 'tk_group_code']
+                );
+    }
+
     /**
      * Gets query for [[Client]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getClient()
-    {
+    public function getClient() {
         return $this->hasOne(Clients::className(), ['id' => 'client_id']);
     }
 
@@ -83,8 +86,7 @@ class ClientDebt extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getCreatedBy()
-    {
+    public function getCreatedBy() {
         return $this->hasOne(User::className(), ['id' => 'created_by']);
     }
 
@@ -93,12 +95,12 @@ class ClientDebt extends \yii\db\ActiveRecord
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getUpdatedBy()
-    {
+    public function getUpdatedBy() {
         return $this->hasOne(User::className(), ['id' => 'updated_by']);
     }
-    
+
     public function beforeSave($insert) {
+
         if ($this->isNewRecord) {
             $this->created_at = new \yii\db\Expression('NOW()');
             $this->created_by = Yii::$app->user->id;

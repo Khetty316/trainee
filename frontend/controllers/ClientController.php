@@ -7,13 +7,12 @@ use frontend\models\client\Clients;
 use frontend\models\client\ClientSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
 use common\models\myTools\FlashHandler;
 use yii\helpers\VarDumper;
 use frontend\models\common\RefCompanyGroupList;
 use frontend\models\client\ClientDebt;
-use yii\data\ActiveDataProvider;
 use frontend\models\client\ClientDebtSearch;
+use common\models\myTools\Mydebug;
 
 /**
  * ClientController implements the CRUD actions for Clients model.
@@ -59,7 +58,6 @@ class ClientController extends Controller {
      */
     public function actionViewClient($id) {
 
-    
         $model = $this->findModel($id);
 
         $contacts = \frontend\models\client\ClientContact::find()
@@ -73,8 +71,6 @@ class ClientController extends Controller {
 
         // limit results to this client
         $dataProvider->query->andWhere(['client_id' => $model->id]);
-        
-//        $dataProvider->sort = false;
 
         return $this->render('viewClient', [
                     'model' => $model,
@@ -84,6 +80,7 @@ class ClientController extends Controller {
         ]);
     }
 
+    //Mydebug::dumpFileW();
     public function actionAddByTemplateClients() {
         $model = new Clients();
         $clientDebt = new \frontend\models\client\ClientDebt();
@@ -120,10 +117,10 @@ class ClientController extends Controller {
                             $data[] = $cell->getValue();
                         }
 
-                        $custNo = $data[0];     // Column A
-                        $name = $data[1];       // Column B
-                        $balance = $data[15];    // Column C
-                        // Skip header row
+                        $custNo = $data[0];
+                        $name = $data[1];
+                        $balance = $data[15];
+                        
                         if ($custNo == 'Cust.No.' || empty($custNo)) {
                             continue;
                         }
@@ -138,11 +135,6 @@ class ClientController extends Controller {
                             'balance' => $balance,
                         ];
                     }
-
-
-                    $group = $clientDebt->tk_group_code;
-                    $month = $clientDebt->month;
-                    $year = $clientDebt->year;
 
                     if (!empty($buffer)) {
                         return $this->render('uploadToConfirmClients', [
@@ -161,10 +153,14 @@ class ClientController extends Controller {
                 }
             }
         }
+        $searchModel = new ClientDebtSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('addByTemplateClients', [
                     'model' => $model,
-                    'clientDebt' => $clientDebt
+                    'clientDebt' => $clientDebt,
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
         ]);
     }
 
@@ -429,7 +425,7 @@ class ClientController extends Controller {
                 ->all();
 
         if ($model->load(Yii::$app->request->post())) {
-            
+
 
             if ($model->save()) {
                 return $this->redirect(['view-client', 'id' => $model->id]);
@@ -692,7 +688,7 @@ class ClientController extends Controller {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         $clientId = Yii::$app->request->get('clientId');
 
-        if ($clientId) {
+        if (!$clientId) {
             return [];
         }
 
@@ -721,19 +717,15 @@ class ClientController extends Controller {
         ]);
     }
 
-    //testing
     public function actionSaveClientDetails() {
-
-        //test debug
-//        echo "<pre>";
-//        print_r(Yii::$app->request->post());
-//        exit;
 
         $postClients = Yii::$app->request->post('Clients');
 
         $companyGroup = Yii::$app->request->post('companyGroup');
         $month = Yii::$app->request->post('month');
         $year = Yii::$app->request->post('year');
+
+//        Mydebug::dumpFileW(Yii::$app->request->post('companyGroup'));
 
         if (!$postClients) {
             return $this->redirect(['client-list']);
@@ -742,83 +734,90 @@ class ClientController extends Controller {
         $custNos = $postClients['cust_no'];
         $balances = $postClients['balance'];
 
-        $columnMap = [
-            RefCompanyGroupList::CODE_TK => 'ac_no_tk',
-            RefCompanyGroupList::CODE_TKE => 'ac_no_tke',
-            RefCompanyGroupList::CODE_TKM => 'ac_no_tkm',
-        ];
+        $transaction = Yii::$app->db->beginTransaction();
 
-        $clientColumn = $columnMap[$companyGroup] ?? null;
+        try {
 
-        foreach ($custNos as $index => $custNo) {
-
-            $balance = floatval($balances[$index]);
-
-            //testing
-            echo "Cust No: " . $custNo . "<br>";
-            echo "Balance: " . $balance . "<br>";
-
-            // detect which column to search
             $columnMap = [
                 RefCompanyGroupList::CODE_TK => 'ac_no_tk',
                 RefCompanyGroupList::CODE_TKE => 'ac_no_tke',
                 RefCompanyGroupList::CODE_TKM => 'ac_no_tkm',
             ];
 
-            $clientColumn = $columnMap[$companyGroup];
+            $clientColumn = $columnMap[$companyGroup] ?? null;
 
-            // find client
-            $client = Clients::find()
-                    ->where([$clientColumn => trim($custNo)])
-                    ->one();
+            foreach ($custNos as $index => $custNo) {
 
-            if (!$client) {
-                continue;
-            }
+                $balance = floatval($balances[$index]);
 
-            // save debt
-            $debt = new ClientDebt();
-            $debt->client_id = $client->id;
-            $debt->tk_group_code = $companyGroup;
-            $debt->month = $month;
-            $debt->year = $year;
-            $debt->balance = $balance;
+                $client = Clients::find()
+                        ->where([$clientColumn => trim($custNo)])
+                        ->one();
 
-//            $debt->created_at = time(); // declare in clientDebt model in beforeSave() function
-//            $debt->created_by = Yii::$app->user->id; // declare in clientDebt model in beforeSave() function
-
-            $debt->save();
-
-            //last step update client table balance (tk_balance, tke_balance, tkm_balance) and total current balance(tk_balance + tke_balance + tkm_balance)
-//            $client = Clients::findOne($debt->client_id);
-
-            $client = Clients::find()
-                    ->where([$clientColumn => $custNo])
-                    ->one();
-
-            if ($client) {
-
-                if ($companyGroup == RefCompanyGroupList::CODE_TK) {
-                    $client->tk_balance = $balance;
+                if (!$client) {
+                    continue;
                 }
 
-                if ($companyGroup == RefCompanyGroupList::CODE_TKE) {
-                    $client->tke_balance = $balance;
+                $debt = ClientDebt::find()
+                        ->where([
+                            'client_id' => $client->id,
+                            'tk_group_code' => $companyGroup,
+                            'month' => $month,
+                            'year' => $year
+                        ])
+                        ->one();
+
+                if (!$debt) {
+                    $debt = new ClientDebt();
+                    $debt->client_id = $client->id;
+                    $debt->tk_group_code = $companyGroup;
+                    $debt->month = $month;
+                    $debt->year = $year;
                 }
 
-                if ($companyGroup == RefCompanyGroupList::CODE_TKM) {
-                    $client->tkm_balance = $balance;
+                $debt->balance = $balance;
+
+                if (!$debt->save()) {
+                    throw new \Exception('Failed to save client debt');
+                }
+
+                $latestDebt = ClientDebt::find()
+                        ->where([
+                            'client_id' => $client->id,
+                            'tk_group_code' => $companyGroup
+                        ])
+                        ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
+                        ->one();
+
+                if ($latestDebt) {
+
+                    if ($companyGroup == RefCompanyGroupList::CODE_TK) {
+                        $client->tk_balance = $latestDebt->balance;
+                    }
+
+                    if ($companyGroup == RefCompanyGroupList::CODE_TKE) {
+                        $client->tke_balance = $latestDebt->balance;
+                    }
+
+                    if ($companyGroup == RefCompanyGroupList::CODE_TKM) {
+                        $client->tkm_balance = $latestDebt->balance;
+                    }
                 }
 
                 $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
                         ($client->tke_balance ?? 0) +
                         ($client->tkm_balance ?? 0);
 
-                $client->save(false);
+                if (!$client->save(false)) {
+                    throw new \Exception('Failed to update client balance');
+                }
             }
+            $transaction->commit();
+            FlashHandler::success("Outstanding balance successfully imported.");
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            FlashHandler::err('Import failed: ' . $e->getMessage());
         }
-
-        Yii::$app->session->setFlash('success', 'Outstanding balance successfully imported.');
 
         return $this->redirect(['index']);
     }

@@ -20,8 +20,6 @@ $this->params['breadcrumbs'][] = $this->title;
         <?= Html::a('Import Outstanding Balance', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
     </p>
 
-    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
-
     <div class="table-responsive">
         <?=
         GridView::widget([
@@ -33,7 +31,7 @@ $this->params['breadcrumbs'][] = $this->title;
             'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
-//            'id',
+
                 [
                     'attribute' => 'client_code',
                     'format' => 'raw',
@@ -63,7 +61,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     'attribute' => 'tkm_balance',
                     'contentOptions' => ['class' => 'text-right'],
                     'value' => function ($model) {
-                        return number_format($model->tke_balance, 2);
+                        return number_format($model->tkm_balance, 2);
                     }
                 ],
                 [
@@ -73,7 +71,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return number_format($model->current_outstanding_balance, 2);
                     }
                 ],
-//            'contact_person',
+
                 [
                     'attribute' => 'contact_person',
                     'format' => 'raw',
@@ -92,7 +90,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return implode('<br>', $nameList);
                     },
                 ],
-//            'contact_position',
+
                 [
                     'attribute' => 'contact_position',
                     'format' => 'raw',
@@ -111,7 +109,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         return implode('<br>', $positionList);
                     }
                 ],
-//            'contact_number',
                 [
                     'attribute' => 'contact_number',
                     'format' => 'raw',
@@ -130,7 +127,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         return implode('<br>', $numList);
                     }
                 ],
-//            'contact_email',
                 [
                     'attribute' => 'contact_email',
                     'format' => 'raw',
@@ -168,17 +164,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return $model['country0']['country_name'] ?? null;
                     }
                 ],
-            //'email:email',
-            //'address_1',
-            //'address_2',
-            //'postcode',
-            //'area',
-            //'state',
-            //'country',
-            //'created_at',
-            //'created_by',
-            //'updated_at',
-            //'updated_by',
+ 
             ],
         ]);
         ?>

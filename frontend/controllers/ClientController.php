@@ -88,23 +88,36 @@ class ClientController extends Controller {
         if (Yii::$app->request->isPost) {
 
             $clientDebt->load(Yii::$app->request->post());
-
             $excelFile = \yii\web\UploadedFile::getInstanceByName('excelTemplate');
 
             if ($excelFile && $excelFile->tempName) {
+
                 $extension = strtolower(pathinfo($excelFile->name, PATHINFO_EXTENSION));
 
                 if (!in_array($extension, ['xls', 'xlsx'])) {
-                    ii::$app->session->setFlash('error', 'Please upload only Excel files (.xls or .xlsx).');
+                    Yii::$app->session->setFlash('error', 'Please upload only Excel files (.xls or .xlsx).');
                     return $this->redirect(['add-by-template-clients']);
                 }
 
                 try {
-                    $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($excelFile->tempName);
+                    // ✅ Fix reader (avoid auto-detection issues)
+                    if ($extension === 'xlsx') {
+                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+                    } else {
+                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+                    }
+
+                    $reader->setReadDataOnly(true);
+
+                    // ✅ IMPORTANT: prevent float/array offset error
+                    \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(
+                            new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder()
+                    );
+
                     $spreadsheet = $reader->load($excelFile->tempName);
                     $worksheet = $spreadsheet->getActiveSheet();
 
-                    $buffer = []; // Buffer to store data temporarily
+                    $buffer = [];
 
                     foreach ($worksheet->getRowIterator(4) as $row) {
 
@@ -114,19 +127,18 @@ class ClientController extends Controller {
                         $data = [];
 
                         foreach ($cells as $cell) {
-                            $data[] = $cell->getValue();
+                            // ✅ safer than getValue()
+                            $data[] = $cell ? $cell->getCalculatedValue() : null;
                         }
 
-                        $custNo = $data[0];
-                        $name = $data[1];
-                        $balance = $data[15];
-                        
-                        if ($custNo == 'Cust.No.' || empty($custNo)) {
+                        // ✅ safe access (no more offset error)
+                        $custNo = isset($data[0]) ? trim((string) $data[0]) : null;
+                        $name = isset($data[1]) ? trim((string) $data[1]) : null;
+                        $balance = isset($data[15]) ? (float) $data[15] : 0;
+
+                        // skip header / empty
+                        if ($custNo === 'Cust.No.' || empty($custNo)) {
                             continue;
-                        }
-
-                        if (empty($custNo)) {
-                            break;
                         }
 
                         $buffer[] = [
@@ -144,15 +156,21 @@ class ClientController extends Controller {
                                     'year' => $clientDebt->year,
                         ]);
                     } else {
-                        \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the 'Name' column in your Excel file is not left blank.");
+                        \common\models\myTools\FlashHandler::err(
+                                "Upload failed: Please ensure that the Excel file contains valid data."
+                        );
                         return $this->redirect(['add-by-template-clients']);
                     }
-                } catch (\Exception $e) {
-                    Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
+                } catch (\Throwable $e) {
+                    Yii::$app->session->setFlash(
+                            'error',
+                            'Error reading the Excel file: ' . $e->getMessage()
+                    );
                     return $this->redirect(['add-by-template-clients']);
                 }
             }
         }
+
         $searchModel = new ClientDebtSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 

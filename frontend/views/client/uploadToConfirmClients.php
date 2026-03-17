@@ -4,8 +4,8 @@ use yii\bootstrap4\ActiveForm;
 use yii\helpers\Html;
 
 $this->title = 'Confirm and Submit Outstanding Balance';
-$this->params['breadcrumbs'][] = ['label' => 'Client'];
-$this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['client-list']];
+$this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
+$this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 ?>

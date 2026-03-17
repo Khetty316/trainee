@@ -16,8 +16,8 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <p>
         <?= Html::a('Create Clients', ['create-client'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
         <?= Html::a('Import Outstanding Balance', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
     </p>
 
     <div class="table-responsive">
@@ -31,7 +31,6 @@ $this->params['breadcrumbs'][] = $this->title;
             'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
-
                 [
                     'attribute' => 'client_code',
                     'format' => 'raw',
@@ -71,7 +70,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         return number_format($model->current_outstanding_balance, 2);
                     }
                 ],
-
                 [
                     'attribute' => 'contact_person',
                     'format' => 'raw',
@@ -90,7 +88,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         return implode('<br>', $nameList);
                     },
                 ],
-
                 [
                     'attribute' => 'contact_position',
                     'format' => 'raw',
@@ -164,7 +161,17 @@ $this->params['breadcrumbs'][] = $this->title;
                         return $model['country0']['country_name'] ?? null;
                     }
                 ],
- 
+            //'email:email',
+            //'address_1',
+            //'address_2',
+            //'postcode',
+            //'area',
+            //'state',
+            //'country',
+            //'created_at',
+            //'created_by',
+            //'updated_at',
+            //'updated_by',
             ],
         ]);
         ?>

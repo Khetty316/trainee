@@ -4,30 +4,33 @@ use yii\bootstrap4\ActiveForm;
 use yii\helpers\Html;
 
 $this->title = 'Confirm and Submit Outstanding Balance';
-$this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = $this->title;
+
 $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 ?>
 <h4><?= Html::encode($this->title) ?></h4>
-<?php $form = ActiveForm::begin(['action' => ['save-client-details']]); ?>
+
+<?php $form = ActiveForm::begin([
+    'method' => 'post',
+    'action' => ['client/process-client-data'] 
+]); ?>
 
 <!--hidden input-->
 <?= Html::hiddenInput('companyGroup', $companyGroup) ?>
 <?= Html::hiddenInput('month', $month) ?>
 <?= Html::hiddenInput('year', $year) ?>
 
-
 <div class="mb-3">
 
     <strong>Company Group :</strong> <?= Html::encode($company->company_name) ?><br>
 
     <strong>Month :</strong> <?= date('F', mktime(0, 0, 0, $month, 1)) ?><br>
-    
+
     <strong>Year :</strong> <?= Html::encode($year) ?>
 
 </div>
-
 
 <table class="table table-bordered">
 
@@ -79,7 +82,8 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
                             'number',
                             "Clients[balance][$index]",
                             $row['balance'] ?? '',
-                            ['class' => 'form-control']
+                            ['class' => 'form-control',
+                             'step' => 'any']
                     )
                     ?>
                 </td>
@@ -89,7 +93,6 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
                         <i class="far fa-trash-alt"></i>
                     </button>
                 </td>
-
             </tr>
 
         <?php endforeach; ?>
@@ -98,10 +101,15 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 
 </table>
 
-<div class="form-group">
-    <?= Html::submitButton('Save to Database', ['class' => 'btn btn-primary']) ?>
-</div>
-<?php ActiveForm::end(); ?>
+<?= Html::submitButton('Proceed', [
+    'class' => 'btn btn-primary mb-2',
+    
+]) ?>
+
+<!--<div class="form-group">
+<?= Html::submitButton('Save to Database', ['class' => 'btn btn-primary']) ?>
+</div>-->
+
 <script>
     $(document).ready(function () {
         $('td').addClass('p-0');
@@ -111,4 +119,4 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
     });
 </script>
 
-
+<?php ActiveForm::end(); ?>

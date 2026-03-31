@@ -10,9 +10,42 @@ use yii\grid\GridView;
 $this->title = 'Clients';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
+
 <div class="clients-index">
 
     <h3><?= Html::encode($this->title) ?></h3>
+
+    <?php if (Yii::$app->session->get('success_message')): ?>
+        <div class="alert alert-success alert-dismissible fade show"
+             style="padding:20px; font-size:18px; margin-bottom:20px;">
+
+            <?= Yii::$app->session->get('success_message') ?>
+
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+
+        <?php Yii::$app->session->remove('success_message'); ?>
+    <?php endif; ?>
+
+    <?php if (Yii::$app->session->hasFlash('downloadNotFoundClient')): ?>
+        <script>
+            setTimeout(function () {
+
+                // remove loading spinner (optional)
+                document.body.classList.remove('loading');
+                document.querySelectorAll('.loading, .overlay, .spinner').forEach(el => {
+                    el.style.display = 'none';
+                });
+
+                // trigger download
+                var iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = '<?= \yii\helpers\Url::to(['client/export-not-found-clients']) ?>';
+                document.body.appendChild(iframe);
+
+            }, 1000);
+        </script>
+    <?php endif; ?>
 
     <p>
         <?= Html::a('Create Clients', ['create-client'], ['class' => 'btn btn-success']) ?>
@@ -178,3 +211,4 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
 
 </div>
+

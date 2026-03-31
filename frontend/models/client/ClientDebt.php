@@ -40,6 +40,8 @@ class ClientDebt extends \yii\db\ActiveRecord {
             [['client_id', 'year', 'created_by', 'updated_by'], 'integer'],
             [['balance'], 'number'],
             [['created_at', 'updated_at', 'month'], 'safe'],
+      [['tk_group_code', 'month', 'year'], 'required'],
+            [['tk_group_code', 'month', 'year'], 'safe'],
             [['tk_group_code'], 'string', 'max' => 10],
             [['client_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clients::className(), 'targetAttribute' => ['client_id' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],

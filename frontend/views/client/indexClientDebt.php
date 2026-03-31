@@ -4,6 +4,7 @@ use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
 use yii\jui\DatePicker;
+use common\models\myTools\MyFormatter;
 ?>
 
 <legend class="w-auto px-2 m-0">Client Debt:</legend>
@@ -91,7 +92,10 @@ $this->registerCss("
             ],
             [
                 'attribute' => 'created_at',
-                'format' => ['datetime', 'php:d/m/Y H:i'],
+//                'format' => ['datetime', 'php:d/m/Y H:i'],
+                'value' => function ($model) {
+                    return $model->created_at ? MyFormatter::asDateTime_ReaddmYHi($model->created_at) : '-';
+                },
                 'filter' => DatePicker::widget([
                     'model' => $searchModel,
                     'attribute' => 'created_at',
@@ -132,7 +136,7 @@ $this->registerCss("
             [
                 'attribute' => 'updated_at',
                 'value' => function ($model) {
-                    return $model->updated_at ? Yii::$app->formatter->asDatetime($model->updated_at, 'php:d/m/Y H:i') : '-';
+                    return $model->updated_at ? MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : '-';
                 },
                 'filter' => DatePicker::widget([
                     'model' => $searchModel,

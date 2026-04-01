@@ -8,11 +8,14 @@ use Yii;
  * This is the model class for table "ref_assigned_pic".
  *
  * @property int $id
- * @property int|null $work_order_master_id
+ * @property int|null $corrective_work_order_master_id
+ * @property int|null $preventive_work_order_master_id
  * @property string|null $name
+ * @property int|null $staff_id
  * @property int|null $active_sts
  *
- * @property CmmsCorrectiveWorkOrderMaster $workOrderMaster
+ * @property CmmsCorrectiveWorkOrderMaster $correctiveWorkOrderMaster
+ * @property CmmsPreventiveWorkOrderMaster $preventiveWorkOrderMaster
  */
 class RefAssignedPic extends \yii\db\ActiveRecord
 {
@@ -30,9 +33,10 @@ class RefAssignedPic extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['work_order_master_id', 'active_sts', 'staff_id'], 'integer'],
+            [['corrective_work_order_master_id', 'preventive_work_order_master_id', 'staff_id', 'active_sts'], 'integer'],
             [['name'], 'string', 'max' => 255],
-            [['work_order_master_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsCorrectiveWorkOrderMaster::className(), 'targetAttribute' => ['work_order_master_id' => 'id']],
+            [['corrective_work_order_master_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsCorrectiveWorkOrderMaster::className(), 'targetAttribute' => ['corrective_work_order_master_id' => 'id']],
+            [['preventive_work_order_master_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsPreventiveWorkOrderMaster::className(), 'targetAttribute' => ['preventive_work_order_master_id' => 'id']],
         ];
     }
 
@@ -43,7 +47,8 @@ class RefAssignedPic extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'work_order_master_id' => 'Work Order Master ID',
+            'corrective_work_order_master_id' => 'Corrective Work Order Master ID',
+            'preventive_work_order_master_id' => 'Preventive Work Order Master ID',
             'name' => 'Name',
             'staff_id' => 'Staff ID',
             'active_sts' => 'Active Sts',
@@ -51,12 +56,22 @@ class RefAssignedPic extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[WorkOrderMaster]].
+     * Gets query for [[CorrectiveWorkOrderMaster]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getWorkOrderMaster()
+    public function getCorrectiveWorkOrderMaster()
     {
-        return $this->hasOne(CmmsCorrectiveWorkOrderMaster::className(), ['id' => 'work_order_master_id']);
+        return $this->hasOne(CmmsCorrectiveWorkOrderMaster::className(), ['id' => 'corrective_work_order_master_id']);
+    }
+
+    /**
+     * Gets query for [[PreventiveWorkOrderMaster]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPreventiveWorkOrderMaster()
+    {
+        return $this->hasOne(CmmsPreventiveWorkOrderMaster::className(), ['id' => 'preventive_work_order_master_id']);
     }
 }

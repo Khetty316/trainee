@@ -41,8 +41,8 @@ class CmmsAssetListSearch extends CmmsAssetList
     public function search($params)
     {
         $query = CmmsAssetList::find()
-                ->where(['is_deleted' => 0])
-                ->andWhere(['active_sts' => 1]);
+//                ->where(['is_deleted' => 0])
+                ->where(['active_sts' => 1]);
 
         // add conditions that should always apply here
 

@@ -9,17 +9,37 @@ use yii\bootstrap4\ActiveForm;
 /* @var $searchModel frontend\models\inventory\InventorySupplierSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+}
+
 $this->title = 'Inventory Control';
 $this->params['breadcrumbs'][] = $this->title;
+$this->params['breadcrumbs'][] = $pageName;
 ?>
 <div class="inventory-supplier-index">
 
-    <?= $this->render('__stockNavBar', ['module' => 'superior', 'pageKey' => '2']) ?>
+    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '2']) ?>
 
     <p>
-        <?= Html::a('Add New Supplier', ['add-new-supplier'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
-        <?= Html::a('Add By Template', ['add-by-template-supplier'], ['class' => 'btn btn-success']) ?>
+        <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
+            <?= Html::a('Add New Supplier', ['add-new-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Upload Template', ['add-by-template-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+        <?php } ?>
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
     </p>
 
     <?=
@@ -37,8 +57,12 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'code',
                 'format' => 'raw',
-                'value' => function ($model) {
-                    return $model->code;
+                'value' => function ($model) use ($moduleIndex) {
+                    if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') {
+                        return Html::a($model->code, ['view-supplier', 'id' => $model->id, 'type' => $moduleIndex]);
+                    } else {
+                        return $model->code;
+                    }
                 }
             ],
             'name',
@@ -55,15 +79,15 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'active_sts',
                 'contentOptions' => ['class' => 'text-center'],
                 'value' => function ($model) {
-                    return $model->active_sts == 0 ? 'No' : 'Yes';
+                    return $model->active_sts == 2 ? 'Yes' : 'No';
                 },
                 'filter' => Html::activeDropDownList(
                         $searchModel,
                         'active_sts',
                         [
                             '' => 'All',
-                            '0' => 'No',
-                            '1' => 'Yes'
+                            '1' => 'No',
+                            '2' => 'Yes'
                         ],
                         ['class' => 'form-control text-center']
                 )
@@ -83,15 +107,15 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $model->updatedBy ? $model->updatedBy->fullname . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
                 }
             ],
-            [
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center col-sm-1'],
-                'value' => function ($model) {
-                    return Html::a('View <i class="fa fa-eye"></i>', ['view-supplier', 'id' => $model->id], [
-                        'class' => 'btn btn-sm btn-success text-center'
-                    ]);
-                }
-            ]
+//            [
+//                'format' => 'raw',
+//                'contentOptions' => ['class' => 'text-center col-sm-1'],
+//                'value' => function ($model) {
+//                    return Html::a('View <i class="fa fa-eye"></i>', ['view-supplier', 'id' => $model->id], [
+//                        'class' => 'btn btn-sm btn-success text-center'
+//                    ]);
+//                }
+//            ]
         ],
     ]);
     ?>

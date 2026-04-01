@@ -27,9 +27,9 @@ $companyGroup = frontend\models\common\RefCompanyGroupList::findOne($po->company
             )
             ?><br>
 
-            TEL NO: <?= Html::encode($companyGroup->tel) ?><br>
+            TEL NO: <?= Html::encode(preg_replace('/<br\s*\/?>/i', ', ', $companyGroup->tel)) ?><br>
             EMAIL: <?= Html::encode($companyGroup->email) ?><br>
-            (Company Reg No: <?= Html::encode($companyGroup->company_id) ?>)<br>
+            (Company Reg No: <?= Html::encode($companyGroup->company_id) ?>)
             (TIN No: <?= Html::encode($companyGroup->tin_no) ?>))
         </td>
     </tr>
@@ -39,7 +39,7 @@ $companyGroup = frontend\models\common\RefCompanyGroupList::findOne($po->company
 <table width="100%">
     <tr>
         <!-- SUPPLIER -->
-        <td width="90%" valign="top" style="font-size:16pt;">
+        <td width="90%" valign="top" style="font-size:18pt;">
             <strong><?= strtoupper(Html::encode($supplier->name)) ?></strong><br>
             <?= Html::encode($supplier->address1) ?><br>
             <?= Html::encode($supplier->address2) ?><br>

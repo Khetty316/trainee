@@ -5,6 +5,7 @@ namespace frontend\models\inventory;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use frontend\models\inventory\InventoryPurchaseOrder;
+use Yii;
 
 /**
  * InventoryPurchaseOrderSearch represents the model behind the search form of `frontend\models\inventory\InventoryPurchaseOrder`.
@@ -16,7 +17,7 @@ class InventoryPurchaseOrderSearch extends InventoryPurchaseOrder {
      */
     public function rules() {
         return [
-            [['id', 'status', 'currency_id', 'total_qty'], 'integer'],
+            [['id', 'status', 'currency_id', 'total_qty', 'active_sts'], 'integer'],
             [['po_no', 'po_date', 'company_group', 'comment', 'created_at', 'updated_at', 'created_by', 'updated_by'], 'safe'],
             [['total_amount', 'total_discount', 'net_amount', 'tax_amount', 'gross_amount'], 'number'],
         ];
@@ -43,10 +44,28 @@ class InventoryPurchaseOrderSearch extends InventoryPurchaseOrder {
         // add conditions that should always apply here
         switch ($type) {
             case "execPendingPurchasing":
-                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PoCreated]);
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PoCreated, 'active_sts' => 2]);
                 break;
             case "execPendingReceiving":
-                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PendingPo]);
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PendingPo, 'active_sts' => 2]);
+                break;
+            case "assistPendingPurchasing":
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PoCreated, 'active_sts' => 2]);
+                break;
+            case "assistPendingReceiving":
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PendingPo, 'active_sts' => 2]);
+                break;
+            case "maintenanceHeadPendingPurchasing":
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PoCreated, 'active_sts' => 2, 'inventory_purchase_order.created_by' => Yii::$app->user->identity->id]);
+                break;
+            case "maintenanceHeadAllPurchasing":
+                $query->where(['active_sts' => 2, 'inventory_purchase_order.created_by' => Yii::$app->user->identity->id]);
+                break;
+            case "maintenanceHeadPendingReceiving":
+                $query->where(['inventory_purchase_order.status' => \frontend\models\RefInventoryStatus::STATUS_PendingPo, 'active_sts' => 2, 'inventory_purchase_order.created_by' => Yii::$app->user->identity->id]);
+                break;
+            case "maintenanceHeadAllReceiving":
+                $query->where(['active_sts' => 2, 'inventory_purchase_order.created_by' => Yii::$app->user->identity->id]);
                 break;
             default:
                 // Handle unknown type or no filter
@@ -74,6 +93,7 @@ class InventoryPurchaseOrderSearch extends InventoryPurchaseOrder {
             'id' => $this->id,
 //            'po_date' => $this->po_date,
             'inventory_purchase_order.status' => $this->status,
+            'inventory_purchase_order.active_sts' => $this->active_sts,
             'inventory_purchase_order.currency_id' => $this->currency_id,
             'total_qty' => $this->total_qty,
             'total_amount' => $this->total_amount,

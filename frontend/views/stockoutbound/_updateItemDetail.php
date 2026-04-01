@@ -10,7 +10,8 @@ $isLegacy = $isLegacy ?? false;
 <div class="stock-detail">
     <?php
     $form = ActiveForm::begin([
-        'id' => 'myForm',
+        'id' => 'stockoutbound-details-form',
+        'options' => ['autocomplete' => 'off']
     ]);
     ?>
 
@@ -116,8 +117,8 @@ $isLegacy = $isLegacy ?? false;
                     </div>
 
                     <!-- Hidden inputs for legacy values -->
-                    <input type="hidden" name="BomDetails[model_type]" id="model-type-legacy" value="<?= Html::encode($model->model_type) ?>">
-                    <input type="hidden" name="BomDetails[brand]" id="brand-legacy" value="<?= Html::encode($model->brand) ?>">
+                    <input type="hidden" name="StockOutboundDetails[model_type]" id="model-type-legacy" value="<?= Html::encode($model->model_type) ?>">
+                    <input type="hidden" name="StockOutboundDetails[brand]" id="brand-legacy" value="<?= Html::encode($model->brand) ?>">
 
                     <!-- Dropdown fields (hidden initially for legacy records) -->
                     <div id="dropdown-fields" style="display: none;">
@@ -133,19 +134,23 @@ $isLegacy = $isLegacy ?? false;
                                 <div class="searchable-dropdown">
                                     <input type="text" 
                                            id="model-type-search" 
-                                           class="form-control search-input"
+                                           class="form-control search-input <?= (!$isLegacy && !$model->isNewRecord) ? 'has-selection' : '' ?>"
                                            placeholder="Type to search..."
-                                           value="<?= !empty($model->inventoryModel) ? $model->inventoryModel->type . ' - ' . $model->inventoryBrand->name : '' ?>"
-                                           autocomplete="off">
-                                    <button type="button" class="clear-btn" id="clear-selection" style="display: none;" title="Clear and select different option">
+                                           value="<?= !empty($model->inventoryModel) ? Html::encode($model->inventoryModel->type . ' - ' . $model->inventoryBrand->name) : '' ?>"
+                                           autocomplete="off"
+                                           <?= (!$isLegacy && !$model->isNewRecord) ? 'readonly' : '' ?>>
+                                    <button type="button" class="clear-btn" id="clear-selection" 
+                                            style="display: <?= (!$isLegacy && !$model->isNewRecord) ? 'none' : 'none' ?>;" 
+                                            title="Clear and select different option"
+                                            <?= (!$isLegacy && !$model->isNewRecord) ? 'disabled' : '' ?>>
                                         <i class="fas fa-times"></i>
                                     </button>
                                     <input type="hidden" 
-                                           name="BomDetails[model_type_input]" 
+                                           name="StockOutboundDetails[model_type_input]" 
                                            id="model-type-hidden"
                                            value="<?= Html::encode($model->model_type_input) ?>">
                                     <input type="hidden" 
-                                           name="BomDetails[brand_input]" 
+                                           name="StockOutboundDetails[brand_input]" 
                                            id="brand-hidden"
                                            value="<?= Html::encode($model->brand_input) ?>">
                                     <div class="dropdown-list" id="model-type-list">
@@ -196,15 +201,16 @@ $isLegacy = $isLegacy ?? false;
                     $form->field($model, 'qty')->textInput([
                         'type' => 'number',
                         'step' => '1',
-                        'min' => 1,
+                        'min' => ($model->dispatched_qty + $model->unacknowledged_qty),
                         'placeholder' => 'Enter quantity'
                     ])->label('Quantity')
                     ?>
 
-            </fieldset>  <div class="form-group">
+            </fieldset>  
+            <div class="form-group">
                 <?=
                 Html::submitButton('Save', [
-                    'class' => 'btn btn-success',
+                    'class' => 'btn btn-success mt-3',
                     'id' => 'submit-btn'
                 ])
                 ?>
@@ -214,7 +220,7 @@ $isLegacy = $isLegacy ?? false;
                     Html::a('Deactivate',
                             ['deactivate-bom-details', 'id' => $model->id],
                             [
-                                'class' => 'btn btn-danger float-right',
+                                'class' => 'btn btn-danger float-right mt-3',
                                 'data' => [
                                     'confirm' => 'Are you sure you want to deactivate this item?',
                                     'method' => 'post',
@@ -246,10 +252,8 @@ $isLegacy = $isLegacy ?? false;
         // Migration button click handler
         $('#migrate-to-dropdown').on('click', function () {
             if (confirm('Are you sure you want to migrate this record to use the dropdown system?\n\nThe old text values will be replaced with selections from the inventory system.')) {
-                // Hide legacy alert and fields
                 $('#legacy-alert').fadeOut();
                 $('#legacy-fields').fadeOut(function () {
-                    // Show dropdown fields
                     $('#dropdown-fields').fadeIn();
                     isLegacy = false;
 
@@ -258,14 +262,16 @@ $isLegacy = $isLegacy ?? false;
                     $('#brand-legacy').val('');
 
                     // Clear all fields
-                    $('#model-type-search').val('');
+                    $('#model-type-search').val('').removeClass('has-selection').attr('readonly', false); // unlock!
                     $('#model-type-hidden').val('');
                     $('#brand-hidden').val('');
                     $('#brand-display').val('');
                     $('#description-input').val('');
                     selectedModelText = '';
 
-                    // Initialize dropdown
+                    // Re-enable clear button
+                    $('#clear-selection').prop('disabled', false);
+
                     initSearchableDropdown();
                 });
             }
@@ -432,6 +438,20 @@ $isLegacy = $isLegacy ?? false;
                 $input.addClass('has-selection').attr('readonly', true);
                 $clearBtn.show();
             }
+
+            // Initialize if editing existing record
+            if ($modelHidden.val() && $input.val()) {
+                selectedModelText = $input.val();
+                $input.addClass('has-selection').attr('readonly', true);
+                $clearBtn.show();
+            }
+
+            // Lock fields permanently if existing non-legacy record
+            var isExistingRecord = <?= (!$model->isNewRecord) ? 'true' : 'false' ?>;
+            if (isExistingRecord && !isLegacy) {
+                $input.attr('readonly', true).addClass('has-selection');
+                $clearBtn.hide().prop('disabled', true);
+            }
         }
 
         // Initialize dropdown if not legacy
@@ -440,7 +460,7 @@ $isLegacy = $isLegacy ?? false;
         }
 
         // Form validation before submit
-        $('#bom-details-form').on('beforeSubmit', function (e) {
+        $('#stockoutbound-details-form').on('beforeSubmit', function (e) {
             if (!isLegacy) {
                 var modelValue = $('#model-type-search').val();
                 var modelHidden = $('#model-type-hidden').val();

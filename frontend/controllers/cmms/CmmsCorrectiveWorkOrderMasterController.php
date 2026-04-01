@@ -12,11 +12,12 @@ use frontend\models\cmms\CmmsPartList;
 use frontend\models\cmms\CmmsToolList;
 use frontend\models\cmms\RefProgressStatus;
 use common\models\User;
-
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
 use yii\helpers\ArrayHelper;
+use common\modules\auth\models\AuthItem;
+use yii\filters\AccessControl;
 
 /**
  * CmmsCorrectiveWorkOrderMasterController implements the CRUD actions for CmmsCorrectiveWorkOrderMaster model.
@@ -32,6 +33,28 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                ],
+            ],
+            'access' => [
+                'class' => AccessControl::className(),
+                'only' => ['view-superior', 'view-assigned-tasks', 'view-fault-list-ids',
+                    'update', 'delete', 'remove-pic', 'view-selected-material', 'create'],
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'actions' => ['view-fault-list-ids', 'view-selected-material'],
+                        'roles' => [AuthItem::ROLE_CMMS_Superior, AuthItem::ROLE_CMMS_Normal],
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['create', 'view-superior', 'update', 'delete', 'remove-pic'],
+                        'roles' => [AuthItem::ROLE_CMMS_Superior],
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['view-assigned-tasks'],
+                        'roles' => [AuthItem::ROLE_CMMS_Normal],
+                    ],
                 ],
             ],
         ];
@@ -51,6 +74,19 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
 //        ]);
 //    }
     
+    public function actionUserManualInventory() {
+        $this->layout = false;
+        $fileName = "T5B-CMMS Module-02.pdf";
+        $fileUrl = Yii::getAlias('@web/uploads/user-manual/' . $fileName);
+
+        // Add timestamp to prevent caching
+        $fileUrl .= '?v=' . time();
+
+        return $this->render('/user-manual', [
+                    'fileUrl' => $fileUrl,
+        ]);
+    }
+
     public function actionViewSuperior() {
         $searchModel = new CmmsCorrectiveWorkOrderMasterSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'superior');
@@ -61,7 +97,7 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
                     'moduleStatus' => 'superior',
         ]);
     }
-    
+
     public function actionViewAssignedTasks() {
         $searchModel = new CmmsCorrectiveWorkOrderMasterSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'assignedTasks');
@@ -87,7 +123,7 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
 
     public function actionViewFaultListIds($id, $moduleStatus) {
         $faultLists = CmmsFaultList::find()
-                ->where(['cmms_work_order_id' => $id])
+                ->where(['cmms_corrective_work_order_id' => $id])
                 ->all();
 
         $model = CmmsCorrectiveWorkOrderMaster::findOne(['id' => $id]);
@@ -141,7 +177,7 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
         $model = $this->findModel($id);
 
         $assignedPICs = $model->assignedPic ?: [
-            new RefAssignedPic(['work_order_master_id' => $model->id])
+            new RefAssignedPic(['corrective_work_order_master_id' => $model->id])
         ];
 
         if (Yii::$app->request->isPost) {
@@ -154,7 +190,7 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
                 if (!$model->save()) {
                     throw new \Exception('Failed to save corrective work order');
                 }
-                
+
                 //calculate the duration
                 if (!empty($model->start_date) && !empty($model->end_date)) {
                     $start = new \DateTime($model->start_date);
@@ -165,16 +201,22 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
                 } else {
                     $model->duration = null;
                 }
-                
+
                 $postPICs = Yii::$app->request->post('RefAssignedPic', []);
+//                Yii::error($postPICs, 'DEBUG_PICS');
                 $savedIds = [];
                 foreach ($postPICs as $row) {
-                    $pic = !empty($row['id'])
-                        ? RefAssignedPic::findOne($row['id'])
-                        : new RefAssignedPic();
+                    $pic = !empty($row['id']) ? RefAssignedPic::findOne($row['id']) : new RefAssignedPic();
 
                     $pic->load($row, '');
-                    $pic->work_order_master_id = $model->id;
+                    $pic->corrective_work_order_master_id = $model->id;
+                    $pic->active_sts = 1;
+
+                    $staffID = User::find()
+                            ->select('id')
+                            ->where(['fullname' => $row['name']])
+                            ->scalar();
+                    $pic->staff_id = $staffID;
 
                     if ($pic->save()) {
                         $savedIds[] = $pic->id; // ID exists NOW
@@ -183,16 +225,16 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
                     }
                 }
 
-//                RefAssignedPic::deleteAll([
-//                    'and',
-//                    ['work_order_master_id' => $model->id],
-//                    ['not in', 'id', $savedIds]
-//                ]);
-                
+                RefAssignedPic::deleteAll([
+                    'and',
+                    ['corrective_work_order_master_id' => $model->id],
+                    ['not in', 'id', $savedIds],
+                ]);
+
                 if (!empty($postPICs)) {
                     $model->progress_status_id = RefProgressStatus::$STATUS_ASSIGNED;
                 }
-                
+
                 if (!$model->save()) {
                     throw new \Exception('Failed to save corrective work order');
                 }
@@ -201,13 +243,12 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
 
                 // ✅ Re-query assignedPICs AFTER save
                 $assignedPICs = $model->assignedPic;
-                
+
                 if ($moduleStatus === 'superior') {
                     return $this->redirect(['view-superior']);
-                } 
-                
+                }
+
                 return $this->redirect(['view-assigned-tasks']);
-                
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 throw $e;
@@ -230,15 +271,33 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
     public function actionDelete($id) {
         CmmsFaultList::updateAll(
                 ['status' => \frontend\models\cmms\RefCmmsStatus::$STATUS_SCREENING_AND_PRIORITISATION],
-                ['cmms_work_order_id' => $id],
+                ['cmms_corrective_work_order_id' => $id],
         );
         CmmsFaultList::updateAll(
-                ['cmms_work_order_id' => null],
-                ['cmms_work_order_id' => $id]
+                ['cmms_corrective_work_order_id' => null],
+                ['cmms_corrective_work_order_id' => $id]
         );
         $this->findModel($id)->delete();
 
         return $this->redirect(['view-superior']);
+    }
+
+    public function actionRemovePic() {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $picId = Yii::$app->request->post('picID');
+        if (!$picId) {
+            throw new \yii\web\BadRequestHttpException('Missing picID');
+        }
+        RefAssignedPic::updateAll(
+                ['active_sts' => 0],
+                ['id' => $picId],
+        );
+        RefAssignedPic::updateAll(
+                ['corrective_work_order_master_id' => null],
+                ['id' => $picId],
+        );
+
+        return ['success' => true];
     }
 
     /**
@@ -254,5 +313,57 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    public function actionViewSelectedMaterial($id, $moduleIndex) {
+        $model = CmmsCorrectiveWorkOrderMaster::findOne($id);
+        if ($model === null) {
+            throw new \yii\web\NotFoundHttpException("Work Order #$id not found.");
+        }
+
+        $materialMaster = \frontend\models\cmms\CmmsWoMaterialRequestMaster::findOne([
+            'wo_type' => \frontend\models\cmms\CmmsWoMaterialRequestMaster::WO_TYPE_CM,
+            'wo_id' => $model->id,
+        ]);
+
+        $details = [];
+        $faults = [];
+
+        if ($materialMaster !== null) {
+            $details = $materialMaster->cmmsWoMaterialRequestDetails ?? [];
+            foreach ($details as $detail) {
+                $faultId = $detail->fault_id;
+                if (!isset($faults[$faultId])) {
+                    $fault = CmmsFaultList::findOne($faultId);
+                    $faults[$faultId] = [
+                        'fault' => $fault,
+                        'materialDetails' => [],
+                    ];
+                }
+                $faults[$faultId]['materialDetails'][] = $detail;
+            }
+        }
+
+        // If no faults from material details, fall back to the WO's fault list
+        if (empty($faults)) {
+            $faultList = CmmsFaultList::findAll(['cmms_corrective_work_order_id' => $model->id]);
+            foreach ($faultList as $fault) {
+                $faults[$fault->id] = [
+                    'fault' => $fault,
+                    'materialDetails' => [],
+                ];
+            }
+        }
+
+        $partToolList = \frontend\models\inventory\InventoryModel::getModelBrandCombinations();
+
+        return $this->render('materialRequestDetailCm', [
+                    'model' => $model,
+                    'materialMaster' => $materialMaster,
+                    'faults' => $faults,
+                    'partToolList' => $partToolList,
+                    'moduleIndex' => $moduleIndex,
+                    'wotype' => \frontend\models\cmms\CmmsWoMaterialRequestMaster::WO_TYPE_CM,
+        ]);
     }
 }

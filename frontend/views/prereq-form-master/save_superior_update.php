@@ -123,7 +123,7 @@ $this->params['breadcrumbs'][] = ['label' => $master->prf_no];
         <tfoot>
             <?php if (!$hasSuperiorUpdate): ?>
                 <tr>
-                    <td colspan="16">      
+                    <td colspan="17">      
                         <?=
                         Html::submitButton('Save', [
                             'id' => 'save-btn',

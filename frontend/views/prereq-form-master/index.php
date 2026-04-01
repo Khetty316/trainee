@@ -166,43 +166,44 @@ $this->params['breadcrumbs'][] = ['label' => 'Pre-Requisition Form - ' . $pageNa
             ],
             //'updated_by',
             //'updated_at',
+           [
+    'attribute' => 'claim_flag',
+    'format' => 'raw',
+    'contentOptions' => ['class' => 'col-sm-1', 'style' => 'text-align: center;'],
+    'filter' => [
+        '0' => "No",
+        '1' => "Yes"
+    ],
+    'value' => function ($model) {
+        if ($model->claim_flag == 1) {
+            $claimMaster = frontend\models\office\claim\ClaimMaster::findOne(['ref_code' => $model->prf_no]);
+            if ($claimMaster) {
+                $link = Html::a(
+                    '<i class="fas fa-external-link-alt"></i>', 
+                    ['/office/claim/personal-view-claim', 'id' => $claimMaster->id],
+                    ['class' => 'ml-2', 'target' => '_blank']
+                );
+                
+                return '<div class="d-flex justify-content-center align-items-center">' . 
+                       '<span>Yes</span>' . 
+                       $link . 
+                       '</div>';
+            }
+        }
+        
+        return '<div class="text-center">' . ($model->claim_flag == 1 ? "Yes" : "No") . '</div>';
+    }
+],
             [
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'col-sm-1 text-center'],
                 'value' => function ($model) use ($moduleIndex) {
                     if ($moduleIndex === 'personal' || $moduleIndex === 'superuser') {
-                        $html = Html::a(
-                                'View <i class="far fa-eye"></i>',
-                                ['view', 'id' => $model->id, 'moduleIndex' => $moduleIndex],
-                                ['class' => 'btn btn-sm btn-primary mx-1']
-                        );
-
-                        $inventoryNeeded = \frontend\models\office\preReqForm\PrereqFormItem::find()
-                                ->where(['prereq_form_master_id' => $model->id])
-                                ->andWhere(['IS NOT', 'inventory_id', null])
-                                ->count();
-
-                        if ($inventoryNeeded > 0) {
-                            $hasReorderRecord = \frontend\models\office\preReqForm\PrereqFormMaster::find()
-                                    ->where(['inventory_flag' => 1])
-                                    ->andWhere(['id' => $model->id])
-                                    ->exists();
-
-                            if (!$hasReorderRecord) {
-                                $html .= Html::a(
-                                        'Proceed to Purchasing <i class="fas fa-arrow-right"></i>',
-                                        ['proceed-to-purchasing', 'id' => $model->id],
+                        return Html::a(
+                                        'View <i class="far fa-eye"></i>',
+                                        ['view', 'id' => $model->id, 'moduleIndex' => $moduleIndex],
                                         ['class' => 'btn btn-sm btn-success mx-1']
                                 );
-                            } else {
-                                $html .= Html::a(
-                                        'View Purchasing <i class="far fa-eye"></i>',
-                                        ['view-purchasing', 'id' => $model->id, 'moduleIndex' => $moduleIndex],
-                                        ['class' => 'btn btn-sm btn-info mx-1']
-                                );
-                            }
-                        }
-                        return $html;
                     } else {
                         return Html::a(
                                         'View <i class="far fa-eye"></i>',

@@ -5,33 +5,31 @@ use yii\bootstrap4\ActiveForm;
 
 if ($moduleIndex === 'execPendingPurchasing') {
     $pageName = 'Purchasing - Executive';
-    $url = 'po?type=execPendingPurchasing';
-    
 } else if ($moduleIndex === 'execAllPurchasing') {
     $pageName = 'Purchasing - Executive';
-    $url = 'po?type=execAllPurchasing';
-    
+} else if ($moduleIndex === 'assistPendingPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+} else if ($moduleIndex === 'assistAllPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+} else if ($moduleIndex === 'maintenanceHeadPendingPurchasing') {
+    $pageName = 'Purchasing - Head of Maintenance';
+} else if ($moduleIndex === 'maintenanceHeadAllPurchasing') {
+    $pageName = 'Purchasing - Head of Maintenance';
 } else if ($moduleIndex === 'execPendingReceiving') {
     $pageName = 'Receiving - Executive';
-    $url = 'po?type=execPendingReceiving';
-    
 } else if ($moduleIndex === 'execAllReceiving') {
     $pageName = 'Receiving - Executive';
-    $url = 'po?type=execAllReceiving';
-    
-}else if ($moduleIndex === 'asistPendingPurchasing') {
-    $pageName = 'Purchasing - Asistant';
-    $url = 'po?type=assistPendingPurchasing';
-    
-} else if ($moduleIndex === 'asistAllPurchasing') {
-    $pageName = 'Purchasing - Asistant';
-    $url = 'po?type=assistAllPurchasing';
-    
-} else if ($moduleIndex === 'asistReceiving') {
-    $pageName = 'Receiving - Asistant';
-    $url = 'po?type=execPending';
+} else if ($moduleIndex === 'assistPendingReceiving') {
+    $pageName = 'Receiving - Assistant';
+} else if ($moduleIndex === 'assistAllReceiving') {
+    $pageName = 'Receiving - Assistant';
+}else if ($moduleIndex === 'maintenanceHeadPendingReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
+} else if ($moduleIndex === 'maintenanceHeadAllReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
 }
 
+$url = 'po?type=' . $moduleIndex;
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
 $this->params['breadcrumbs'][] = ['label' => $pageName, 'url' => [$url]];
 $this->params['breadcrumbs'][] = ['label' => 'Purchase Order'];
@@ -150,6 +148,20 @@ $form = ActiveForm::begin([
             <?php } else { ?>
                 <?=
                 Html::button('Generate PO', [
+                    'class' => 'btn btn-secondary',
+                    'disabled' => true
+                ])
+                ?>
+            <?php } ?>
+            <?php if ($po->status === frontend\models\RefInventoryStatus::STATUS_PoCreated || $po->status === frontend\models\RefInventoryStatus::STATUS_AwaitingDelivery || $po->status === frontend\models\RefInventoryStatus::STATUS_PartiallyReceived) { ?>
+                <?=
+                Html::a('Deactivate PO',
+                        ['deactivate-po', 'id' => $po->id, 'moduleIndex' => $moduleIndex],
+                        ['class' => 'btn btn-warning', 'title' => 'Deactivate PO']); //add prompt confirmation alert before submit
+                ?>
+            <?php } else { ?>
+                <?=
+                Html::button('Deactivate PO', [
                     'class' => 'btn btn-secondary',
                     'disabled' => true
                 ])

@@ -136,15 +136,15 @@ $this->params['breadcrumbs'][] = $this->title;
                                     </td>
                                     <td class="text-center">
                                         <?php if (!$isFullyDispatched && $detail->active_sts == 1) { ?>
-                                                        <!--<input type="checkbox" class="select-row" data-master="<?php //= $keyMaster   ?>" data-max-qty="<?php //= ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty)   ?>" onclick="fillQuantity(this)">-->
+                                                        <!--<input type="checkbox" class="select-row" data-master="<?php //= $keyMaster       ?>" data-max-qty="<?php //= ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty)       ?>" onclick="fillQuantity(this)">-->
                                             <?php
-                                            if ($detail->qty_stock_available === null) {
+                                            if ($detail->qty_stock_available === null && $detail->inventory_model_id === null) {
                                                 $stockAvailable = ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty);
                                             } else {
                                                 $stockAvailable = $detail->qty_stock_available;
                                             }
                                             ?>
-                                            <input type="checkbox" class="select-row" data-master="<?= $keyMaster ?>" data-max-qty="<?= ($stockAvailable) ?>" onclick="fillQuantity(this)">
+                                            <input type="checkbox" class="select-row" data-master="<?= $keyMaster ?>" data-max-qty="<?= ($stockAvailable ?? 0) ?>" onclick="fillQuantity(this)">
                                         <?php } ?>
                                     </td>
                                 <?php } ?>

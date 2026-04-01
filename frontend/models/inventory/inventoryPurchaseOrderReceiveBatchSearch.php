@@ -5,6 +5,7 @@ namespace frontend\models\inventory;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use frontend\models\inventory\inventoryPurchaseOrderReceiveBatch;
+use Yii;
 
 /**
  * inventoryPurchaseOrderReceiveBatchSearch represents the model behind the search form of `frontend\models\inventory\inventoryPurchaseOrderReceiveBatch`.
@@ -36,28 +37,27 @@ class inventoryPurchaseOrderReceiveBatchSearch extends inventoryPurchaseOrderRec
      *
      * @return ActiveDataProvider
      */
-    public function search($params) {
+    public function search($params, $type = "") {
         $query = inventoryPurchaseOrderReceiveBatch::find();
-        
+        $query->join("LEFT JOIN", "user a", "inventory_purchase_order_receive_batch.received_by = a.id");
+        $query->join("LEFT JOIN", "inventory_purchase_order po", "inventory_purchase_order_receive_batch.inventory_po_id = po.id");
 
         // add conditions that should always apply here
-//        switch ($type) {
-//            case "byBatch":
-//                $query->where(['inventory_purchase_order_receive_batch.inventory_po_id' => $id]);
-//                break;
-//
-//            default:
-//                // Handle unknown type or no filter
-//                break;
-//        }
+        switch ($type) {
+            case "maintenanceHead":
+                $query->where(['po.created_by' => Yii::$app->user->identity->id]);
+                break;
+
+            default:
+                // Handle unknown type or no filter
+                break;
+        }
         // add conditions that should always apply here
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
         ]);
 
-        $query->join("LEFT JOIN", "user a", "inventory_purchase_order_receive_batch.received_by = a.id");
-$query->join("LEFT JOIN", "inventory_purchase_order po", "inventory_purchase_order_receive_batch.inventory_po_id = po.id");
         $this->load($params);
 
         if (!$this->validate()) {

@@ -45,25 +45,23 @@ use Yii;
  * @property string|null $created_by_fullname
  * @property string|null $updated_by_fullname
  */
-class VInventoryDetail extends \yii\db\ActiveRecord
-{
+class VInventoryDetail extends \yii\db\ActiveRecord {
+
     /**
      * {@inheritdoc}
      */
-    public static function tableName()
-    {
+    public static function tableName() {
         return 'v_inventory_detail';
     }
 
     public static function primaryKey() {
         return ['inventory_id'];
     }
-    
+
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
             [['inventory_id', 'supplier_id', 'brand_id', 'model_id', 'minimum_qty', 'stock_level_sts', 'stock_on_hand', 'required_qty', 'reorder_qty', 'qty_pending_receipt', 'stock_reserved', 'stock_available', 'active_sts'], 'integer'],
             [['created_at', 'updated_at'], 'safe'],
@@ -77,8 +75,7 @@ class VInventoryDetail extends \yii\db\ActiveRecord
     /**
      * {@inheritdoc}
      */
-    public function attributeLabels()
-    {
+    public function attributeLabels() {
         return [
             'inventory_id' => 'Inventory ID',
             'inventory_code' => 'Inventory Code',

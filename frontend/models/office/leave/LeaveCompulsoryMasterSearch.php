@@ -16,8 +16,8 @@ class LeaveCompulsoryMasterSearch extends LeaveCompulsoryMaster {
      */
     public function rules() {
         return [
-            [['id', 'days', 'requestor', 'status', 'approval_by'], 'integer'],
-            [['start_date', 'end_date', 'requestor_remark', 'approval_remark', 'created_at'], 'safe'],
+            [['id', 'days'], 'integer'],
+            [['requestor', 'status', 'approval_by', 'start_date', 'end_date', 'requestor_remark', 'approval_remark', 'created_at'], 'safe'],
         ];
     }
 
@@ -45,6 +45,10 @@ class LeaveCompulsoryMasterSearch extends LeaveCompulsoryMaster {
             'query' => $query,
         ]);
 
+        $query->join("LEFT JOIN", "user a", "leave_compulsory_master.requestor = a.id");
+        $query->join("LEFT JOIN", "user b", "leave_compulsory_master.approval_by = b.id");
+        $query->join("LEFT JOIN", "user c", "leave_compulsory_master.updated_by = c.id");
+
         $this->load($params);
 
         if (!$this->validate()) {
@@ -59,13 +63,19 @@ class LeaveCompulsoryMasterSearch extends LeaveCompulsoryMaster {
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
             'days' => $this->days,
-            'requestor' => $this->requestor,
-            'status' => $this->status,
-            'approval_by' => $this->approval_by,
-            'created_at' => $this->created_at,
+//            'requestor' => $this->requestor,
+            'leave_compulsory_master.status' => $this->status,
+//            'approval_by' => $this->approval_by,
+//            'created_at' => $this->created_at,
         ]);
 
-        $query->andFilterWhere(['like', 'requestor_remark', $this->requestor_remark])
+        $query->andFilterWhere(['like', 'a.fullname', $this->requestor])
+                ->andFilterWhere(['like', 'b.fullname', $this->approval_by])
+                ->andFilterWhere(['like', 'c.fullname', $this->updated_by])
+                ->andFilterWhere(['like', 'leave_compulsory_master.created_at', $this->created_at])
+                ->andFilterWhere(['like', 'leave_compulsory_master.updated_at', $this->updated_at])
+                ->andFilterWhere(['like', 'leave_compulsory_master.approved_at', $this->approved_at])
+                ->andFilterWhere(['like', 'requestor_remark', $this->requestor_remark])
                 ->andFilterWhere(['like', 'approval_remark', $this->approval_remark]);
 
         if (!array_key_exists('sort', $params)) {
@@ -74,5 +84,4 @@ class LeaveCompulsoryMasterSearch extends LeaveCompulsoryMaster {
 
         return $dataProvider;
     }
-
 }

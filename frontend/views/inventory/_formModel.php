@@ -15,7 +15,7 @@ $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList()
 
     <div class="form-row">
         <div class="col-lg-12 col-md-12 col-sm-12">
-            <?= $form->field($model, 'type')->textInput(['maxlength' => true]) ?>
+            <?= $form->field($model, 'type')->textInput(['maxlength' => true, 'required' => true]) ?>
         </div>
         <div class="col-lg-12 col-md-12 col-sm-12">
             <?= $form->field($model, 'description')->textInput(['maxlength' => true]) ?>
@@ -36,7 +36,7 @@ $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList()
             ?>
 
             <?php if (!$model->isNewRecord && $model->image): ?>
-                <div class="current-file mt-2">
+                <div class="current-file mt-2 mb-3">
                     <strong>Current file:</strong> 
                     <?php
                     $extension = pathinfo($model->image, PATHINFO_EXTENSION);

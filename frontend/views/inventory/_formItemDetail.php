@@ -3,11 +3,26 @@
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+    $url = 'inventory/inventory/item-list?type=execStock';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+    $url = 'inventory/inventory/item-list?type=assistStock';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+    $url = 'inventory/inventory/item-list?type=projcoorStock';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+    $url = 'inventory/inventory/item-list?type=maintenanceHeadStock';
+}
+
 $this->title = 'Item Detail';
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
-$this->params['breadcrumbs'][] = ['label' => 'Item List', 'url' => ['item-list']];
+$this->params['breadcrumbs'][] = $pageName;
+$this->params['breadcrumbs'][] = ['label' => 'Item List', 'url' => [$url]];
 $this->params['breadcrumbs'][] = $model->code;
-$this->params['breadcrumbs'][] = $this->title;
+//$this->params['breadcrumbs'][] = $this->title;
 ?>
 
 <div class="inventory-item-form">
@@ -35,14 +50,33 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
     <div class="form-row">
-        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="col-lg-6 col-md-6 col-sm-12">
             <?= $form->field($vmodel, 'group')->textInput(['maxlength' => true, 'disabled' => true]) ?>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="col-lg-6 col-md-6 col-sm-12">
             <?= $form->field($vmodel, 'unit_type')->textInput(['maxlength' => true, 'disabled' => true]) ?>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
-            <?= $form->field($model, 'stock_on_hand')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+    </div> 
+    <div class="form-row">
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'stock_in')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'stock_on_hand')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'stock_reserved')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'stock_out')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'stock_available')->textInput(['maxlength' => true, 'disabled' => true]) ?>
+        </div>
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <?= $form->field($vmodel, 'qty_pending_receipt')->textInput(['maxlength' => true, 'disabled' => true]) ?>
         </div>
     </div>
     <div class="form-row">
@@ -70,7 +104,9 @@ $this->params['breadcrumbs'][] = $this->title;
                 <?php endif; ?>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
+    </div>
+    <div class="form-row">
+        <div class="col-lg-4 col-md-6 col-sm-12 mt-3">
             <?=
             $form->field($model, 'active_sts')->dropDownList([
                 '1' => 'No',
@@ -80,7 +116,7 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
     </div>
     <div class="form-group">
-        <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Save', ['class' => 'btn btn-success mt-3']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>

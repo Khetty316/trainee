@@ -2,7 +2,7 @@
 
 use yii\helpers\Html;
 
-$this->title = 'Check Client Data';
+$this->title = 'Check Client Detail';
 $this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = $this->title;
@@ -17,7 +17,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <h4 class="text-success">Existing Clients</h4>
         <table class="table table-bordered">
             <thead>
-                <tr><th>#</th><th>Cust No</th><th>Name</th><th>Company Group</th></tr>
+                <tr><th>#</th><th>Cust No</th><th>Name</th><th>Balance</th><th>Company Group</th></tr>
             </thead>
             <tbody>
                 <?php if (!empty($existData)): ?>
@@ -26,6 +26,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             <td><?= $i + 1 ?></td>
                             <td><?= Html::encode($row['cust_no']) ?></td>
                             <td><?= Html::encode($row['name']) ?></td>
+                            <td><?= Html::encode($row['balance']) ?></td>
                             <td><?= Html::encode($row['company_group']) ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -40,7 +41,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <h4 class="text-danger">Not Found Clients</h4>
         <table class="table table-bordered">
             <thead>
-                <tr><th>#</th><th>Cust No</th><th>Name</th><th>Company Group</th></tr>
+                <tr><th>#</th><th>Cust No</th><th>Name</th><th>Balance</th><th>Company Group</th></tr>
             </thead>
             <tbody>
                 <?php if (!empty($notExistData)): ?>
@@ -49,6 +50,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             <td><?= $i + 1 ?></td>
                             <td><?= Html::encode($row['cust_no']) ?></td>
                             <td><?= Html::encode($row['name']) ?></td>
+                            <td><?= Html::encode($row['balance']) ?></td>
                             <td><?= Html::encode($row['company_group']) ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -62,7 +64,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
 <div class="d-flex justify-content-end mt-3 mb-4">
     <button type="submit" id="saveBtn" class="btn btn-primary">
-        Save To Database
+        Proceed & Save
     </button>
 </div>
 

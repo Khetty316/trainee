@@ -3,7 +3,7 @@
 namespace frontend\models\common;
 
 use Yii;
-
+//
 /**
  * This is the model class for table "ref_company_group_list".
  *

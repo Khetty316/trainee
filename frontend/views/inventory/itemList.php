@@ -8,8 +8,19 @@ use common\models\myTools\MyFormatter;
 /* @var $searchModel frontend\models\inventory\InventorySupplierSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+}
+
 $this->title = 'Inventory Control';
 $this->params['breadcrumbs'][] = $this->title;
+$this->params['breadcrumbs'][] = $pageName;
 ?>
 <style>
     .grid-wrap {
@@ -32,13 +43,21 @@ $this->params['breadcrumbs'][] = $this->title;
     }
 </style>
 
-<div class="inventory-supplier-index">
-
-    <?= $this->render('__stockNavBar', ['module' => 'superior', 'pageKey' => '1']) ?>
+<div class="inventory-item-index">
+    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '1']) ?>
 
     <p>
-        <?= Html::a('Add Item', ['add-new-item'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
+        <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
+            <?= Html::a('Add Item', ['add-new-item', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+        <?php } ?>
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
     </p>
 
     <div class="table-responsive">
@@ -61,10 +80,14 @@ $this->params['breadcrumbs'][] = $this->title;
                     'headerOptions' => ['style' => 'width: 150px; white-space: nowrap;'],
                     'contentOptions' => ['style' => 'white-space: nowrap;'],
                     'format' => 'raw',
-                    'value' => function ($model) {
-                        return Html::a($model->inventory_code, ['view-item-detail', 'id' => $model->inventory_id]);
+                    'value' => function ($model) use ($moduleIndex) {
+                        if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') {
+                            return Html::a($model->inventory_code, ['view-item-detail', 'id' => $model->inventory_id, 'type' => $moduleIndex]);
+                        } else {
+                            return $model->inventory_code;
+                        }
                     }
-                ], 
+                ],
                 [
                     'attribute' => 'department_name',
                     'label' => 'Department',
@@ -161,7 +184,7 @@ $this->params['breadcrumbs'][] = $this->title;
 //                        return $model->minimum_qty;
 //                    }
 //                ],
-                        [
+                [
                     'attribute' => 'stock_in',
                     'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                     'contentOptions' => ['style' => 'text-align: center;'],
@@ -179,7 +202,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return $model->stock_on_hand;
                     }
                 ],
-                        [
+                [
                     'attribute' => 'stock_reserved',
                     'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                     'contentOptions' => ['style' => 'text-align: center;'],
@@ -188,7 +211,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return $model->stock_reserved;
                     }
                 ],
-                        [
+                [
                     'attribute' => 'stock_out',
                     'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                     'contentOptions' => ['style' => 'text-align: center;'],
@@ -197,7 +220,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         return $model->stock_out;
                     }
                 ],
-                        [
+                [
                     'attribute' => 'stock_available',
                     'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                     'contentOptions' => ['style' => 'text-align: center;'],
@@ -229,7 +252,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     'headerOptions' => ['style' => 'width: 90px;'],
                     'contentOptions' => ['class' => 'grid-wrap', 'style' => 'text-align: center;'],
                     'value' => function ($model) {
-                        return $model->active_sts == 1 ? 'No' : 'Yes';
+                        return $model->active_sts == 2 ? 'Yes' : 'No';
                     },
                     'filter' => Html::activeDropDownList(
                             $searchModel,

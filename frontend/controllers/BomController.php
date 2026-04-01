@@ -121,7 +121,7 @@ class BomController extends Controller {
             if ($model->validate() && $model->save()) {
                 Yii::$app->session->setFlash('success', 'BOM detail saved successfully.');
             } else {
-                Yii::$app->session->setFlash('error', 'Please fix the errors below.');
+                Yii::$app->session->setFlash('error', 'Failed to save material detail.');
             }
             return $this->redirect(['index', 'productionPanelId' => $model->bomMaster->production_panel_id, 'justCreated' => true]);
         }
@@ -169,7 +169,7 @@ class BomController extends Controller {
             if ($model->validate() && $model->save()) {
                 Yii::$app->session->setFlash('success', 'BOM detail saved successfully.');
             } else {
-                Yii::$app->session->setFlash('error', 'Please fix the errors below.');
+                Yii::$app->session->setFlash('error', 'Failed to update material detail.');
             }
             return $this->redirect(['index', 'productionPanelId' => $model->bomMaster->production_panel_id]);
         }
@@ -177,7 +177,6 @@ class BomController extends Controller {
         // Prepare data for view
         $inventoryModel = new InventoryModel();
         $data = $inventoryModel->prepareFormData($model);
-
         return $this->renderAjax('update', $data);
     }
 
@@ -796,7 +795,7 @@ class BomController extends Controller {
     public function actionDeactivateBomDetails($id) {
         if (Yii::$app->request->isPost) {
             $model = \frontend\models\bom\BomDetails::findOne($id);
-            $model->active_status = 0;
+            $model->active_status = 0; 
             $model->update();
             return $this->redirect(['index', 'productionPanelId' => $model->bomMaster->production_panel_id]);
         }

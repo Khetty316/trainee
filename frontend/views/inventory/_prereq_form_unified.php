@@ -62,12 +62,80 @@ foreach ($vmodel as $v) {
         $vmodelMap[$v->item_id] = $v;
     }
 }
+
+$staffList = common\models\User::getActiveExexGradeDropDownList();
+echo $form->field($master, 'reference_type')->hiddenInput()->label(false);
 ?>
 
 <div class="container-fluid">
     <div class="row mb-3">
+        <div class="col-12 col-md-4 col-lg-3">
+            <?php
+            $friendlyText = '';
+            if ($master->reference_type === 'bom') {
+                $friendlyText = 'Project - Bill of Material';
+            } elseif ($master->reference_type === 'reserve') {
+                $friendlyText = 'Reservation';
+            }
+            ?>
+
+            <div class="form-group">
+                <label class="control-label">Reference Type</label>
+                <input type="text" class="form-control" value="<?= $friendlyText ?>" readonly>
+            </div>
+        </div>
+        <div class="col-12 col-md-4 col-lg-3">
+
+            <?php
+            if ($master->reference_type === 'bom') {
+                $bomMaster = frontend\models\bom\BomMaster::findOne($master->reference_id);
+                $displayValue = $bomMaster ? $bomMaster->productionPanel->project_production_panel_code : $master->reference_id;
+            } else if ($master->reference_type === 'reserve') {
+                $user = common\models\User::findOne($master->reference_id);
+                $displayValue = $user ? $user->username : $master->reference_id;
+            } else {
+                $displayValue = $master->reference_id;
+            }
+            ?>
+
+            <?php if ($master->reference_type === 'bom'): ?>
+                <?=
+                        $form->field($master, 'reference_id')
+                        ->textInput([
+                            'class' => 'form-control',
+                            'required' => true,
+                            'readonly' => true,
+                            'value' => $displayValue  // Display the project code
+                        ])
+                ?>
+
+            <?php elseif ($master->reference_type === 'reserve'): ?>
+                <?=
+                $form->field($master, 'reference_id')->dropDownList(
+                        $staffList,
+                        [
+                            'prompt' => 'Select Staff',
+                            'required' => true,
+                            'options' => [
+                                $master->reference_id => ['selected' => true] // Preselect the current value
+                            ]
+                        ]
+                )
+                ?>
+
+            <?php else: ?>
+                <?=
+                        $form->field($master, 'reference_id')
+                        ->textInput([
+                            'class' => 'form-control',
+                            'required' => true,
+                            'value' => $displayValue
+                        ])
+                ?>
+            <?php endif; ?>
+        </div>
         <?php if (!$isView): ?>
-            <div class="col-12 col-md-6 col-lg-4 offset-md-6 offset-lg-8">
+            <div class="col-12 col-md-4 col-lg-3 offset-md-3 offset-lg-3">
                 <?=
                         $form->field($master, 'date_of_material_required')
                         ->input('date', [
@@ -107,7 +175,9 @@ foreach ($vmodel as $v) {
             }
             ?>
 
-            <?php foreach ($items as $i => $item): ?>
+            <?php
+            foreach ($items as $i => $item):
+                ?>
                 <?php
                 // Safety check - ensure item is an object
                 if (!is_object($item)) {
@@ -117,7 +187,6 @@ foreach ($vmodel as $v) {
 //                $itemModel = $vmodelMap[$item->item_id] ?? $item;
                 $itemModel = isset($vmodelMap[$item->item_id]) ? $vmodelMap[$item->item_id] : $item;
                 ?>
-
 
                 <?php if ($isView): ?>
                     <!-- VIEW MODE -->
@@ -156,7 +225,7 @@ foreach ($vmodel as $v) {
                 <tr>
                     <td colspan="<?= $hasSuperiorUpdate && $isView ? '20' : '15' ?>">
                         <div class="row">
-                            <?php if (($moduleIndex === 'personal' || $moduleIndex === 'inventory' || $moduleIndex === 'projcoor') && !$isView): ?>
+                            <?php if (($moduleIndex === 'personal' || $moduleIndex === 'inventory') && !$isView): ?>
                                 <div class="col-2 col-sm-1 col-md-1 col-lg-1">
                                     <button type="button" class="btn btn-primary btn-block" onclick="PrereqForm.addRow()">
                                         <i class="fas fa-plus-circle"></i> Add Row

@@ -299,10 +299,10 @@ $this->params['breadcrumbs'][] = $this->title;
                                 </td>
                                 <?php
                                 if (!$model->is_finalized) {
-                                    $gotpushedPanel = !empty(array_filter($revision->projectQPanels, fn($panel) => !empty($panel->projectProductionPanels)));
+//                                    $gotpushedPanel = !empty(array_filter($revision->projectQPanels, fn($panel) => !empty($panel->projectProductionPanels)));
                                     ?>
                                     <td class="text-center">
-                                        <?php if (!$gotpushedPanel) { ?>
+                                        <?php // if (!$gotpushedPanel) { ?>
                                             <?=
                                             Html::a(
                                                     '<i class="far fa-clone fa-lg"></i>',
@@ -317,13 +317,14 @@ $this->params['breadcrumbs'][] = $this->title;
                                                     ]
                                             )
                                             ?>
-                                        <?php } else { ?>
-                                            <?=
-                                            Html::a(
-                                                    '<i class="far fa-clone fa-lg text-muted"></i>'
-                                            )
+                                        <?php // } else { ?>
+                                            <?php
+//                                            =
+//                                            Html::a(
+//                                                    '<i class="far fa-clone fa-lg text-muted"></i>'
+//                                            )
                                             ?>
-                                        <?php } ?>
+                                        <?php // } ?>
                                     </td>
                                 <?php }
                                 ?>

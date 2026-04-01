@@ -17,7 +17,7 @@ use common\modules\auth\models\AuthItem;
 //$this->params['breadcrumbs'][] = $this->title;
 ?>
 <p>
-<?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
+    <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
 </p>
 <?=
 GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
@@ -128,7 +128,11 @@ GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
             'format' => 'raw',
             'value' => function ($data) {
                 $text = $data->emergency_leave == 1 ? $data->leave_type_name . '.<br/><span class ="text-info">Applied for emergency leave </span>' : $data->leave_type_name;
-                return $text;
+                $text2 = '';
+                if ($data->compulsory_leave !== null) {
+                    $text2 .= '</br><span class = "text-info">(Compulsory Leave)</span>';
+                }
+                return $text . $text2;
             },
         ],
         [
@@ -261,22 +265,83 @@ GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
             'label' => 'Superior\'s Response',
             'format' => 'raw',
             'value' => function ($data) {
-                if ($data->leave_type_code != RefLeaveType::codeAnnual && $data->leave_type_code != RefLeaveType::codeUnpaid) {
+//                if ($data->leave_type_code != RefLeaveType::codeAnnual && $data->leave_type_code != RefLeaveType::codeUnpaid) {
+//                    return ' - ';
+//                } else {
+//                    if ($data->superior_id) {
+//                        if ($data->sup_response_by) {
+//                            $text = 'Superior: ' . $data->superior;
+//                            $text .= ($data->sup_response ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->sup_response_at);
+//                            $text .= "<br/>Remarks: <p class='text-wrap'>" . $data->sup_remarks . '</p>';
+//                            return $text;
+//                        } else if ($data->leave_status == 0 || $data->leave_status == 8 || $data->leave_status == LeaveMaster::STATUS_GetHrApproval) {
+//                            return ' - ';
+//                        } else {
+//                            return $data->superior . '<br> (Pending) ';
+//                        }
+//                    } else {
+//                        $text2 = '';
+//                        if ($data->compulsory_leave !== null) {
+//                            $leaveCompulsoryDetail = \frontend\models\office\leave\LeaveCompulsoryDetail::findOne($data->compulsory_leave);
+//                            $leaveCompulsoryMaster = $leaveCompulsoryDetail->compulsoryMaster;
+//
+//                            $text2 .= '</br><span class="text-info">(Compulsory Leave)</span>';
+//                            $text = 'Director: ' . $leaveCompulsoryMaster->approvalBy->fullname;
+//                            $text .= ($leaveCompulsoryMaster->approval_remark ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($leaveCompulsoryMaster->approved_at);
+//                            $text .= "<br/>Remarks: <p class='text-wrap'>" . $leaveCompulsoryMaster->approval_remark . '</p>';
+//                            return $text;
+//                        } else {
+//                            return '(No Superior)';
+//                        }
+//                    }
+//                }
+                if ($data->leave_type_code != RefLeaveType::codeAnnual && $data->leave_type_code != RefLeaveType::codeUnpaid && $data->leave_type_code != RefLeaveType::codeTravel) {
                     return ' - ';
                 } else {
-                    if ($data->superior_id) {
-                        if ($data->sup_response_by) {
-                            $text = 'Superior: ' . $data->superior;
-                            $text .= ($data->sup_response ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->sup_response_at);
-                            $text .= "<br/>Remarks: <p class='text-wrap'>" . $data->sup_remarks . '</p>';
-                            return $text;
-                        } else if ($data->leave_status == 0 || $data->leave_status == 8 || $data->leave_status == LeaveMaster::STATUS_GetHrApproval) {
-                            return ' - ';
-                        } else {
-                            return $data->superior . '<br> (Pending) ';
+                    if ($data->leave_type_code == RefLeaveType::codeTravel) {
+                        if ($data->superior_id) {
+                            if ($data->sup_response_by && $data->hr_response_by === null) {
+                                $text = 'Superior: ' . $data->superior;
+                                $text .= ($data->sup_response ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->sup_response_at);
+                                $text .= "<br/>Remarks: <p class='text-wrap'>" . $data->sup_remarks . '</p>';
+                                return $text;
+                            } else if ($data->hr_response_by !== null || $data->leave_status == LeaveMaster::STATUS_GetHrApproval) {
+                                return ' - ';
+                            } else if ($data->leave_status == 6) {
+                                return ' - ';
+                            } else {
+                                return $data->superior . '<br> (Pending) ';
+                            }
                         }
                     } else {
-                        return '(No Superior)';
+                        if ($data->superior_id) {
+                            if ($data->sup_response_by) {
+                                $text = 'Superior: ' . $data->superior;
+                                $text .= ($data->sup_response ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->sup_response_at);
+                                $text .= "<br/>Remarks: <p class='text-wrap'>" . $data->sup_remarks . '</p>';
+                                return $text;
+                            } else if ($data->leave_status == 0 || $data->leave_status == 8 || $data->leave_status == LeaveMaster::STATUS_GetHrApproval) {
+                                return ' - ';
+                            } else if ($data->leave_status == 6) {
+                                return ' - ';
+                            } else {
+                                return $data->superior . '<br> (Pending) ';
+                            }
+                        } else {
+                            $text2 = '';
+                            if ($data->compulsory_leave !== null) {
+                                $leaveCompulsoryDetail = \frontend\models\office\leave\LeaveCompulsoryDetail::findOne($data->compulsory_leave);
+                                $leaveCompulsoryMaster = $leaveCompulsoryDetail->compulsoryMaster;
+
+                                $text2 .= '</br><span class="text-info">(Compulsory Leave)</span>';
+                                $text = 'Director: ' . $leaveCompulsoryMaster->approvalBy->fullname;
+                                $text .= ($leaveCompulsoryMaster->status === LeaveMaster::STATUS_Approved ? '<br/><span class="text-success">Approved</span>' : '<br/><span class="text-danger">Rejected</span>') . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($leaveCompulsoryMaster->approved_at);
+                                $text .= "<br/>Remarks: <p class='text-wrap'>" . $leaveCompulsoryMaster->approval_remark . '</p>';
+                                return $text;
+                            } else {
+                                return '(No Superior)';
+                            }
+                        }
                     }
                 }
             },
@@ -288,14 +353,52 @@ GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
             'label' => 'HR Dept\'s Response',
             'format' => 'raw',
             'value' => function ($data) {
+//                if ($data->leave_type_code == RefLeaveType::codeAnnual || $data->leave_type_code == RefLeaveType::codeUnpaid || $data->leave_type_code == RefLeaveType::codeTravel) {
+//                    return ' - ';
+//                }
+//                if ($data->sup_response_by) {
+//                    return ' - ';
+//                }
+//
+//                $text = '';
+//
+//                if ($data->hr_response_by) {
+//                    $text .= ($data->hr_response ? '<span class="text-success">Approved by</span>' : '<span class="text-danger">Rejected by</span>') . ': ' . $data->hr_response_by . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->hr_response_at);
+//                    $text .= $data->hr_remarks ? "<br/>Remarks: <p class='text-wrap'>" . $data->hr_remarks . '</p><br/><br/>' : "<br/><br/>";
+//
+//                    if (isset($data->hr_recall_by)) {
+//                        $text .= '<span class="text-danger">Recalled by</span>: ' . $data->hr_recall_by . '.<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->hr_recall_at);
+//                        $text .= $data->hr_recall_remarks ? "<br/>Remarks: <p class='text-wrap'>" . $data->hr_recall_remarks . '</p>' : '';
+//                    }
+//
+//                    return $text;
+//                } else {
+//                    if ($data->leave_status == LeaveMaster::STATUS_ReliefRejected || $data->leave_status == LeaveMaster::STATUS_Rejected) {
+//                        return ' - ';
+//                    } else {
+//                        return '(Pending)';
+//                    }
+//                }
+                $text = '';
                 if ($data->leave_type_code == RefLeaveType::codeAnnual || $data->leave_type_code == RefLeaveType::codeUnpaid) {
                     return ' - ';
                 }
+
+                if ($data->leave_type_code == RefLeaveType::codeTravel && $data->hr_response_by) {
+                    $text .= ($data->hr_response ? '<span class="text-success">Approved by</span>' : '<span class="text-danger">Rejected by</span>') . ': ' . $data->hr_response_by . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->hr_response_at);
+                    $text .= $data->hr_remarks ? "<br/>Remarks: <p class='text-wrap'>" . $data->hr_remarks . '</p><br/><br/>' : "<br/><br/>";
+
+                    if (isset($data->hr_recall_by)) {
+                        $text .= '<span class="text-danger">Recalled by</span>: ' . $data->hr_recall_by . '.<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->hr_recall_at);
+                        $text .= $data->hr_recall_remarks ? "<br/>Remarks: <p class='text-wrap'>" . $data->hr_recall_remarks . '</p>' : '';
+                    }
+
+                    return $text;
+                }
+
                 if ($data->sup_response_by) {
                     return ' - ';
                 }
-
-                $text = '';
 
                 if ($data->hr_response_by) {
                     $text .= ($data->hr_response ? '<span class="text-success">Approved by</span>' : '<span class="text-danger">Rejected by</span>') . ': ' . $data->hr_response_by . '<br/>@ ' . MyFormatter::asDateTime_ReaddmYHi($data->hr_response_at);
@@ -309,6 +412,8 @@ GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
                     return $text;
                 } else {
                     if ($data->leave_status == LeaveMaster::STATUS_ReliefRejected || $data->leave_status == LeaveMaster::STATUS_Rejected) {
+                        return ' - ';
+                    } else if ($data->leave_status == 6) {
                         return ' - ';
                     } else {
                         return '(Pending)';

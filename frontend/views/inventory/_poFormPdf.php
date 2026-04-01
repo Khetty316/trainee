@@ -2,7 +2,6 @@
 
 use yii\helpers\Html;
 use common\models\myTools\MyFormatter;
-
 ?>
 
 <!DOCTYPE html>
@@ -37,7 +36,7 @@ use common\models\myTools\MyFormatter;
                     <?php foreach ($items as $i => $item): ?>
                         <tr>
                             <td align="center"><?= $i + 1 ?></td>
-                            <td align="center"><?= $item->inventoryDetail->code ?></td>
+                            <td><?= $item->inventoryDetail->code ?></td>
                             <td>
                                 <?= Html::encode($item->brand->name ?? '') ?>,
                                 <?= Html::encode($item->model_description) ?><br>

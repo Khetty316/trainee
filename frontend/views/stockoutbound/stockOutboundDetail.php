@@ -52,6 +52,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     <th>Total Quantity</th>
                                     <th>Dispatched Quantity</th>
                                     <th>Unacknowledged Quantity</th>
+                                    <th>Available Quantity</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -84,6 +85,18 @@ $this->params['breadcrumbs'][] = $this->title;
                                         <td><?= $detail->qty ?></td>
                                         <td><?= ($detail->dispatched_qty === null) ? 0 : $detail->dispatched_qty ?></td>
                                         <td><?= ($detail->unacknowledged_qty === null) ? 0 : $detail->unacknowledged_qty ?></td>
+                                        <td><?=
+                                            (($detail->qty_stock_available === null) ? 0 : $detail->qty_stock_available) . Html::a(
+                                                    "<i class='far fa-edit m-1 float-right'></i>",
+                                                    "javascript:void(0)",
+                                                    [
+                                                        'title' => "View Detail",
+                                                        'value' => yii\helpers\Url::to(['view-inventory-stockoutbound-detail', 'id' => $detail->id, 'productionPanelId' => $bomMaster->productionPanel->id, 'type' => "bomstockoutbound"]),
+                                                        'class' => 'modalButton',
+                                                        'data-modaltitle' => 'View Detail',
+                                                    ])
+                                            ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

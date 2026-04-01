@@ -11,10 +11,12 @@ $this->params['breadcrumbs'][] = ['label' => $model->id, 'url' => ['view', 'id' 
 $this->params['breadcrumbs'][] = 'Update';
 ?>
 <div class="bomdetails-update">
-    <?= $this->render('_form', [
+    <?=
+    $this->render('_form', [
         'model' => $model,
-         'modelBrandList' => $modelBrandList,
-            'isLegacy' => $isLegacy,
-    ]) ?>
+        'modelBrandList' => $modelBrandList,
+        'isLegacy' => $isLegacy,
+    ])
+    ?>
 
 </div>

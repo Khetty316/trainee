@@ -17,7 +17,7 @@ class UserSearch extends User {
     public function rules() {
         return [
             [['id', 'status', 'created_at', 'updated_at', 'postcode', 'area_id'], 'integer'],
-            [['username', 'auth_key', 'password', 'password_reset_token', 'email', 'verification_token', 'fullname', 'contact_no', 'address', 'emergency_contact_no', 'emergency_contact_person', 'staff_id'], 'safe'],
+            [['date_of_join', 'employment_type', 'ic_no', 'sex', 'username', 'auth_key', 'password', 'password_reset_token', 'email', 'verification_token', 'fullname', 'contact_no', 'address', 'emergency_contact_no', 'emergency_contact_person', 'staff_id'], 'safe'],
         ];
     }
 
@@ -67,6 +67,8 @@ class UserSearch extends User {
             'postcode' => $this->postcode,
             'area_id' => $this->area_id,
             'status' => $this->status,
+            'sex' => $this->sex,
+            'date_of_join' => $this->date_of_join,
         ]);
 
         $query->andFilterWhere(['like', 'username', $this->username])
@@ -80,6 +82,7 @@ class UserSearch extends User {
                 ->andFilterWhere(['like', 'contact_no', $this->contact_no])
                 ->andFilterWhere(['like', 'address', $this->address])
                 ->andFilterWhere(['like', 'emergency_contact_no', $this->emergency_contact_no])
+                ->andFilterWhere(['like', 'ic_no', $this->ic_no])
                 ->andFilterWhere(['like', 'emergency_contact_person', $this->emergency_contact_person]);
 
         switch ($type) {
@@ -92,5 +95,4 @@ class UserSearch extends User {
 
         return $dataProvider;
     }
-
 }

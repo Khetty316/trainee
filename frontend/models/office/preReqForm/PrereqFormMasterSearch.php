@@ -18,8 +18,8 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
      */
     public function rules() {
         return [
-            [['id', 'status', 'is_deleted', 'created_by', 'updated_by'], 'integer'],
-            [['superior_id', 'prf_no', 'date_of_material_required', 'filename', 'created_at', 'updated_at'], 'safe'],
+            [['claim_flag', 'id', 'status', 'is_deleted', 'created_by', 'updated_by'], 'integer'],
+            [['reference_type', 'reference_id', 'superior_id', 'prf_no', 'date_of_material_required', 'filename', 'created_at', 'updated_at'], 'safe'],
             [['total_amount'], 'number'],
         ];
     }
@@ -98,6 +98,27 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
                 $query->where(['prereq_form_master.source_module' => 2])
                     ->andWhere(['prereq_form_master.created_by' => Yii::$app->user->identity->id]);
                 break;
+            
+            case "pendingProcurementInventoryMaintenanceHead":
+                $query->where(['prereq_form_master.source_module' => 2])
+                        ->andWhere(['prereq_form_master.is_deleted' => 0])
+                        ->andWhere(['prereq_form_master.status' => RefGeneralStatus::STATUS_Approved])
+                        ->andWhere(['prereq_form_master.inventory_flag' => null])
+                        ->andWhere(['prereq_form_master.created_by' => Yii::$app->user->identity->id]);
+                break;
+
+            case "pendingApprovalInventoryMaintenanceHead":
+                $query->where(['prereq_form_master.source_module' => 2])
+                        ->andWhere(['prereq_form_master.is_deleted' => 0])
+                        ->andWhere(['prereq_form_master.status' => RefGeneralStatus::STATUS_GetSuperiorApproval])
+                        ->andWhere(['prereq_form_master.inventory_flag' => null])
+                        ->andWhere(['prereq_form_master.created_by' => Yii::$app->user->identity->id]);
+                break;
+
+            case "allInventoryMaintenanceHead":
+                $query->where(['prereq_form_master.source_module' => 2])
+                    ->andWhere(['prereq_form_master.created_by' => Yii::$app->user->identity->id]);
+                break;
         }
 
         // add conditions that should always apply here
@@ -124,6 +145,8 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
 //            'superior_id' => $this->superior_id,
             'status' => $this->status,
             'is_deleted' => $this->is_deleted,
+            'claim_flag' => $this->claim_flag,
+            'reference_type' => $this->reference_type,
 //            'created_by' => $this->created_by,
 //            'created_at' => $this->created_at,
 //            'updated_by' => $this->updated_by,
@@ -153,6 +176,69 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
 //                ->andFilterWhere(['like', 'prereq_form_master.filename', $this->filename])
                 ->andFilterWhere(['like', 'a.fullname', $this->superior_id]);
 
+         // Handle reference_id filter - search based on what is DISPLAYED in the view
+    if (!empty($this->reference_id)) {
+        $searchTerm = $this->reference_id;
+        
+        // Build the OR condition for reference_id search based on display values
+        $referenceCondition = ['or'];
+        
+        // 1. Search in project production panels (for bom_detail and bomstockoutbound)
+        $projectPanelCondition = ['or'];
+        
+        // Get IDs from bom_detail path
+        $bomDetailIds = \frontend\models\bom\BomDetails::find()
+                ->alias('bd')
+                ->select('bd.id')
+                ->leftJoin('bom_master bm', 'bm.id = bd.bom_master')
+                ->leftJoin('project_production_panels ppp', 'ppp.id = bm.production_panel_id')
+                ->where(['like', 'ppp.project_production_panel_code', $searchTerm])
+                ->column();
+        
+        // Get IDs from stock outbound path
+        $stockOutboundIds = \frontend\models\bom\StockOutboundDetails::find()
+                ->alias('sod')
+                ->select('sod.id')
+                ->leftJoin('bom_details bd', 'bd.id = sod.bom_detail_id')
+                ->leftJoin('bom_master bm', 'bm.id = bd.bom_master')
+                ->leftJoin('project_production_panels ppp', 'ppp.id = bm.production_panel_id')
+                ->where(['like', 'ppp.project_production_panel_code', $searchTerm])
+                ->column();
+        
+        if (!empty($bomDetailIds) || !empty($stockOutboundIds)) {
+            $allIds = array_merge($bomDetailIds, $stockOutboundIds);
+            $referenceCondition[] = [
+                'and',
+                ['inventory_order_request.reference_type' => ['bom_detail', 'bomstockoutbound']],
+                ['inventory_order_request.reference_id' => $allIds]
+            ];
+        }
+        
+        // 2. Search in user table (for reserve type)
+        $userIds = \common\models\User::find()
+                ->select('id')
+                ->where(['like', 'fullname', $searchTerm])
+                ->orWhere(['like', 'username', $searchTerm])
+                ->orWhere(['like', 'email', $searchTerm])
+                ->column();
+        
+        if (!empty($userIds)) {
+            $referenceCondition[] = [
+                'and',
+                ['inventory_order_request.reference_type' => 'reserve'],
+                ['inventory_order_request.reference_id' => $userIds]
+            ];
+        }
+        
+        // Apply the reference condition if any matches found
+        if (count($referenceCondition) > 1) {
+            $query->andWhere($referenceCondition);
+        } else {
+            // No matches found - return no results
+            $query->andWhere('0=1');
+        }
+    }
+    
         $dataProvider->setSort([
             'defaultOrder' => [
                 'id' => SORT_DESC

@@ -104,6 +104,7 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
             'reserved_by' => 'Reserved By',
             'reference_type' => 'Reference Type',
             'reference_id' => 'Reference ID',
+            'claim_flag' => 'Claim Submitted',
         ];
     }
 
@@ -441,26 +442,35 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
         return $master;
     }
 
-    private static function saveItems($masterId, $items, $sourceModule, $referenceType, $referenceId) {
+    public static function saveItems($masterId, $items, $sourceModule, $referenceType, $referenceId) {
         foreach ($items as $index => $data) {
+            try {
+                $item = isset($data['id']) ? PrereqFormItem::findOne($data['id']) : new PrereqFormItem();
 
-            $item = isset($data['id']) ? PrereqFormItem::findOne($data['id']) : new PrereqFormItem();
+                if (!$item) {
+                    $item = new PrereqFormItem();
+                }
 
-            if (!$item) {
-                $item = new PrereqFormItem();
-            }
+                // Debug: Check what normalizeItem returns
+                $normalized = self::normalizeItem($data, $sourceModule);
 
-            $normalized = self::normalizeItem($data, $sourceModule);
+                if ($sourceModule === 'inventory') {
+                    $exists = PrereqFormItem::checkInventoryDuplicate($normalized['department_code'], $normalized['supplier_id'], $normalized['brand_id'], $normalized['model_name'], $item->id ?? null);
+                    if ($exists) {
+                        throw new \Exception('Duplicate inventory item detected.');
+                    }
+                }
 
-            if ($sourceModule === 'inventory') {
-                self::checkInventoryDuplicate($normalized, $item->id ?? null);
-            }
+                $reference = self::handleReference($referenceType, $normalized, $referenceId);
 
-            $reference = self::handleReference($referenceType, $normalized, $referenceId);
-            self::assignItem($item, $masterId, $normalized, $reference);
+                // This is where the error might occur - if $reference is an array but assignItem expects string
+                self::assignItem($item, $masterId, $normalized, $reference);
 
-            if (!$item->save()) {
-                throw new \Exception('Item ' . ($index + 1) . ' save failed: ' . json_encode($item->getErrors()));
+                if (!$item->save()) {
+                    throw new \Exception('Item ' . ($index + 1) . ' save failed: ' . json_encode($item->getErrors()));
+                }
+            } catch (\Exception $e) {
+                throw $e; // Re-throw to maintain original flow
             }
         }
     }
@@ -482,14 +492,6 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
         }
 
         return $result;
-    }
-
-    private static function checkInventoryDuplicate($data, $excludeId) {
-        $exists = PrereqFormItem::checkInventoryDuplicate($data['department_code'], $data['supplier_id'], $data['brand_id'], $data['model_name'], $excludeId);
-
-        if ($exists) {
-            throw new \Exception('Duplicate inventory item detected.');
-        }
     }
 
     private static function handleReference($type, $data, $parentId) {
@@ -519,11 +521,11 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
                     'id' => $bomItem->id,
                 ];
 
-//            case 'cmms':
-//                return [
-//                    'type' => 'work_order',
-//                    'id' => $parentId,
-//                ];
+            case 'reserve':
+                return [
+                    'type' => 'reserve',
+                    'id' => $parentId,
+                ];
 
             default:
                 return null;
@@ -541,8 +543,10 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
         $item->model_group = $data['model_group'] ?? null;
         $item->item_description = $data['item_description'] ?? null;
         $item->quantity = $data['quantity'] ?? null;
+        $item->model_unit_type = $data['unit_type'] ?? null;
         $item->unit_price = $data['unit_price'] ?? null;
         $item->total_price = $data['total_price'] ?? null;
+        $item->purpose_or_function = $data['purpose_or_function'] ?? null;
         $item->currency = $data['currency'] ?? null;
         $item->remark = $data['remark'] ?? null;
         $item->is_deleted = 0;

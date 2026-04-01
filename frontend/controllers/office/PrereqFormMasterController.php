@@ -155,140 +155,90 @@ class PrereqFormMasterController extends Controller {
      * updated by Khetty - 12/8/2025
      * /
      */
-//    public function actionCreate($moduleIndex) {
-//        $master = new PrereqFormMaster();
-//        $vmodel = new VPrereqFormMasterDetail();
-//        $items = [new PrereqFormItem()];
-//        $worklists = [];
-//        $hasSuperiorUpdate = false;
-//        foreach ($items as $i => $item) {
-//            $worklist = PrereqFormItemWorklist::findOne([
-//                'prereq_form_master_id' => $master->id,
-//                'prereq_form_item_id' => $item->id
-//            ]);
-//
-//            if (!$worklist) {
-//                $worklist = new PrereqFormItemWorklist();
-//                $worklist->prereq_form_master_id = $master->id;
-//                $worklist->prereq_form_item_id = $item->id;
-//            } else {
-//                $hasSuperiorUpdate = true;
-//            }
-//            $worklists[$i] = $worklist;
-////            $worklists[$i]->save(false);
-//        }
-//
-//        if ($vmodel->load(Yii::$app->request->post())) {
-////            \common\models\myTools\Mydebug::dumpFileW(Yii::$app->request->post());
-//            // Start database transaction
-//            $transaction = Yii::$app->db->beginTransaction();
-//
-//            try {
-//                $postMaster = Yii::$app->request->post('PrereqFormMaster');
-//                $master->date_of_material_required = $postMaster['date_of_material_required'];
-////                $master->total_amount = $postMaster['total_amount'];
-//                $master->prf_no = $master->generatePrfNo();
-//                $master->superior_id = Yii::$app->user->identity->superior_id;
-//                $master->status = RefGeneralStatus::STATUS_GetSuperiorApproval;
-//                $master->is_deleted = 0;
-//
-//                // Save master record first
-//                if (!$master->save()) {
-//                    throw new \Exception('Failed to save master record');
-//                }
-//
-//                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail');
-//
-//                // Save all items
-//                foreach ($postItems as $itemData) {
-//                    $item = new PrereqFormItem();
-//                    $item->prereq_form_master_id = $master->id;
-//                    $item->item_description = $itemData['item_description'];
-//                    $item->quantity = $itemData['quantity'] ?? null;
-//                    $item->currency = $itemData['currency'];
-//                    $item->unit_price = $itemData['unit_price'] ?? null;
-//                    $item->total_price = $itemData['total_price'] ?? null;
-//                    $item->purpose_or_function = $itemData['purpose_or_function'] ?? null;
-//                    $item->remark = $itemData['remark'] ?? null;
-//
-//                    if (!$item->save()) {
-////                        \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
-//                        throw new \Exception('Failed to save item: ' . json_encode($item->getErrors()));
-//                    }
-//                }
-//
-//                // If we reach here, commit the transaction
-//                $transaction->commit();
-//                FlashHandler::success('Success!');
-//            } catch (Exception $e) {
-//                // Something went wrong, rollback the transaction
-//                $transaction->rollBack();
-//                FlashHandler::err('Failed: ' . $e->getMessage());
-////                \common\models\myTools\Mydebug::dumpFileW([
-////                    'master_errors' => $master->getErrors(),
-////                    'exception' => $e->getMessage()
-////                ]);
-//            }
-//
-//            return $this->redirect(['personal-pending-approval']);
-//        }
-//
-//        return $this->render('create', [
-//                    'master' => $master,
-//                    'items' => $items,
-//                    'vmodel' => $vmodel,
-//                    'isUpdate' => false,
-//                    'isView' => false,
-//                    'moduleIndex' => $moduleIndex,
-//                    'worklists' => $worklists,
-//                    'hasSuperiorUpdate' => $hasSuperiorUpdate,
-//        ]);
-//    }
-
     public function actionCreate($moduleIndex) {
         $master = new PrereqFormMaster();
         $vmodel = new VPrereqFormMasterDetail();
         $items = [new PrereqFormItem()];
         $worklists = [];
         $hasSuperiorUpdate = false;
+        foreach ($items as $i => $item) {
+            $worklist = PrereqFormItemWorklist::findOne([
+                'prereq_form_master_id' => $master->id,
+                'prereq_form_item_id' => $item->id
+            ]);
 
-        if (Yii::$app->request->isPost) {
+            if (!$worklist) {
+                $worklist = new PrereqFormItemWorklist();
+                $worklist->prereq_form_master_id = $master->id;
+                $worklist->prereq_form_item_id = $item->id;
+            } else {
+                $hasSuperiorUpdate = true;
+            }
+            $worklists[$i] = $worklist;
+//            $worklists[$i]->save(false);
+        }
+
+        if ($vmodel->load(Yii::$app->request->post())) {
+            \common\models\myTools\Mydebug::dumpFileW(Yii::$app->request->post());
+            // Start database transaction
             $transaction = Yii::$app->db->beginTransaction();
 
             try {
-                // ===== SAVE MASTER =====
                 $postMaster = Yii::$app->request->post('PrereqFormMaster');
-                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
+                $master->date_of_material_required = $postMaster['date_of_material_required'];
+//                $master->total_amount = $postMaster['total_amount'];
                 $master->prf_no = $master->generatePrfNo();
                 $master->superior_id = Yii::$app->user->identity->superior_id;
                 $master->status = RefGeneralStatus::STATUS_GetSuperiorApproval;
                 $master->is_deleted = 0;
+                $master->inventory_flag = 0;
+                $master->source_module = 1;
 
+                // Save master record first
                 if (!$master->save()) {
-                    throw new \Exception('Master save failed: ' . json_encode($master->getErrors()));
+                    throw new \Exception('Failed to save master record');
                 }
 
-                // ===== SAVE ITEMS =====
-                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-                $this->saveItems($master->id, $postItems, false);
+                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail');
 
+                // Save all items
+                foreach ($postItems as $itemData) {
+                    $item = new PrereqFormItem();
+                    $item->prereq_form_master_id = $master->id;
+                    $item->item_description = $itemData['item_description'];
+                    $item->quantity = $itemData['quantity'] ?? null;
+                    $item->currency = $itemData['currency'];
+                    $item->unit_price = $itemData['unit_price'] ?? null;
+                    $item->total_price = $itemData['total_price'] ?? null;
+                    $item->purpose_or_function = $itemData['purpose_or_function'] ?? null;
+                    $item->remark = $itemData['remark'] ?? null;
+                    $item->department_code = $itemData['department_code'] ?? null;
+                    $item->supplier_name = $itemData['supplier_name'] ?? null;
+                    $item->brand_name = $itemData['brand_name'] ?? null;
+                    $item->model_name = $itemData['model_name'] ?? null;
+
+                    if (!$item->save()) {
+//                        \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
+                        throw new \Exception('Failed to save item: ' . json_encode($item->getErrors()));
+                    }
+                }
+
+                // If we reach here, commit the transaction
                 $transaction->commit();
-                FlashHandler::success('Purchase Requisition Form created successfully!');
-                return $this->redirect(['personal-pending-approval']);
-            } catch (\Exception $e) {
+                FlashHandler::success('Success!');
+            } catch (Exception $e) {
+                // Something went wrong, rollback the transaction
                 $transaction->rollBack();
-                FlashHandler::err('Failed to create form: ' . $e->getMessage());
-                Yii::error('Create PRF Error: ' . $e->getMessage(), __METHOD__);
+                FlashHandler::err('Failed: ' . $e->getMessage());
+//                \common\models\myTools\Mydebug::dumpFileW([
+//                    'master_errors' => $master->getErrors(),
+//                    'exception' => $e->getMessage()
+//                ]);
             }
+
+            return $this->redirect(['personal-pending-approval']);
         }
-
-        // ===== DROPDOWN DATA =====
         $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
-        $supplierList = InventorySupplier::getAllDropDownSupplierList();
-        $brandList = InventoryBrand::getAllDropDownBrandList();
-        $modelList = InventoryModel::getAllDropDownModelList();
-        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
-
         return $this->render('create', [
                     'master' => $master,
                     'items' => $items,
@@ -299,86 +249,210 @@ class PrereqFormMasterController extends Controller {
                     'worklists' => $worklists,
                     'hasSuperiorUpdate' => $hasSuperiorUpdate,
                     'departmentList' => $departmentList,
-                    'supplierList' => $supplierList,
-                    'brandList' => $brandList,
-                    'modelList' => $modelList,
-                    'currencyList' => $currencyList,
         ]);
     }
 
+//    public function actionCreate($moduleIndex) {
+//        $master = new PrereqFormMaster();
+//        $vmodel = new VPrereqFormMasterDetail();
+//        $items = [new PrereqFormItem()];
+//        $worklists = [];
+//        $hasSuperiorUpdate = false;
+//
+//        if (Yii::$app->request->isPost) {
+//            $transaction = Yii::$app->db->beginTransaction();
+//
+//            try {
+//                // ===== SAVE MASTER =====
+//                $postMaster = Yii::$app->request->post('PrereqFormMaster');
+//                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
+//                $master->prf_no = $master->generatePrfNo();
+//                $master->superior_id = Yii::$app->user->identity->superior_id;
+//                $master->status = RefGeneralStatus::STATUS_GetSuperiorApproval;
+//                $master->is_deleted = 0;
+//
+//                if (!$master->save()) {
+//                    throw new \Exception('Master save failed: ' . json_encode($master->getErrors()));
+//                }
+//
+//                // ===== SAVE ITEMS =====
+//                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
+//                $this->saveItems($master->id, $postItems, false);
+//
+//                $transaction->commit();
+//                FlashHandler::success('Purchase Requisition Form created successfully!');
+//                return $this->redirect(['personal-pending-approval']);
+//            } catch (\Exception $e) {
+//                $transaction->rollBack();
+//                FlashHandler::err('Failed to create form: ' . $e->getMessage());
+//                Yii::error('Create PRF Error: ' . $e->getMessage(), __METHOD__);
+//            }
+//        }
+//
+//        // ===== DROPDOWN DATA =====
+//        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
+//        $supplierList = InventorySupplier::getAllDropDownSupplierList();
+//        $brandList = InventoryBrand::getAllDropDownBrandList();
+//        $modelList = InventoryModel::getAllDropDownModelList();
+//        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
+//
+//        return $this->render('create', [
+//                    'master' => $master,
+//                    'items' => $items,
+//                    'vmodel' => $vmodel,
+//                    'isUpdate' => false,
+//                    'isView' => false,
+//                    'moduleIndex' => $moduleIndex,
+//                    'worklists' => $worklists,
+//                    'hasSuperiorUpdate' => $hasSuperiorUpdate,
+//                    'departmentList' => $departmentList,
+//                    'supplierList' => $supplierList,
+//                    'brandList' => $brandList,
+//                    'modelList' => $modelList,
+//                    'currencyList' => $currencyList,
+//        ]);
+//    }
+
     /**
-     * Update existing PRF (before superior approval)
+     * Updates the current PrereqFormMaster model.
+     * If update is successful, the browser will be redirected to the 'view' page
+     * $vmodel is passed in as an array
+     * @param type $id (id of the current PrereqFormMaster model)
+     * @return mixed
      */
     public function actionUpdate($id, $moduleIndex) {
-        $master = PrereqFormMaster::findOne($id);
-        if (!$master) {
-            FlashHandler::err('Record not found');
-            return $this->redirect(['personal-pending-approval']);
-        }
-
+        $master = PrereqFormMaster::find()
+                ->where(['id' => $id])
+                ->with(['prereqFormItems'])
+                ->one();
+//        echo "<script>console.log('number of items: " . count($master->items) . "');</script>";
         $vmodel = VPrereqFormMasterDetail::find()
                 ->where(['master_id' => $id])
+                ->with(['items'])
                 ->all();
-
-        $items = $master->prereqFormItems;
+        // check for items returned
+//        $itemIds = [];
+//        foreach ($vmodel as $v) {
+//            foreach ($v->items as $item) {
+//                $itemIds[] = $item->id;
+//                echo "<script>console.log('Item ID: " . $item->id . "')</script>";
+//            }
+//        }
+        $items = $master->prereqFormItems;    // retrieves items with is_deleted == 0
+        // pass in the worklist model as a variable
         $worklists = [];
+
         $hasSuperiorUpdate = false;
+        foreach ($items as $i => $item) {
+            $worklist = PrereqFormItemWorklist::findOne([
+                'prereq_form_master_id' => $id,
+                'prereq_form_item_id' => $item->id
+            ]);
 
-        if (Yii::$app->request->isPost) {
-            $transaction = Yii::$app->db->beginTransaction();
-
-            try {
-                // ===== UPDATE MASTER =====
-                $postMaster = Yii::$app->request->post('PrereqFormMaster');
-                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
-                $master->updated_by = Yii::$app->user->id;
-                $master->updated_at = date('Y-m-d H:i:s');
-
-                if (!$master->save()) {
-                    throw new \Exception('Master update failed: ' . json_encode($master->getErrors()));
-                }
-
-                // ===== MARK OLD ITEMS AS DELETED =====
-                PrereqFormItem::updateAll(
-                        ['is_deleted' => 1],
-                        ['prereq_form_master_id' => $id, 'is_deleted' => 0]
-                );
-
-                // ===== SAVE NEW/UPDATED ITEMS =====
-                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-                $this->saveItems($master->id, $postItems, true);
-
-                $transaction->commit();
-                FlashHandler::success('Purchase Requisition Form updated successfully!');
-                return $this->redirect(['personal-pending-approval']);
-            } catch (\Exception $e) {
-                $transaction->rollBack();
-                FlashHandler::err('Failed to update form: ' . $e->getMessage());
-                Yii::error('Update PRF Error: ' . $e->getMessage(), __METHOD__);
+            if (!$worklist) {
+                $worklist = new PrereqFormItemWorklist();
+                $worklist->prereq_form_master_id = $id;
+                $worklist->prereq_form_item_id = $item->id;
+            } else {
+                $hasSuperiorUpdate = true;
             }
+            $worklists[$i] = $worklist;
+//            $worklists[$i]->save(false);
         }
 
-        // ===== DROPDOWN DATA =====
-        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
-        $supplierList = InventorySupplier::getAllDropDownSupplierList();
-        $brandList = InventoryBrand::getAllDropDownBrandList();
-        $modelList = InventoryModel::getAllDropDownModelList();
-        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
+        if (empty($items)) {
+            $items = [new PrereqFormItem()];
+        }
 
-        return $this->render('create', [
+        if (Yii::$app->request->isPost) {
+            // Delete existing items before resaving
+            $itemIds = PrereqFormItem::find()
+                    ->select('id')
+                    ->where(['prereq_form_master_id' => $id, 'is_deleted' => 0])
+                    ->column();
+
+//            PrereqFormItemWorklist::deleteAll(
+//                    ['prereq_form_item_id' => $itemIds]
+//            );
+
+            PrereqFormItem::updateAll(
+//                    ['prereq_form_master_id' => $id, 'is_deleted' => 0]
+                    ['is_deleted' => 1],
+                    ['id' => $itemIds]
+            );
+
+            $postMaster = Yii::$app->request->post('PrereqFormMaster');
+
+            $master->date_of_material_required = $postMaster['date_of_material_required'];
+//            $master->total_amount = $postMaster['total_amount'];
+
+            $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
+            if ($master->save()) {// && !empty($postItems)) {
+//                $this->rememberDBIds('prereq_form_master');
+//                \common\models\myTools\Mydebug::dumpFileW($postItems);
+//                if (!empty($postItems)) {
+                foreach ($postItems as $itemData) {
+                    if (isset($itemData['id'])) {
+                        $item = PrereqFormItem::findOne($itemData['id']);
+                    } else {
+                        // New item
+                        $item = new PrereqFormItem();
+//                            $item->prereq_form_master_id = $master->id;
+                    }
+
+                    $item->prereq_form_master_id = $master->id;
+                    $item->item_description = $itemData['item_description'];
+                    $item->quantity = $itemData['quantity'] ?? null;
+                    $item->currency = $itemData['currency'];
+                    $item->unit_price = $itemData['unit_price'] ?? null;
+                    $item->total_price = $itemData['total_price'] ?? null;
+                    $item->purpose_or_function = $itemData['purpose_or_function'] ?? null;
+                    $item->remark = $itemData['remark'] ?? null;
+                    $item->department_code = $itemData['department_code'] ?? null;
+                    $item->supplier_name = $itemData['supplier_name'] ?? null;
+                    $item->brand_name = $itemData['brand_name'] ?? null;
+                    $item->model_name = $itemData['model_name'] ?? null;
+
+                    if (!$item->save()) {
+                        \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
+                    }
+//                    $this->rememberDBIds('prereq_form_item');
+                }
+
+                // delete all records that are 'unintentionally' marked as deleted
+                $redundantIds = PrereqFormItem::find()
+                        ->select('id')
+                        ->where(['is_deleted' => 1, 'updated_by' => null])
+                        ->column();
+
+                PrereqFormItemWorklist::deleteAll(
+                        ['prereq_form_item_id' => $redundantIds]
+                );
+
+                PrereqFormItem::deleteAll(
+                        ['is_deleted' => 1, 'updated_by' => null]
+                );
+//                }
+                $this->rememberDBIds('prereq_form_item');
+
+                FlashHandler::success('Updated!');
+                return $this->redirect(['view', 'id' => $master->id, 'moduleIndex' => $moduleIndex]);
+            } else {
+                FlashHandler::err('Failed to update!');
+//                \common\models\myTools\Mydebug::dumpFileW($master->getErrors());
+            }
+        }
+        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
+        return $this->render('update', [
                     'master' => $master,
-                    'items' => $items,
                     'vmodel' => $vmodel,
+                    'items' => $items,
                     'isUpdate' => true,
                     'isView' => false,
                     'moduleIndex' => $moduleIndex,
                     'worklists' => $worklists,
                     'hasSuperiorUpdate' => $hasSuperiorUpdate,
                     'departmentList' => $departmentList,
-                    'supplierList' => $supplierList,
-                    'brandList' => $brandList,
-                    'modelList' => $modelList,
-                    'currencyList' => $currencyList,
         ]);
     }
 

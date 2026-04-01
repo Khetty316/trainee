@@ -3,9 +3,19 @@
 use yii\widgets\DetailView;
 use yii\bootstrap4\Html;
 use yii\bootstrap4\ActiveForm;
+use common\models\myTools\MyCommonFunction;
+use common\modules\auth\models\AuthItem;
 
-$this->params['breadcrumbs'][] = ['label' => 'HR - Leave Management'];
-$this->params['breadcrumbs'][] = ['label' => 'Compulsory Leave', 'url' => '/working/leavemgmt/hr-compulsory-leave'];
+if(MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_SystemAdmin])){
+    $label = 'Leave Approval (Director)';
+    $url = '/working/leavemgmt/director-compulsory-leave';
+}else if(MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior, AuthItem::ROLE_SystemAdmin])){
+    $label = 'HR - Leave Management';
+    $url = '/working/leavemgmt/hr-compulsory-leave';
+}
+
+$this->params['breadcrumbs'][] = ['label' => $label];
+$this->params['breadcrumbs'][] = ['label' => 'Compulsory Leave', 'url' => $url];
 $this->params['breadcrumbs'][] = 'View Compulsory Leave';
 ?>
 
@@ -51,31 +61,38 @@ $this->params['breadcrumbs'][] = 'View Compulsory Leave';
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+<!--                            <tr>
                                 <th colspan="2">Production Staff</th>
-                            </tr>
-                            <?php foreach ($prods as $prod): ?>
-                                <tr>
-                                    <td><?= Html::encode($prod['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($prod['fullname']))) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <tr>
+                            </tr>-->
+                            <?php //foreach ($prods as $prod): ?>
+<!--                                <tr>
+                                    <td><?php //= Html::encode($prod['staff_id']) ?></td>
+                                    <td><?php //= Html::encode(ucwords(strtolower($prod['fullname']))) ?></td>
+                                </tr>-->
+                            <?php //endforeach; ?>
+<!--                            <tr>
                                 <th colspan="2">Executive Staff</th>
-                            </tr>
-                            <?php foreach ($execs as $exec): ?>
-                                <tr>
-                                    <td><?= Html::encode($exec['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($exec['fullname']))) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            <tr>
+                            </tr>-->
+                            <?php //foreach ($execs as $exec): ?>
+<!--                                <tr>
+                                    <td><?php //= Html::encode($exec['staff_id']) ?></td>
+                                    <td><?php //= Html::encode(ucwords(strtolower($exec['fullname']))) ?></td>
+                                </tr>-->
+                            <?php //endforeach; ?>
+<!--                            <tr>
                                 <th colspan="2">Office Staff</th>
-                            </tr>
-                            <?php foreach ($offices as $office): ?>
+                            </tr>-->
+                            <?php //foreach ($offices as $office): ?>
+<!--                                <tr>
+                                    <td><?php //= Html::encode($office['staff_id']) ?></td>
+                                    <td><?php //= Html::encode(ucwords(strtolower($office['fullname']))) ?></td>
+                                </tr>-->
+                            <?php //endforeach; ?>
+                                <?php foreach ($cDetails as $staff): 
+                                $staff = common\models\User::findOne($staff['user_id']); ?>
                                 <tr>
-                                    <td><?= Html::encode($office['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($office['fullname']))) ?></td>
+                                    <td><?= Html::encode($staff->staff_id) ?></td>
+                                    <td><?= Html::encode(ucwords(strtolower($staff->fullname))) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

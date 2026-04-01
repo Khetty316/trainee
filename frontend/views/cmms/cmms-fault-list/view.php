@@ -93,9 +93,8 @@ use frontend\models\cmms\CmmsAssetList;
                             '<i class="bi bi-eye"></i>',
                             'javascript:void(0);',
                             [
-                                'class' => 'modalButtonSingle btn btn-sm btn-success',
-                                'id' => 'view-asset-btn',
-                                'data-url' => Url::to(['view-asset-details']), 
+                                'class' => 'view-asset-btn btn btn-sm btn-success',
+                                'data-url' => Url::to(['view-asset-details', 'asset_id' => $model->fault_asset_id]), 
                                 'data-back-url' => Url::to(['fault-form-modal', 'id' => $model->id ?? null]),
                                 'aria-disabled' => 'false',
                             ]
@@ -152,7 +151,7 @@ use frontend\models\cmms\CmmsAssetList;
     </div>
 
 <script>
-    $(document).on('click', '#view-asset-btn', function (e) {
+    $(document).on('click', '.view-asset-btn', function (e) {
         e.preventDefault();
 
         const $btn = $(this);
@@ -169,7 +168,6 @@ use frontend\models\cmms\CmmsAssetList;
             $('#asset-details-container').fadeIn(150);
             $('#asset-details-content').html('<div class="text-muted">Loading...</div>');
         });
-        
         $.get(url, { asset_id: assetId, model_id: modelId })
             .done(function (html) {
                 $('#asset-details-content').fadeOut(100, function () {

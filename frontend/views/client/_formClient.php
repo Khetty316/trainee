@@ -6,7 +6,7 @@ use yii\bootstrap4\ActiveForm;
 /* @var $this yii\web\View */
 /* @var $model frontend\models\client\Clients */
 /* @var $form yii\widgets\ActiveForm */
-
+//
 
 if ($model->area) {
     $model->areaName = $model->area0->area_name;

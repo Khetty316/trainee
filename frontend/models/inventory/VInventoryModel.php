@@ -40,6 +40,10 @@ class VInventoryModel extends \yii\db\ActiveRecord
         return 'v_inventory_model';
     }
 
+    public static function primaryKey() {
+        return ['id'];
+    }
+    
     /**
      * {@inheritdoc}
      */
@@ -68,9 +72,9 @@ class VInventoryModel extends \yii\db\ActiveRecord
             'description' => 'Description',
             'unit_type' => 'Unit Type',
             'image' => 'Image',
-            'active_sts' => 'Active Sts',
+            'active_sts' => 'Active',
             'inventory_brand_id' => 'Inventory Brand ID',
-            'brand_name' => 'Brand Name',
+            'brand_name' => 'Brand',
             'brand_model' => 'Brand Model',
             'total_stock_on_hand' => 'Total Stock On Hand',
             'total_stock_reserved' => 'Total Stock Reserved',
@@ -84,5 +88,11 @@ class VInventoryModel extends \yii\db\ActiveRecord
             'updated_by_name' => 'Updated By Name',
             'updated_at' => 'Updated At',
         ];
+    }
+    
+    public function getInventoryDetails()
+    {
+        return $this->hasMany(InventoryDetail::className(), ['model_id' => 'id'])
+            ->andWhere(['active_sts' => 2]);
     }
 }

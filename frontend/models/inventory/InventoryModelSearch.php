@@ -9,13 +9,12 @@ use frontend\models\inventory\InventoryModel;
 /**
  * InventoryModelSearch represents the model behind the search form of `frontend\models\inventory\InventoryModel`.
  */
-class InventoryModelSearch extends InventoryModel
-{
+class InventoryModelSearch extends InventoryModel {
+
     /**
      * {@inheritdoc}
      */
-    public function rules()
-    {
+    public function rules() {
         return [
             [['id', 'active_sts'], 'integer'],
             [['total_stock_on_hand', 'total_stock_reserved', 'total_stock_available', 'type', 'group', 'description', 'unit_type', 'image', 'created_at', 'updated_at', 'created_by', 'updated_by', 'inventory_brand_id'], 'safe'],
@@ -25,8 +24,7 @@ class InventoryModelSearch extends InventoryModel
     /**
      * {@inheritdoc}
      */
-    public function scenarios()
-    {
+    public function scenarios() {
         // bypass scenarios() implementation in the parent class
         return Model::scenarios();
     }
@@ -39,7 +37,7 @@ class InventoryModelSearch extends InventoryModel
      * @return ActiveDataProvider
      */
     public function search($params) {
-        $query = InventoryModel::find();
+        $query = VInventoryModel::find();
 
         // add conditions that should always apply here
 
@@ -61,7 +59,8 @@ class InventoryModelSearch extends InventoryModel
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'active_sts' => $this->active_sts,
+            'inventory_model.active_sts' => $this->active_sts,
+            'inventory_model.inventory_brand_id' => $this->inventory_brand_id,
 //            'created_by' => $this->created_by,
 //            'created_at' => $this->created_at,
 //            'updated_by' => $this->updated_by,
@@ -77,9 +76,14 @@ class InventoryModelSearch extends InventoryModel
                 ->andFilterWhere(['like', 'total_stock_reserved', $this->total_stock_reserved])
                 ->andFilterWhere(['like', 'total_stock_available', $this->total_stock_available])
                 ->andFilterWhere(['like', 'user.fullname', $this->created_by])
-                ->andFilterWhere(['like', 'user.fullname', $this->updated_by])
-                ->andFilterWhere(['like', 'inventory_brand.name', $this->inventory_brand_id]);
-
+                ->andFilterWhere(['like', 'user.fullname', $this->updated_by]);
+        
+        $dataProvider->setSort([
+            'defaultOrder' => [
+                'id' => SORT_DESC
+            ],
+        ]);
+        
         return $dataProvider;
     }
 }

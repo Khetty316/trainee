@@ -6,10 +6,25 @@ use common\models\myTools\MyCommonFunction;
 use common\modules\auth\models\AuthItem;
 use common\models\myTools\MyFormatter;
 
-$this->title = 'Updates Order Receive';
+if ($moduleIndex === 'execPendingReceiving') {
+    $pageName = 'Receiving - Executive';
+} else if ($moduleIndex === 'execAllReceiving') {
+    $pageName = 'Receiving - Executive';
+} else if ($moduleIndex === 'assistPendingReceiving') {
+    $pageName = 'Receiving - Assistant';
+} else if ($moduleIndex === 'assistAllReceiving') {
+    $pageName = 'Receiving - Assistant';
+}else if ($moduleIndex === 'maintenanceHeadPendingReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
+} else if ($moduleIndex === 'maintenanceHeadAllReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
+}
 
+$url = 'po?type=' . $moduleIndex;
+
+$this->title = 'Updates Order Receive';
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
-$this->params['breadcrumbs'][] = ['label' => 'Receiving', 'url' => ['executive-pending-receive-purchase-order']];
+$this->params['breadcrumbs'][] = ['label' => $pageName, 'url' => [$url]];
 $this->params['breadcrumbs'][] = ['label' => $po->po_no];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
@@ -70,7 +85,7 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
     <div class="table-responsive">
         <table class="table table-sm table-bordered mb-0">
-                        <thead class="table-dark">
+            <thead class="table-dark">
                 <tr>
                     <th class="text-center">#</th>
                     <th>Item No.</th>

@@ -84,6 +84,8 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
                 AuthItem::ROLE_Director,
                 AuthItem::ROLE_ProjCoordinator,
                 AuthItem::ROLE_SystemAdmin,
+                AuthItem::ROLE_PrdnElec_Executive,
+                AuthItem::ROLE_PrdnFab_Executive,
                 AuthItem::ROLE_PrdnElec_Wkr,
                 AuthItem::ROLE_PrdnFab_Wkr,
             ]);
@@ -128,23 +130,25 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
             <?php
 //            if ($hasPendingInventoryAccess) {
             ?>
-            <div id="pending-action-inventory" class="clickable-card" data-bs-toggle="collapse" data-bs-target="#inventoryAccordion">
-    <div class="summary-card">
-        <div class="summary-title">
-            <span><i class="fas fa-boxes summary-icon text-info"></i> Inventory</span>
-            <span class="summary-count">...</span>
-        </div>
-        <div class="loader text-center p-3">
-            <i class="fas fa-spinner fa-spin"></i>
-        </div>
-    </div>
-</div>
+<!--            <div id="pending-action-inventory" class="clickable-card" data-bs-toggle="collapse" data-bs-target="#inventoryAccordion">
+                <div class="summary-card">
+                    <div class="summary-title">
+                        <span><i class="fas fa-boxes summary-icon text-info"></i> Inventory</span>
+                        <span class="summary-count">...</span>
+                    </div>
+                    <div class="loader text-center p-3">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                </div>
+            </div>-->
             <?php
 //            }
             ?>
             <?php
-            if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior])) {
+            if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior]) && !MyCommonFunction::checkRoles([AuthItem::ROLE_Director])) {
                 $pendingCount = ($totalPendingReliefLeave + $totalPendingSuperiorLeave + $totalPendingHrLeave);
+            } else if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director])) {
+                $pendingCount = ($totalPendingReliefLeave + $totalPendingSuperiorLeave + $totalPendingDirectorLeave);
             } else {
                 $pendingCount = ($totalPendingReliefLeave + $totalPendingSuperiorLeave);
             }
@@ -183,7 +187,7 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
                             <a href="/working/leavemgmt/superior-leave-approval" class="text-decoration-none">
                                 <div class="role-summary-item mb-2">
                                     <div class="role-info">
-                                        <i class="fas fa-user-tie role-icon text-success"></i>
+                                        <i class="fas fa-user-check role-icon text-success"></i>
                                         <span class="role-name">Superior</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
@@ -194,7 +198,7 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
                             </a>
                         <?php } ?>
 
-                        <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior])) { ?>
+                        <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior]) && !MyCommonFunction::checkRoles([AuthItem::ROLE_Director])) { ?>
                             <a href="/working/leavemgmt/hr-leave-approval" class="text-decoration-none">
                                 <div class="role-summary-item mb-2">
                                     <div class="role-info">
@@ -203,6 +207,21 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <span class="role-count badge bg-info"><?= $totalPendingHrLeave ?></span>
+                                        <i class="fas fa-chevron-right accordion-arrow ml-3"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        <?php } ?>
+
+                        <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director])) { ?>
+                            <a href="/working/leavemgmt/director-compulsory-leave" class="text-decoration-none">
+                                <div class="role-summary-item mb-2">
+                                    <div class="role-info">
+                                        <i class="fas fa-user-tie role-icon text-dark"></i>
+                                        <span class="role-name">Director</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="role-count badge bg-dark"><?= $totalPendingDirectorLeave ?></span>
                                         <i class="fas fa-chevron-right accordion-arrow ml-3"></i>
                                     </div>
                                 </div>
@@ -226,7 +245,7 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
             } else if (MyCommonFunction::checkRoles([AuthItem::ROLE_CM_Finance])) {
                 $pendingCount = $totalPendingFinanceClaim;
             }
-            if (MyCommonFunction::checkRoles([AuthItem::ROLE_CM_Superior]) || MyCommonFunction::checkRoles([AuthItem::ROLE_CM_Finance])) {
+            if ((MyCommonFunction::checkRoles([AuthItem::ROLE_CM_Superior]) || MyCommonFunction::checkRoles([AuthItem::ROLE_CM_Finance])) && !MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior])) {
                 ?>
                 <div class="summary-card clickable-card" data-bs-toggle="collapse" data-bs-target="#claimAccordion" aria-expanded="false" aria-controls="claimAccordion">
                     <div class="summary-title">
@@ -438,12 +457,12 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
     </div>
 </div>
 <script>
-    $(document).on('click', '.clickable-sub', function() {
-    var target = $(this).attr('data-target');
-    $(target).collapse('toggle');
-});
+    $(document).on('click', '.clickable-sub', function () {
+        var target = $(this).attr('data-target');
+        $(target).collapse('toggle');
+    });
     $(document).ready(function () {
-<?php // if ($performanceFactoryStaffBanner) {       ?>
+<?php // if ($performanceFactoryStaffBanner) {        ?>
 //            $.ajax({
 //                url: '/site/performance-factory-staff-banner',
 //                type: 'GET',
@@ -456,7 +475,7 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
 //                            );
 //                }
 //            });
-<?php // }       ?>
+<?php // }        ?>
 
 <?php if ($hasPendingAction1Access) { ?>
             $.ajax({
@@ -533,24 +552,24 @@ $this->registerCssFile('@web/css/dashboardStyle.css');
             });
 <?php } ?>
 
-<?php // if ($hasPendingPanelDefectReadStatusAccess) {  ?>
+<?php // if ($hasPendingPanelDefectReadStatusAccess) {   ?>
         $.ajax({
-    url: '/site/pending-action-inventory',
-    type: 'GET',
-    success: function (data) {
-        $('#pending-action-inventory').html(data);
-        
-        // Re-initialize Bootstrap Collapses for the newly injected HTML
-        var collapseElementList = [].slice.call(document.querySelectorAll('#inventoryAccordion .collapse'));
-        var collapseList = collapseElementList.map(function (collapseEl) {
-          return new bootstrap.Collapse(collapseEl, { toggle: false });
+            url: '/site/pending-action-inventory',
+            type: 'GET',
+            success: function (data) {
+                $('#pending-action-inventory').html(data);
+
+                // Re-initialize Bootstrap Collapses for the newly injected HTML
+                var collapseElementList = [].slice.call(document.querySelectorAll('#inventoryAccordion .collapse'));
+                var collapseList = collapseElementList.map(function (collapseEl) {
+                    return new bootstrap.Collapse(collapseEl, {toggle: false});
+                });
+            },
+            error: function (xhr) {
+                $('#pending-action-inventory').html("<div class='alert alert-danger'>Error: " + xhr.responseText + "</div>");
+            }
         });
-    },
-    error: function (xhr) {
-        $('#pending-action-inventory').html("<div class='alert alert-danger'>Error: " + xhr.responseText + "</div>");
-    }
-});
-<?php // }  ?>
+<?php // }   ?>
 
 <?php if ($hasSection1Access || $hasSection2Access || $hasSection3Access || $hasSection4Access) { ?>
             var dateFrom = document.getElementById('reportingmodel-datefrom').value;

@@ -59,115 +59,115 @@ $isDeleted = ($model->is_deleted == 1);
         ?>
     </td>
 
-<td class="supplier-cell">
-    <?php if ($moduleIndex === 'inventory'): ?>
-        <?php
-        // Only use suppliers from the list - no custom values
-        $supplierOptions = $supplierList;
-        $currentSupplierName = $model->supplier_name ?? '';
-        
-        // Check if current supplier exists in list (check both keys AND values)
-        $supplierExistsAsKey = array_key_exists($currentSupplierName, $supplierOptions);
-        $supplierExistsAsValue = in_array($currentSupplierName, $supplierOptions, true);
-        $supplierExists = $supplierExistsAsKey || $supplierExistsAsValue;
-        
-        // If supplier exists as value but not as key, find the key
-        $selectedSupplierKey = '';
-        if (!$supplierExistsAsKey && $supplierExistsAsValue) {
-            $selectedSupplierKey = array_search($currentSupplierName, $supplierOptions, true);
-        } elseif ($supplierExistsAsKey) {
-            $selectedSupplierKey = $currentSupplierName;
-        }
-        
-        $supplierNotInList = !empty($currentSupplierName) && !$supplierExists;
-        ?>
-        
-        <?php if ($supplierNotInList): ?>
-            <!-- Show warning if supplier is not in list -->
-            <div class="alert alert-warning alert-sm mb-1 p-1">
-                <small><strong>Warning:</strong> Supplier "<?= Html::encode($currentSupplierName) ?>" not found in inventory.</small>
-            </div>
-        <?php endif; ?>
-        
-        <?=
-        Html::dropDownList(
-                "VPrereqFormMasterDetail[$index][supplier_name]",
-                $selectedSupplierKey,
-                $supplierOptions,
-                [
-                    'class' => 'form-control supplier-select',
-                    'prompt' => 'Select Supplier',
-                    'required' => true,
-                    'data-original-value' => $currentSupplierName,
-                    'data-supplier-exists' => $supplierExists ? 'true' : 'false'
-                ]
-        )
-        ?>
-    <?php else: ?>
-        <?=
-        Html::textInput(
-                "VPrereqFormMasterDetail[$index][supplier_name]",
-                $model->supplier_name ?? '',
-                ['class' => 'form-control supplier-field', 'placeholder' => 'Supplier name', 'required' => true]
-        )
-        ?>
-    <?php endif; ?>
-</td>
+    <td class="supplier-cell">
+        <?php if ($moduleIndex === 'inventory'): ?>
+            <?php
+            // Only use suppliers from the list - no custom values
+            $supplierOptions = $supplierList;
+            $currentSupplierName = $model->supplier_name ?? '';
 
-  <td class="brand-cell">
-    <?php if ($moduleIndex === 'inventory'): ?>
-        <?php
-        // Only use brands from the list - no custom values
-        $brandOptions = $brandList;
-        $currentBrandName = $model->brand_name ?? '';
-        
-        // Check if current brand exists in list (check both keys AND values)
-        $brandExistsAsKey = array_key_exists($currentBrandName, $brandOptions);
-        $brandExistsAsValue = in_array($currentBrandName, $brandOptions, true);
-        $brandExists = $brandExistsAsKey || $brandExistsAsValue;
-        
-        // If brand exists as value but not as key, find the key
-        $selectedBrandKey = '';
-        if (!$brandExistsAsKey && $brandExistsAsValue) {
-            $selectedBrandKey = array_search($currentBrandName, $brandOptions, true);
-        } elseif ($brandExistsAsKey) {
-            $selectedBrandKey = $currentBrandName;
-        }
-        
-        $brandNotInList = !empty($currentBrandName) && !$brandExists;
-        ?>
-        
-        <?php if ($brandNotInList): ?>
-            <!-- Show warning if brand is not in list -->
-            <div class="alert alert-warning alert-sm mb-1 p-1">
-                <small><strong>Warning:</strong> Brand "<?= Html::encode($currentBrandName) ?>" not found in inventory.</small>
-            </div>
+            // Check if current supplier exists in list (check both keys AND values)
+            $supplierExistsAsKey = array_key_exists($currentSupplierName, $supplierOptions);
+            $supplierExistsAsValue = in_array($currentSupplierName, $supplierOptions, true);
+            $supplierExists = $supplierExistsAsKey || $supplierExistsAsValue;
+
+            // If supplier exists as value but not as key, find the key
+            $selectedSupplierKey = '';
+            if (!$supplierExistsAsKey && $supplierExistsAsValue) {
+                $selectedSupplierKey = array_search($currentSupplierName, $supplierOptions, true);
+            } elseif ($supplierExistsAsKey) {
+                $selectedSupplierKey = $currentSupplierName;
+            }
+
+            $supplierNotInList = !empty($currentSupplierName) && !$supplierExists;
+            ?>
+
+            <?php if ($supplierNotInList): ?>
+                <!-- Show warning if supplier is not in list -->
+                <div class="alert alert-warning alert-sm mb-1 p-1">
+                    <small><strong>Warning:</strong> Supplier "<?= Html::encode($currentSupplierName) ?>" not found in inventory.</small>
+                </div>
+            <?php endif; ?>
+
+            <?=
+            Html::dropDownList(
+                    "VPrereqFormMasterDetail[$index][supplier_name]",
+                    $selectedSupplierKey,
+                    $supplierOptions,
+                    [
+                        'class' => 'form-control supplier-select',
+                        'prompt' => 'Select Supplier',
+                        'required' => true,
+                        'data-original-value' => $currentSupplierName,
+                        'data-supplier-exists' => $supplierExists ? 'true' : 'false'
+                    ]
+            )
+            ?>
+        <?php else: ?>
+            <?=
+            Html::textInput(
+                    "VPrereqFormMasterDetail[$index][supplier_name]",
+                    $model->supplier_name ?? '',
+                    ['class' => 'form-control supplier-field', 'placeholder' => 'Supplier name', 'required' => true]
+            )
+            ?>
         <?php endif; ?>
-        
-        <?=
-        Html::dropDownList(
-                "VPrereqFormMasterDetail[$index][brand_name]",
-                $selectedBrandKey,
-                $brandOptions,
-                [
-                    'class' => 'form-control brand-select',
-                    'prompt' => 'Select Brand',
-                    'required' => true,
-                    'data-original-value' => $currentBrandName,
-                    'data-brand-exists' => $brandExists ? 'true' : 'false'
-                ]
-        )
-        ?>
-    <?php else: ?>
-        <?=
-        Html::textInput(
-                "VPrereqFormMasterDetail[$index][brand_name]",
-                $model->brand_name ?? '',
-                ['class' => 'form-control brand-field', 'placeholder' => 'Brand name', 'required' => true]
-        )
-        ?>
-    <?php endif; ?>
-</td>
+    </td>
+
+    <td class="brand-cell">
+        <?php if ($moduleIndex === 'inventory'): ?>
+            <?php
+            // Only use brands from the list - no custom values
+            $brandOptions = $brandList;
+            $currentBrandName = $model->brand_name ?? '';
+
+            // Check if current brand exists in list (check both keys AND values)
+            $brandExistsAsKey = array_key_exists($currentBrandName, $brandOptions);
+            $brandExistsAsValue = in_array($currentBrandName, $brandOptions, true);
+            $brandExists = $brandExistsAsKey || $brandExistsAsValue;
+
+            // If brand exists as value but not as key, find the key
+            $selectedBrandKey = '';
+            if (!$brandExistsAsKey && $brandExistsAsValue) {
+                $selectedBrandKey = array_search($currentBrandName, $brandOptions, true);
+            } elseif ($brandExistsAsKey) {
+                $selectedBrandKey = $currentBrandName;
+            }
+
+            $brandNotInList = !empty($currentBrandName) && !$brandExists;
+            ?>
+
+            <?php if ($brandNotInList): ?>
+                <!-- Show warning if brand is not in list -->
+                <div class="alert alert-warning alert-sm mb-1 p-1">
+                    <small><strong>Warning:</strong> Brand "<?= Html::encode($currentBrandName) ?>" not found in inventory.</small>
+                </div>
+            <?php endif; ?>
+
+            <?=
+            Html::dropDownList(
+                    "VPrereqFormMasterDetail[$index][brand_name]",
+                    $selectedBrandKey,
+                    $brandOptions,
+                    [
+                        'class' => 'form-control brand-select',
+                        'prompt' => 'Select Brand',
+                        'required' => true,
+                        'data-original-value' => $currentBrandName,
+                        'data-brand-exists' => $brandExists ? 'true' : 'false'
+                    ]
+            )
+            ?>
+        <?php else: ?>
+            <?=
+            Html::textInput(
+                    "VPrereqFormMasterDetail[$index][brand_name]",
+                    $model->brand_name ?? '',
+                    ['class' => 'form-control brand-field', 'placeholder' => 'Brand name', 'required' => true]
+            )
+            ?>
+        <?php endif; ?>
+    </td>
 
     <td class="model-cell">
         <?=
@@ -298,7 +298,7 @@ $isDeleted = ($model->is_deleted == 1);
     <td class="text-center" style="vertical-align: middle;">
         <?= Html::hiddenInput("VPrereqFormMasterDetail[$index][id]", $model->item_id ?? '', ['id' => "item-id-$index"]) ?>
         <?= Html::hiddenInput("VPrereqFormMasterDetail[$index][item_reference_type]", $model->item_reference_type ?? '') ?>
-<?= Html::hiddenInput("VPrereqFormMasterDetail[$index][item_reference_id]", $model->item_reference_id ?? '') ?>
+        <?= Html::hiddenInput("VPrereqFormMasterDetail[$index][item_reference_id]", $model->item_reference_id ?? '') ?>
         <?= Html::hiddenInput("VPrereqFormMasterDetail[$index][toDelete]", '0', ['id' => "toDelete-$index"]) ?>
 
         <?php if ($moduleIndex === 'personal' || $moduleIndex === 'inventory'): ?>

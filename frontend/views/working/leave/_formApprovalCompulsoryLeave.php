@@ -3,9 +3,19 @@
 use yii\widgets\DetailView;
 use yii\bootstrap4\Html;
 use yii\bootstrap4\ActiveForm;
+use common\models\myTools\MyCommonFunction;
+use common\modules\auth\models\AuthItem;
 
-$this->params['breadcrumbs'][] = ['label' => 'HR - Leave Management'];
-$this->params['breadcrumbs'][] = ['label' => 'Compulsory Leave', 'url' => '/working/leavemgmt/hr-compulsory-leave'];
+if(MyCommonFunction::checkRoles([AuthItem::ROLE_Director])){
+    $label = 'Leave Approval (Director)';
+    $url = '/working/leavemgmt/director-compulsory-leave';
+}else if(MyCommonFunction::checkRoles([AuthItem::ROLE_SystemAdmin])){
+    $label = 'HR - Leave Management';
+    $url = '/working/leavemgmt/hr-compulsory-leave';
+}
+
+$this->params['breadcrumbs'][] = ['label' => $label];
+$this->params['breadcrumbs'][] = ['label' => 'Compulsory Leave', 'url' => $url];
 $this->params['breadcrumbs'][] = 'Leave Approval';
 ?>
 
@@ -35,16 +45,16 @@ $this->params['breadcrumbs'][] = 'Leave Approval';
                     ]);
 
                     echo $form->field($model, 'status')->dropDownList([
-                        '7' => 'Reject',
                         '4' => 'Approve',
+                        '7' => 'Reject',
                     ]);
 
                     echo $form->field($model, 'approval_remark')->textarea(['rows' => 4]);
 
-                    echo Html::submitButton('Submit', ['class' => 'btn btn-success float-right']);
+echo Html::submitButton('Submit', ['class' => 'btn btn-success float-right', 'id' => 'submit-btn']);
 
                     ActiveForm::end();
-                    ?>
+                    ?> 
                 </div>
             </fieldset>
         </div>
@@ -60,31 +70,32 @@ $this->params['breadcrumbs'][] = 'Leave Approval';
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
+<!--                            <tr>
                                 <th colspan="2">Production Staff</th>
                             </tr>
-                            <?php foreach ($prods as $prod): ?>
+                            <?php// foreach ($prods as $prod): ?>
                                 <tr>
-                                    <td><?= Html::encode($prod['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($prod['fullname']))) ?></td>
+                                    <td><?php //= Html::encode($prod['staff_id']) ?></td>
+                                    <td><?php //= Html::encode(ucwords(strtolower($prod['fullname']))) ?></td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php //endforeach; ?>
                             <tr>
                                 <th colspan="2">Executive Staff</th>
-                            </tr>
-                            <?php foreach ($execs as $exec): ?>
-                                <tr>
-                                    <td><?= Html::encode($exec['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($exec['fullname']))) ?></td>
+                            </tr>-->
+                            <?php //foreach ($execs as $exec): ?>
+<!--                                <tr>
+                                    <td><?php //= Html::encode($exec['staff_id']) ?></td>
+                                    <td><?php //= Html::encode(ucwords(strtolower($exec['fullname']))) ?></td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php // endforeach; ?>
                             <tr>
                                 <th colspan="2">Office Staff</th>
-                            </tr>
-                            <?php foreach ($offices as $office): ?>
+                            </tr>-->
+                            <?php foreach ($cDetails as $staff): 
+                                $staff = common\models\User::findOne($staff['user_id']); ?>
                                 <tr>
-                                    <td><?= Html::encode($office['staff_id']) ?></td>
-                                    <td><?= Html::encode(ucwords(strtolower($office['fullname']))) ?></td>
+                                    <td><?= Html::encode($staff->staff_id) ?></td>
+                                    <td><?= Html::encode(ucwords(strtolower($staff->fullname))) ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -94,3 +105,28 @@ $this->params['breadcrumbs'][] = 'Leave Approval';
         </div>
     </div>
 </div>
+
+<?php
+$js = <<<JS
+$('#submit-btn').on('click', function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var status = $('#leavecompulsorymaster-status').val();
+
+    if (status == '4') {
+        if (!confirm('Are you sure you want to APPROVE this application?')) {
+            return false;
+        }
+    } else if (status == '7') {
+        if (!confirm('Are you sure you want to REJECT this application?')) {
+            return false;
+        }
+    }
+
+    $('#approval-form').yiiActiveForm('submitForm');
+});
+JS;
+
+$this->registerJs($js);
+?>

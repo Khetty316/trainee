@@ -52,7 +52,7 @@ $this->params['breadcrumbs'][] = $this->title;
         <tbody id="listTBody">  
             <?php
                 $faults = array_filter($faults, function ($m) {
-                    return (int)$m->is_deleted === 0;
+                    return (int)$m->active_sts === 1;
                 });
             ?>
             <?php foreach ($faults as $mD => $fault): ?>
@@ -61,7 +61,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     <td class="text-center"><?= $fault->fault_type; ?></td>
                     <td class="text-center"><?= $fault->fault_primary_detail; ?></td>
                     <td class="text-center"><?= $fault->fault_secondary_detail; ?></td>
-                    
                 </tr>
             <?php endforeach; ?>
         </tbody>

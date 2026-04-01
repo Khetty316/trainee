@@ -30,6 +30,7 @@ use frontend\models\inventory\InventoryStockoutbound;
  * @property int|null $created_by
  * @property string|null $updated_at
  * @property int|null $updated_by
+ * @property int|null $inventory_sts 1 = no, 2 = linked
  *
  * @property StockDispatchTrial[] $stockDispatchTrials
  * @property StockOutboundMaster $stockOutboundMaster
@@ -40,10 +41,11 @@ use frontend\models\inventory\InventoryStockoutbound;
 class StockOutboundDetails extends \yii\db\ActiveRecord {
 
     CONST runningNoLength = 2;
+
 // Virtual attributes for form input
     public $model_type_input;
     public $brand_input;
-    
+
     /**
      * {@inheritdoc}
      */
@@ -57,7 +59,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
     public function rules() {
         return [
             [['stock_outbound_master_id'], 'required'],
-            [['stock_outbound_master_id', 'bom_detail_id', 'inventory_model_id', 'inventory_brand_id', 'qty_stock_available', 'active_sts', 'fully_dispatch_status', 'created_by', 'updated_by'], 'integer'],
+            [['stock_outbound_master_id', 'bom_detail_id', 'inventory_model_id', 'inventory_brand_id', 'qty_stock_available', 'active_sts', 'fully_dispatch_status', 'created_by', 'updated_by', 'inventory_sts'], 'integer'],
             [['qty', 'dispatched_qty', 'unacknowledged_qty'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['model_type', 'brand', 'descriptions', 'engineer_remark'], 'string', 'max' => 1000],
@@ -65,7 +67,78 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
             [['bom_detail_id'], 'exist', 'skipOnError' => true, 'targetClass' => BomDetails::className(), 'targetAttribute' => ['bom_detail_id' => 'id']],
             [['inventory_model_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryModel::className(), 'targetAttribute' => ['inventory_model_id' => 'id']],
             [['inventory_brand_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryBrand::className(), 'targetAttribute' => ['inventory_brand_id' => 'id']],
+            // Validation: Either use dropdown system (model_type_input + brand_input) OR legacy (model_type + brand)
+            ['model_type', 'required', 'when' => function ($model) {
+                    // Model type is required if not using dropdown system
+                    return empty($model->model_type_input);
+                }, 'message' => 'Model Type is required.'],
+            ['brand', 'required', 'when' => function ($model) {
+                    // Brand is required if not using dropdown system
+                    return empty($model->brand_input);
+                }, 'message' => 'Brand is required.'],
+            ['model_type_input', 'required', 'when' => function ($model) {
+                    // Required if using new system (not legacy)
+                    return empty($model->model_type);
+                }, 'message' => 'Please select a Model Type from the dropdown.'],
+            ['brand_input', 'required', 'when' => function ($model) {
+                    // Required if using new system (not legacy)
+                    return empty($model->brand);
+                }, 'message' => 'Please select a Brand from the dropdown.'],
+            // Custom validation
+            ['model_type_input', 'validateModelInput', 'skipOnEmpty' => false],
+            ['brand_input', 'validateBrandInput', 'skipOnEmpty' => false],
         ];
+    }
+
+    /**
+     * Custom validation for model type input
+     */
+    public function validateModelInput($attribute, $params) {
+        // If model_type_input is provided, it must be a valid dropdown selection
+        if (!empty($this->model_type_input)) {
+            $inventoryModel = InventoryModel::findOne($this->model_type_input);
+            if (!$inventoryModel) {
+                $this->addError($attribute, 'Selected Model Type is invalid.');
+            } else {
+                // Set the inventory_model_id for saving
+                $this->inventory_model_id = $this->model_type_input;
+
+                // Auto-fill model_type from inventory
+                $this->model_type = $inventoryModel->type;
+
+                $this->inventory_sts = 2;
+
+                // Auto-fill description from inventory
+                if (!empty($inventoryModel->description)) {
+                    $this->descriptions = $inventoryModel->description;
+                }
+            }
+        } else if (!empty($this->model_type)) {
+            // Legacy record - clear inventory model ID
+            $this->inventory_model_id = null;
+        }
+    }
+
+    /**
+     * Custom validation for brand input
+     */
+    public function validateBrandInput($attribute, $params) {
+        // If brand_input is provided, it must be a valid dropdown selection
+        if (!empty($this->brand_input)) {
+            $inventoryBrand = InventoryBrand::findOne($this->brand_input);
+            if (!$inventoryBrand) {
+                $this->addError($attribute, 'Selected Brand is invalid.');
+            } else {
+                // Set the inventory_brand_id for saving
+                $this->inventory_brand_id = $this->brand_input;
+
+                // Auto-fill brand from inventory
+                $this->brand = $inventoryBrand->name;
+            }
+        } else if (!empty($this->brand)) {
+            // Legacy record - clear inventory brand ID
+            $this->inventory_brand_id = null;
+        }
     }
 
     /**
@@ -92,6 +165,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
             'created_by' => 'Created By',
             'updated_at' => 'Updated At',
             'updated_by' => 'Updated By',
+            'inventory_sts' => 'Inventory Sts',
         ];
     }
 
@@ -267,7 +341,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
                             $actionType,
                             $stockDetail->id,
                             $dispatchMasterId,
-                            StockDispatchMaster::TO_BE_ACKNOWLEDGED
+                            $postData['current_sts']
                     );
 
                     $this->updateAllQtyInStockDetail($stockDetail);
@@ -354,76 +428,121 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
         }
     }
 
-   public function updateAllQtyInStockDetail($stockDetail)
-{
-    /*
-     |--------------------------------------------------------------------------
-     | 1️⃣ Acknowledged (PHYSICAL movement only)
-     |--------------------------------------------------------------------------
-     */
-    $totalAcknowledged = StockDispatchTrial::find()
-        ->where([
-            'stock_outbound_details_id' => $stockDetail->id,
-            'current_sts' => StockDispatchMaster::HAS_BEEN_ACKNOWLEDGED
-        ])
-        ->sum('dispatch_qty') ?? 0;
+    public function updateAllQtyInStockDetail($stockDetail, $referenceType = 'bomstockoutbound') {
 
-    /*
-     |--------------------------------------------------------------------------
-     | 2️⃣ Unacknowledged (display purpose only)
-     |--------------------------------------------------------------------------
-     */
-    $totalUnacknowledged = StockDispatchTrial::find()
-        ->where([
-            'stock_outbound_details_id' => $stockDetail->id,
-            'current_sts' => StockDispatchMaster::TO_BE_ACKNOWLEDGED
-        ])
-        ->sum('dispatch_qty') ?? 0;
+        /*
+          |--------------------------------------------------------------------------
+          | 1️⃣ Acknowledged (PHYSICAL movement only)
+          |--------------------------------------------------------------------------
+         */
+        $totalAcknowledged = StockDispatchTrial::find()
+                        ->where([
+                            'stock_outbound_details_id' => $stockDetail->id,
+                            'current_sts' => StockDispatchMaster::HAS_BEEN_ACKNOWLEDGED
+                        ])
+                        ->sum('dispatch_qty') ?? 0;
 
-    /*
-     |--------------------------------------------------------------------------
-     | 3️⃣ Get allocated qty from inventory
-     |--------------------------------------------------------------------------
-     */
-    $allocateQty = InventoryStockoutbound::find()
-        ->where([
-            'reference_type' => 'bomstockoutbound',
-            'reference_id' => $stockDetail->id,
-        ])
-        ->sum('qty') ?? 0;
+        /*
+          |--------------------------------------------------------------------------
+          | 2️⃣ Unacknowledged (display purpose only)
+          |--------------------------------------------------------------------------
+         */
+        $totalUnacknowledged = StockDispatchTrial::find()
+                        ->where(['stock_outbound_details_id' => $stockDetail->id])
+                        ->andWhere([
+                            'in',
+                            'current_sts',
+                            [
+                                StockDispatchMaster::TO_BE_ACKNOWLEDGED,
+                                StockDispatchMaster::TO_BE_COLLECTED
+                            ]
+                        ])
+                        ->sum('dispatch_qty') ?? 0;
 
-    /*
-     |--------------------------------------------------------------------------
-     | 4️⃣ Available = Allocated - Acknowledged ONLY
-     |--------------------------------------------------------------------------
-     */
-    $availableQty = $allocateQty - $totalAcknowledged;
+        /*
+          |--------------------------------------------------------------------------
+          | 3️⃣ Get allocated qty from inventory
+          |--------------------------------------------------------------------------
+         */
+        $allocateQty = InventoryStockoutbound::find()
+                        ->where([
+                            'reference_type' => $referenceType,
+                            'reference_id' => $stockDetail->id,
+                        ])
+                        ->sum('qty') ?? 0;
 
-    if ($availableQty < 0) {
-        throw new \Exception(
-            "Available stock cannot be negative for detail ID: " . $stockDetail->id
-        );
+        /*
+          |--------------------------------------------------------------------------
+          | 4️⃣ Available = Allocated - Acknowledged ONLY
+          |--------------------------------------------------------------------------
+         */
+        $availableQty = $allocateQty - $totalAcknowledged;
+
+        if ($availableQty < 0) {
+            throw new \Exception("Available stock cannot be negative for detail ID: " . $stockDetail->id);
+        }
+
+        /*
+          |--------------------------------------------------------------------------
+          | 5️⃣ Update stock detail
+          |--------------------------------------------------------------------------
+         */
+        $stockDetail->dispatched_qty = $totalAcknowledged;
+        $stockDetail->unacknowledged_qty = $totalUnacknowledged;
+        $currentDispatched = $stockDetail->dispatched_qty + $stockDetail->unacknowledged_qty;
+        $stockDetail->qty_stock_available = $availableQty;
+
+        $stockDetail->fully_dispatch_status = ($stockDetail->qty == $currentDispatched) ? 1 : 0;
+
+        if (!$stockDetail->save()) {
+            throw new \Exception("Failed to update stock detail qty: " . json_encode($stockDetail->errors));
+        }
     }
 
-    /*
-     |--------------------------------------------------------------------------
-     | 5️⃣ Update stock detail
-     |--------------------------------------------------------------------------
-     */
-    $stockDetail->dispatched_qty = $totalAcknowledged;
-    $stockDetail->unacknowledged_qty = $totalUnacknowledged;
-    $stockDetail->qty_stock_available = $availableQty;
+//    public function updateStockMasterStatus($productionPanelId) {
+//        $stockMasters = StockOutboundMaster::find()->where(['production_panel_id' => $productionPanelId])->all();
+//        foreach ($stockMasters as $stockMaster) {
+//            $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
+//            $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
+//            if (!$stockMaster->save(false)) {
+//                throw new \Exception("Failed to update stock master status: " . json_encode($stockMaster->errors));
+//            }
+//        }
+//    }
 
-    $stockDetail->fully_dispatch_status =
-        ($stockDetail->qty == $totalAcknowledged) ? 1 : 0;
+    public function updateStockMasterStatus($productionPanelId) {
+        $transaction = Yii::$app->db->beginTransaction();
 
-    if (!$stockDetail->save()) {
-        throw new \Exception(
-            "Failed to update stock detail qty: " .
-            json_encode($stockDetail->errors)
-        );
+        try {
+            $stockMasters = StockOutboundMaster::find()
+                    ->where(['production_panel_id' => $productionPanelId])
+                    ->all();
+
+            foreach ($stockMasters as $stockMaster) {
+
+                $hasPendingDispatch = StockOutboundDetails::find()
+                        ->where([
+                            'stock_outbound_master_id' => $stockMaster->id,
+                            'fully_dispatch_status' => 0
+                        ])
+                        ->exists();
+
+                $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
+
+                if (!$stockMaster->save(false)) {
+                    throw new \Exception(
+                                    "Failed to update stock master status: " . json_encode($stockMaster->errors)
+                            );
+                }
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+
+            $transaction->rollBack();
+            throw $e;
+        }
     }
-}
 
     /**
      * Update a stock detail with the new dispatch quantity.
@@ -659,7 +778,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
             throw new \Exception('Not enough reserved stock to dispatch.');
         }
     }
-    
+
     public function isLegacyRecord() {
         return (!empty($this->model_type) || !empty($this->brand)) &&
                 empty($this->inventory_model_id) &&

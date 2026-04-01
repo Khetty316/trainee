@@ -132,7 +132,7 @@ use frontend\models\cmms\CmmsAssetList;
             <?php
                 $faults = array_filter($faults, function ($md) use ($vModelMap) {
                     $row = $vModelMap[$md->id] ?? $md;
-                    return (int)($row->is_deleted ?? 0) === 0;
+                    return (int)($row->active_sts ?? 1) === 1;
                 });
             ?>
             <?php $renderIndex = 0; ?>

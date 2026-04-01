@@ -12,9 +12,11 @@ use common\models\User;
  * @property int|null $receive_batch_id
  * @property int|null $inventory_po_item_id
  * @property int|null $received_quantity
+ * @property int|null $add_to_stock
  * @property int|null $received_by
  * @property string|null $received_at
  *
+ * @property InventoryPoItemReceiveAllocation[] $inventoryPoItemReceiveAllocations
  * @property User $receivedBy
  * @property InventoryPurchaseOrderReceiveBatch $receiveBatch
  * @property InventoryPurchaseOrderItem $inventoryPoItem
@@ -33,7 +35,7 @@ class InventoryPurchaseOrderItemReceive extends \yii\db\ActiveRecord {
      */
     public function rules() {
         return [
-            [['receive_batch_id', 'inventory_po_item_id', 'received_quantity', 'received_by'], 'integer'],
+            [['receive_batch_id', 'inventory_po_item_id', 'received_quantity', 'add_to_stock', 'received_by'], 'integer'],
             [['received_at'], 'safe'],
             [['received_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['received_by' => 'id']],
             [['receive_batch_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryPurchaseOrderReceiveBatch::className(), 'targetAttribute' => ['receive_batch_id' => 'id']],
@@ -50,9 +52,19 @@ class InventoryPurchaseOrderItemReceive extends \yii\db\ActiveRecord {
             'receive_batch_id' => 'Receive Batch ID',
             'inventory_po_item_id' => 'Inventory Po Item ID',
             'received_quantity' => 'Received Quantity',
+            'add_to_stock' => 'Add To Stock',
             'received_by' => 'Received By',
             'received_at' => 'Received At',
         ];
+    }
+
+    /**
+     * Gets query for [[InventoryPoItemReceiveAllocations]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getInventoryPoItemReceiveAllocations() {
+        return $this->hasMany(InventoryPoItemReceiveAllocation::className(), ['inventory_po_item_receive_id' => 'id']);
     }
 
     /**

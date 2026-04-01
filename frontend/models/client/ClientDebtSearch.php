@@ -5,7 +5,7 @@ namespace frontend\models\client;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use frontend\models\client\ClientDebt;
-
+//
 /**
  * ClientDebtSearch represents the model behind the search form of `frontend\models\client\ClientDebt`.
  */

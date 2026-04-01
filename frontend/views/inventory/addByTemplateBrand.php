@@ -3,9 +3,24 @@
 use yii\helpers\Html;
 use yii\bootstrap4\ActiveForm;
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+    $url = 'inventory/inventory/brand-list?type=execStock';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+    $url = 'inventory/inventory/brand-list?type=assistStock';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+    $url = 'inventory/inventory/brand-list?type=projcoorStock';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+    $url = 'inventory/inventory/brand-list?type=maintenanceHeadStock';
+}
+
 $this->title = 'Add New Brand';
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
-$this->params['breadcrumbs'][] = ['label' => 'Brand', 'url' => ['brand-list']];
+$this->params['breadcrumbs'][] = $pageName;
+$this->params['breadcrumbs'][] = ['label' => 'Brand List', 'url' => [$url]];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 

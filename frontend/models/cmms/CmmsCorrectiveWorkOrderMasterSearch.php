@@ -52,7 +52,7 @@ class CmmsCorrectiveWorkOrderMasterSearch extends CmmsCorrectiveWorkOrderMaster
                             RefAssignedPic::find()
                                 ->select('id')
                                 ->where(
-                                    'ref_assigned_pic.work_order_master_id = cmms_corrective_work_order_master.id'
+                                    'ref_assigned_pic.corrective_work_order_master_id = cmms_corrective_work_order_master.id'
                                 )
                                 ->andWhere([
                                     'ref_assigned_pic.name' =>
@@ -67,7 +67,7 @@ class CmmsCorrectiveWorkOrderMasterSearch extends CmmsCorrectiveWorkOrderMaster
                     'exists',
                     CmmsFaultList::find()
                         ->select('id')
-                        ->where('cmms_fault_list.cmms_work_order_id = cmms_corrective_work_order_master.id')
+                        ->where('cmms_fault_list.cmms_corrective_work_order_id = cmms_corrective_work_order_master.id')
                         ->andWhere(['cmms_fault_list.superior_id' => Yii::$app->user->identity->id])
                     ])
                       ->andWhere(['cmms_corrective_work_order_master.active_sts' => 1]);

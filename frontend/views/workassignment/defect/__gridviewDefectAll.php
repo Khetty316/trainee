@@ -56,15 +56,15 @@ echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
                 return MyFormatter::asDateTime_ReaddmYHi($model->created_at);
             }
         ],
-        [
-            'attribute' => 'created_at',
-            'label' => 'Complaint At',
-            'headerOptions' => ['class' => 'tdnowrap'],
-            'format' => 'raw',
-            'value' => function ($model) {
-                return MyFormatter::asDateTime_ReaddmYHi($model->created_at);
-            }
-        ],
+//        [
+//            'attribute' => 'created_at',
+//            'label' => 'Complaint At',
+//            'headerOptions' => ['class' => 'tdnowrap'],
+//            'format' => 'raw',
+//            'value' => function ($model) {
+//                return MyFormatter::asDateTime_ReaddmYHi($model->created_at);
+//            }
+//        ],
         [
             'attribute' => 'is_read',
             'label' => 'Read',

@@ -56,16 +56,16 @@ foreach ($items as $item) {
             <tr>
                 <th rowspan="2" class="text-center" width="4%">No.</th>
                 <th rowspan="2" width="20%">Item Description</th>
-                <th rowspan="2" class="text-center" width="7%">Qty</th>
-                <th rowspan="2" class="text-center" width="6%">Currency</th>
+                <th rowspan="2" class="text-center" width="5%">Qty</th>
+                <th rowspan="2" class="text-center" width="8%">Currency</th>
                 <th rowspan="2" class="text-right" width="8%">Unit Price</th>
                 <th rowspan="2" class="text-right" width="8%">Total Price</th>
                 <th rowspan="2" width="12%">Purpose</th>
                 <th colspan="5" class="text-center" width="35%">Superior's Response</th>
             </tr>
             <tr>
-                <th class="text-center" width="6%">Qty</th>
-                <th class="text-center" width="6%">Currency</th>
+                <th class="text-center" width="5%">Qty</th>
+                <th class="text-center" width="8%">Currency</th>
                 <th class="text-right" width="8%">Unit Price</th>
                 <th class="text-right" width="8%">Total Price</th>
                 <th class="text-left" width="7%">Remark</th>

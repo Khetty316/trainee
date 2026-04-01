@@ -7,7 +7,7 @@ use frontend\models\common\RefArea;
 use frontend\models\common\RefCountries;
 use common\models\User;
 use frontend\models\common\RefState;
-
+//
 /**
  * This is the model class for table "clients".
  *
@@ -72,19 +72,19 @@ class Clients extends \yii\db\ActiveRecord {
      */
     public function rules() {
         return [
-            [['client_code', 'company_name', 'company_registration_no', 'company_tin'], 'required'],
+            [['client_code', 'company_name'], 'required'],
             [['current_outstanding_balance'], 'number'],
             [['area', 'state', 'created_by', 'updated_by'], 'integer'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['created_at', 'updated_at', 'company_registration_no', 'company_tin'], 'safe'],
             [['client_code'], 'string', 'max' => 10],
             [['ac_no_tk', 'ac_no_tke', 'ac_no_tkm', 'company_name', 'company_registration_no', 'company_tin', 'payment_term', 'contact_person', 'contact_position', 'address_1', 'address_2'], 'string', 'max' => 255],
             [['contact_number', 'contact_fax', 'postcode'], 'string', 'max' => 50],
             [['areaName', 'stateName', 'countryName'], 'string', 'max' => 100],
             [['country'], 'string', 'max' => 5],
             [['client_code'], 'unique'],
-            [['ac_no_tk'], 'unique'],
-            [['ac_no_tke'], 'unique'],
-            [['ac_no_tkm'], 'unique'],
+//            [['ac_no_tk'], 'unique'],
+//            [['ac_no_tke'], 'unique'],
+//            [['ac_no_tkm'], 'unique'],
             [['area'], 'exist', 'skipOnError' => true, 'targetClass' => RefArea::className(), 'targetAttribute' => ['area' => 'area_id']],
             [['country'], 'exist', 'skipOnError' => true, 'targetClass' => RefCountries::className(), 'targetAttribute' => ['country' => 'country_code']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],

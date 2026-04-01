@@ -46,7 +46,7 @@ class StockoutboundController extends Controller {
                         'roles' => [AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View],
                     ],
                     [
-                        'actions' => ['outbound-finalized-item', 'inventory-validation', 'initiate-outbound-master', 'view-material-detail', 'add-material', 'deactivate-item', 'update-item-detail', 'dispatch-item-list', 'confirm-stock-dispatch', 'stock-return', 'return-dispatched-quantity'],
+                        'actions' => ['view-inventory-stockoutbound-detail', 'outbound-finalized-item', 'inventory-validation', 'initiate-outbound-master', 'view-material-detail', 'add-material', 'deactivate-item', 'update-item-detail', 'dispatch-item-list', 'confirm-stock-dispatch', 'stock-return', 'return-dispatched-quantity'],
                         'allow' => true,
                         'roles' => [AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal],
                     ],
@@ -161,7 +161,7 @@ class StockoutboundController extends Controller {
 
                     // Process inventory for each detail
                     foreach ($outboundDetails as $detail) {
-                        $this->processInventoryItem($detail, $userId);
+                        InventoryOrderRequest::processInventoryItem($detail, $detail->qty, $userId, 'bomstockoutbound', $detail->bom_detail_id);
                     }
                 }
 
@@ -200,7 +200,7 @@ class StockoutboundController extends Controller {
 
                     // Process inventory for each detail
                     foreach ($outboundDetails as $detail) {
-                        $this->processInventoryItem($detail, $userId);
+                        InventoryOrderRequest::processInventoryItem($detail, $detail->qty, $userId, 'bomstockoutbound', $detail->bom_detail_id);
                     }
                 }
 
@@ -496,208 +496,397 @@ class StockoutboundController extends Controller {
      * Process inventory for a single outbound detail item
      * Returns true on success, false on failure (will trigger rollback)
      */
-    private function processInventoryItem(StockOutboundDetails $item, $userId) {
-        try {
-            if (!$item->inventory_model_id || !$item->inventory_brand_id) {
-                throw new \Exception("Item {$item->id}: No inventory model/brand specified");
-            }
-
-            $requiredQty = $item->qty;
-            $allocatedQty = 0;
-
-            // STEP 1: Check for existing reserved items for this user
-            $existingReserves = InventoryReserveItem::find()
-                    ->alias('iri')
-                    ->innerJoin('inventory_detail id', 'id.id = iri.inventory_detail_id')
-                    ->where([
-                        'iri.user_id' => $userId,
-                        'id.model_id' => $item->inventory_model_id,
-                        'id.brand_id' => $item->inventory_brand_id,
-                        'iri.status' => 1, // Active/available reserves
-                    ])
-                    ->andWhere(['>', 'iri.available_qty', 0])
-                    ->orderBy(['iri.created_at' => SORT_ASC]) // FIFO - oldest reserves first
-                    ->all();
-
-            // STEP 2: Allocate from existing reserves first
-            foreach ($existingReserves as $reserve) {
-                if ($allocatedQty >= $requiredQty) {
-                    break;
-                }
-
-                $availableReserveQty = $reserve->available_qty;
-                $qtyToAllocate = min($availableReserveQty, $requiredQty - $allocatedQty);
-
-                if ($qtyToAllocate > 0) {
-                    // Update reserve item quantities
-                    $reserve->dispatched_qty += $qtyToAllocate;
-                    $reserve->available_qty -= $qtyToAllocate;
-
-                    if (!$reserve->save()) {
-                        throw new \Exception("Failed to update reserve item {$reserve->id}: " . json_encode($reserve->errors));
-                    }
-
-                    // Get the inventory detail
-                    $inventoryDetail = InventoryDetail::findOne($reserve->inventory_detail_id);
-
-                    if (!$inventoryDetail) {
-                        throw new \Exception("Inventory detail {$reserve->inventory_detail_id} not found");
-                    }
-
-                    // Create stock outbound record
-                    // reference_type = 3 (bomstockoutbound) - tracks the CONSUMER
-                    // reference_id = stock_outbound_details.id - the consuming record
-                    // reserve_item_id = inventory_reserve_item.id - tracks the SOURCE
-                    $inventoryStockOutbound = new InventoryStockoutbound();
-                    $inventoryStockOutbound->inventory_detail_id = $inventoryDetail->id;
-                    $inventoryStockOutbound->reference_type = "bomstockoutbound";
-                    $inventoryStockOutbound->reference_id = $item->id; // Link to stock_outbound_details (consumer)
-                    $inventoryStockOutbound->reserve_item_id = $reserve->id; // Link to inventory_reserve_item (source)
-                    $inventoryStockOutbound->qty = $qtyToAllocate;
-
-                    if (!$inventoryStockOutbound->save()) {
-                        throw new \Exception("Failed to save InventoryStockoutbound: " . json_encode($inventoryStockOutbound->errors));
-                    }
-
-                    // Update inventory detail - reserve the stock
-                    $inventoryDetail->stock_reserved += $qtyToAllocate;
-                    $inventoryDetail->stock_available -= $qtyToAllocate;
-
-                    if (!$inventoryDetail->save()) {
-                        throw new \Exception("Failed to update inventory detail {$inventoryDetail->id}: " . json_encode($inventoryDetail->errors));
-                    }
-
-                    $allocatedQty += $qtyToAllocate;
-
-                    // Update item's ready to dispatch quantity
-                    $item->qty_stock_available = ($item->qty_stock_available ?? 0) + $qtyToAllocate;
-
-                    Yii::info("Allocated {$qtyToAllocate} from reserve item {$reserve->id} (inventory_detail {$inventoryDetail->id}) for BOM outbound detail {$item->id}");
-                }
-            }
-
-            // STEP 3: If still need more, allocate from general available stock
-            if ($allocatedQty < $requiredQty) {
-                $remainingQty = $requiredQty - $allocatedQty;
-
-                // Find available inventory details for this model and brand
-                $inventoryDetails = InventoryDetail::find()
-                        ->where([
-                            'model_id' => $item->inventory_model_id,
-                            'brand_id' => $item->inventory_brand_id,
-                            'active_sts' => 2
-                        ])
-                        ->andWhere(['>', 'stock_available', 0])
-                        ->orderBy([
-                            'stock_available' => SORT_DESC, // Allocate from highest available stock first
-                            'created_at' => SORT_ASC // Then by oldest stock (FIFO)
-                        ])
-                        ->all();
-
-                // Allocate stock from available suppliers
-                foreach ($inventoryDetails as $inventoryDetail) {
-                    if ($allocatedQty >= $requiredQty) {
-                        break;
-                    }
-
-                    $availableQty = $inventoryDetail->stock_available;
-
-                    if ($availableQty > 0) {
-                        $qtyToAllocate = min($availableQty, $requiredQty - $allocatedQty);
-
-                        if ($qtyToAllocate > 0) {
-                            // Calculate new values
-                            $newStockReserved = $inventoryDetail->stock_reserved + $qtyToAllocate;
-                            $newStockAvailable = $inventoryDetail->stock_available - $qtyToAllocate;
-
-                            // Validate: stock_available should not go negative
-                            if ($newStockAvailable < 0) {
-                                throw new \Exception("Insufficient stock available for inventory detail {$inventoryDetail->id}");
-                            }
-
-                            // Create stock outbound record
-                            // reference_type = 3 (bomstockoutbound) - tracks the CONSUMER
-                            // reference_id = stock_outbound_details.id - the consuming record
-                            // reserve_item_id = NULL - indicates general stock (not from reserve)
-                            $inventoryStockOutbound = new InventoryStockoutbound();
-                            $inventoryStockOutbound->inventory_detail_id = $inventoryDetail->id;
-                            $inventoryStockOutbound->reference_type = "bomstockoutbound";
-                            $inventoryStockOutbound->reference_id = $item->id; // Link to stock_outbound_details (consumer)
-                            $inventoryStockOutbound->reserve_item_id = NULL; // NULL = general stock (source)
-                            $inventoryStockOutbound->qty = $qtyToAllocate;
-
-                            if (!$inventoryStockOutbound->save()) {
-                                throw new \Exception("Failed to save InventoryStockoutbound: " . json_encode($inventoryStockOutbound->errors));
-                            }
-
-                            // UPDATE: Reserve the stock
-                            $inventoryDetail->stock_reserved = $newStockReserved;
-                            $inventoryDetail->stock_available = $newStockAvailable;
-
-                            if (!$inventoryDetail->save()) {
-                                throw new \Exception("Failed to update inventory detail {$inventoryDetail->id}: " . json_encode($inventoryDetail->errors));
-                            }
-
-                            $allocatedQty += $qtyToAllocate;
-
-                            // Update item's ready to dispatch quantity
-                            $item->qty_stock_available = ($item->qty_stock_available ?? 0) + $qtyToAllocate;
-
-                            Yii::info("Allocated {$qtyToAllocate} from general stock (inventory detail {$inventoryDetail->id}) for BOM outbound detail {$item->id}");
-                        }
-                    }
-                }
-            }
-
-            // Save updated item quantities
-            if (!$item->save()) {
-                throw new \Exception("Failed to update item {$item->id}: " . json_encode($item->errors));
-            }
-
-            // STEP 4: Check if we need to create order request
-            if ($allocatedQty < $requiredQty) {
-                $balanceQty = $requiredQty - $allocatedQty;
-
-                if (!$this->createOrderRequest($item, $balanceQty)) {
-                    throw new \Exception("Failed to create order request for item {$item->id}");
-                }
-
-                Yii::info("Created order request for {$balanceQty} units for BOM outbound detail {$item->id}");
-            }
-
-            Yii::info("Successfully processed inventory item {$item->id}: allocated {$allocatedQty}/{$requiredQty} (from reserve + general stock)");
-
-            return true;
-        } catch (\Exception $e) {
-            // Log and re-throw - this will bubble up to the main transaction
-            Yii::error("processInventoryItem failed for item {$item->id}: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-    /**
-     * Create reorder request for insufficient stock
-     * Returns true on success, false on failure (will trigger rollback)
-     */
-    private function createOrderRequest(StockOutboundDetails $item, $balanceQty) {
-        try {
-            $orderRequest = new InventoryOrderRequest();
-            $orderRequest->inventory_model_id = $item->inventory_model_id;
-            $orderRequest->inventory_brand_id = $item->inventory_brand_id;
-            $orderRequest->reference_type = 'bomstockoutbound';
-            $orderRequest->reference_id = $item->id;
-            $orderRequest->required_qty = $balanceQty;
-
-            if (!$orderRequest->save()) {
-                throw new \Exception("Failed to save order request: " . json_encode($orderRequest->errors));
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            Yii::error("createOrderRequest failed: " . $e->getMessage());
-            throw $e; // Re-throw to trigger rollback
-        }
-    }
+//    private function processInventoryItem(StockOutboundDetails $item, $userId) {
+//        try {
+//            if (!$item->inventory_model_id || !$item->inventory_brand_id) {
+//                throw new \Exception("Item {$item->id}: No inventory model/brand specified");
+//            }
+//
+//            $requiredQty = $item->qty;
+//            $allocatedQty = 0;
+//
+//            // STEP 1: Check for existing reserved items for this user
+//            $existingReservesGenaral = InventoryReserveItem::find()
+//                    ->alias('iri')
+//                    ->innerJoin('inventory_detail id', 'id.id = iri.inventory_detail_id')
+//                    ->where([
+//                        'iri.user_id' => $userId,
+//                        'iri.reference_type' => null, 
+//                        'iri.reference_id' => null,
+//                        'id.model_id' => $item->inventory_model_id,
+//                        'id.brand_id' => $item->inventory_brand_id,
+//                        'iri.status' => 1, // Active/available reserves
+//                    ])
+//                    ->andWhere(['>', 'iri.available_qty', 0])
+//                    ->orderBy(['iri.created_at' => SORT_ASC]) // FIFO - oldest reserves first
+//                    ->all();
+//            
+//            $existingReservesByBom = InventoryReserveItem::find()
+//                    ->alias('iri')
+//                    ->innerJoin('inventory_detail id', 'id.id = iri.inventory_detail_id')
+//                    ->where([
+//                        'iri.user_id' => $userId,
+//                        'iri.reference_type' => "bom_detail", // use "bom_detail for stockoutbound module
+//                        'iri.reference_id' => $item->bom_detail_id,
+//                        'id.model_id' => $item->inventory_model_id,
+//                        'id.brand_id' => $item->inventory_brand_id,
+//                        'iri.status' => 1, // Active/available reserves
+//                    ])
+//                    ->andWhere(['>', 'iri.available_qty', 0])
+//                    ->orderBy(['iri.created_at' => SORT_ASC]) // FIFO - oldest reserves first
+//                    ->all();
+//
+//            // STEP 2: Allocate from existing reserves first
+//            foreach ($existingReserves as $reserve) {
+//                if ($allocatedQty >= $requiredQty) {
+//                    break;
+//                }
+//
+//                $availableReserveQty = $reserve->available_qty;
+//                $qtyToAllocate = min($availableReserveQty, $requiredQty - $allocatedQty);
+//
+//                if ($qtyToAllocate > 0) {
+//                    // Update reserve item quantities
+//                    $reserve->dispatched_qty += $qtyToAllocate;
+//                    $reserve->available_qty -= $qtyToAllocate;
+//
+//                    if (!$reserve->save()) {
+//                        throw new \Exception("Failed to update reserve item {$reserve->id}: " . json_encode($reserve->errors));
+//                    }
+//
+//                    // Get the inventory detail
+//                    $inventoryDetail = InventoryDetail::findOne($reserve->inventory_detail_id);
+//
+//                    if (!$inventoryDetail) {
+//                        throw new \Exception("Inventory detail {$reserve->inventory_detail_id} not found");
+//                    }
+//
+//                    // Create stock outbound record
+//                    // reference_type = 3 (bomstockoutbound) - tracks the CONSUMER
+//                    // reference_id = stock_outbound_details.id - the consuming record
+//                    // reserve_item_id = inventory_reserve_item.id - tracks the SOURCE
+//                    $inventoryStockOutbound = new InventoryStockoutbound();
+//                    $inventoryStockOutbound->inventory_detail_id = $inventoryDetail->id;
+//                    $inventoryStockOutbound->reference_type = "bomstockoutbound";
+//                    $inventoryStockOutbound->reference_id = $item->id; // Link to stock_outbound_details (consumer)
+//                    $inventoryStockOutbound->reserve_item_id = $reserve->id; // Link to inventory_reserve_item (source)
+//                    $inventoryStockOutbound->qty = $qtyToAllocate;
+//
+//                    if (!$inventoryStockOutbound->save()) {
+//                        throw new \Exception("Failed to save InventoryStockoutbound: " . json_encode($inventoryStockOutbound->errors));
+//                    }
+//
+//                    // Update inventory detail - reserve the stock
+//                    $inventoryDetail->stock_reserved += $qtyToAllocate;
+//                    $inventoryDetail->stock_available -= $qtyToAllocate;
+//
+//                    if (!$inventoryDetail->save()) {
+//                        throw new \Exception("Failed to update inventory detail {$inventoryDetail->id}: " . json_encode($inventoryDetail->errors));
+//                    }
+//
+//                    $allocatedQty += $qtyToAllocate;
+//
+//                    // Update item's ready to dispatch quantity
+//                    $item->qty_stock_available = ($item->qty_stock_available ?? 0) + $qtyToAllocate;
+//
+//                    Yii::info("Allocated {$qtyToAllocate} from reserve item {$reserve->id} (inventory_detail {$inventoryDetail->id}) for BOM outbound detail {$item->id}");
+//                }
+//            }
+//
+//            // STEP 3: If still need more, allocate from general available stock
+//            if ($allocatedQty < $requiredQty) {
+//                $remainingQty = $requiredQty - $allocatedQty;
+//
+//                // Find available inventory details for this model and brand
+//                $inventoryDetails = InventoryDetail::find()
+//                        ->where([
+//                            'model_id' => $item->inventory_model_id,
+//                            'brand_id' => $item->inventory_brand_id,
+//                            'active_sts' => 2
+//                        ])
+//                        ->andWhere(['>', 'stock_available', 0])
+//                        ->orderBy([
+//                            'stock_available' => SORT_DESC, // Allocate from highest available stock first
+//                            'created_at' => SORT_ASC // Then by oldest stock (FIFO)
+//                        ])
+//                        ->all();
+//
+//                // Allocate stock from available suppliers
+//                foreach ($inventoryDetails as $inventoryDetail) {
+//                    if ($allocatedQty >= $requiredQty) {
+//                        break;
+//                    }
+//
+//                    $availableQty = $inventoryDetail->stock_available;
+//
+//                    if ($availableQty > 0) {
+//                        $qtyToAllocate = min($availableQty, $requiredQty - $allocatedQty);
+//
+//                        if ($qtyToAllocate > 0) {
+//                            // Calculate new values
+//                            $newStockReserved = $inventoryDetail->stock_reserved + $qtyToAllocate;
+//                            $newStockAvailable = $inventoryDetail->stock_available - $qtyToAllocate;
+//
+//                            // Validate: stock_available should not go negative
+//                            if ($newStockAvailable < 0) {
+//                                throw new \Exception("Insufficient stock available for inventory detail {$inventoryDetail->id}");
+//                            }
+//
+//                            // Create stock outbound record
+//                            // reference_type = 3 (bomstockoutbound) - tracks the CONSUMER
+//                            // reference_id = stock_outbound_details.id - the consuming record
+//                            // reserve_item_id = NULL - indicates general stock (not from reserve)
+//                            $inventoryStockOutbound = new InventoryStockoutbound();
+//                            $inventoryStockOutbound->inventory_detail_id = $inventoryDetail->id;
+//                            $inventoryStockOutbound->reference_type = "bomstockoutbound";
+//                            $inventoryStockOutbound->reference_id = $item->id; // Link to stock_outbound_details (consumer)
+//                            $inventoryStockOutbound->reserve_item_id = NULL; // NULL = general stock (source)
+//                            $inventoryStockOutbound->qty = $qtyToAllocate;
+//
+//                            if (!$inventoryStockOutbound->save()) {
+//                                throw new \Exception("Failed to save InventoryStockoutbound: " . json_encode($inventoryStockOutbound->errors));
+//                            }
+//
+//                            // UPDATE: Reserve the stock
+//                            $inventoryDetail->stock_reserved = $newStockReserved;
+//                            $inventoryDetail->stock_available = $newStockAvailable;
+//
+//                            if (!$inventoryDetail->save()) {
+//                                throw new \Exception("Failed to update inventory detail {$inventoryDetail->id}: " . json_encode($inventoryDetail->errors));
+//                            }
+//
+//                            $allocatedQty += $qtyToAllocate;
+//
+//                            // Update item's ready to dispatch quantity
+//                            $item->qty_stock_available = ($item->qty_stock_available ?? 0) + $qtyToAllocate;
+//
+//                            Yii::info("Allocated {$qtyToAllocate} from general stock (inventory detail {$inventoryDetail->id}) for BOM outbound detail {$item->id}");
+//                        }
+//                    }
+//                }
+//            }
+//
+//            // Save updated item quantities
+//            if (!$item->save()) {
+//                throw new \Exception("Failed to update item {$item->id}: " . json_encode($item->errors));
+//            }
+//
+//            // STEP 4: Check if we need to create order request
+//            if ($allocatedQty < $requiredQty) {
+//                $balanceQty = $requiredQty - $allocatedQty;
+//
+//                if (!$this->createOrderRequest($item, $balanceQty)) {
+//                    throw new \Exception("Failed to create order request for item {$item->id}");
+//                }
+//
+//                Yii::info("Created order request for {$balanceQty} units for BOM outbound detail {$item->id}");
+//            }
+//
+//            Yii::info("Successfully processed inventory item {$item->id}: allocated {$allocatedQty}/{$requiredQty} (from reserve + general stock)");
+//
+//            return true;
+//        } catch (\Exception $e) {
+//            // Log and re-throw - this will bubble up to the main transaction
+//            Yii::error("processInventoryItem failed for item {$item->id}: " . $e->getMessage());
+//            throw $e;
+//        }
+//    }
+    //unused
+//    private function processInventoryItem(StockOutboundDetails $item, $userId) {
+//        try {
+//
+//            if (!$item->inventory_model_id || !$item->inventory_brand_id) {
+//                throw new \Exception("Item {$item->id}: No inventory model/brand specified");
+//            }
+//
+//            $requiredQty = $item->qty;
+//            $allocatedQty = 0;
+//
+//            // allocate from BOM reserve first 
+//            $allocatedQty += $this->allocateFromReserve($item, $userId, 'bom_detail', $item->bom_detail_id, $requiredQty - $allocatedQty);
+//
+//            // then allocate from general reserves
+//            if ($allocatedQty < $requiredQty) {
+//                $allocatedQty += $this->allocateFromReserve($item, $userId, 'reserve', $userId, $requiredQty - $allocatedQty);
+//            }
+//
+//            // then allocate from general stock
+//            if ($allocatedQty < $requiredQty) {
+//                $allocatedQty += $this->allocateFromGeneralStock($item, $requiredQty - $allocatedQty);
+//            }
+//
+//            // Save updated item
+//            if (!$item->save()) {
+//                throw new \Exception("Failed to update item {$item->id}");
+//            }
+//
+//            // 4️⃣ Create order request if still insufficient
+//            if ($allocatedQty < $requiredQty) {
+//                $balanceQty = $requiredQty - $allocatedQty;
+//
+//                if (!$this->createOrderRequest($item, $balanceQty)) {
+//                    throw new \Exception("Failed to create order request.");
+//                }
+//            }
+//
+//            return true;
+//        } catch (\Exception $e) {
+//            Yii::error("processInventoryItem failed for item {$item->id}: " . $e->getMessage());
+//            throw $e;
+//        }
+//    }
+//
+//    private function allocateFromReserve($item, $userId, $referenceType, $referenceId, $remainingQty) {
+//        if ($remainingQty <= 0) {
+//            return 0;
+//        }
+//
+//        $query = InventoryReserveItem::find()
+//                ->alias('iri')
+//                ->innerJoin('inventory_detail id', 'id.id = iri.inventory_detail_id')
+//                ->where([
+//                    'iri.user_id' => $userId,
+//                    'iri.reference_type' => $referenceType,
+//                    'iri.reference_id' => $referenceId,
+//                    'id.model_id' => $item->inventory_model_id,
+//                    'id.brand_id' => $item->inventory_brand_id,
+//                    'iri.status' => 2, //2 = active, 1 = inactive
+//                ])
+//                ->andWhere(['>', 'iri.available_qty', 0])
+//                ->orderBy(['iri.created_at' => SORT_ASC]); // FIFO
+//
+//        $reserves = $query->all();
+//        $allocated = 0;
+//        
+//        foreach ($reserves as $reserve) {
+//
+//            if ($allocated >= $remainingQty) {
+//                break;
+//            }
+//
+//            $qtyToAllocate = min($reserve->available_qty, $remainingQty - $allocated);
+//
+//            if ($qtyToAllocate <= 0) {
+//                continue;
+//            }
+//
+//            // Update reserve
+//            $reserve->dispatched_qty += $qtyToAllocate;
+//            $reserve->available_qty -= $qtyToAllocate;
+//
+//            if (!$reserve->save()) {
+//                throw new \Exception("Failed updating reserve {$reserve->id}");
+//            }
+//
+//            $inventoryDetail = InventoryDetail::findOne($reserve->inventory_detail_id);
+//
+//            if (!$inventoryDetail) {
+//                throw new \Exception("Inventory detail not found");
+//            }
+//
+//            $this->createStockOutbound($inventoryDetail->id, $item->id, $reserve->id, $qtyToAllocate);
+//
+//            $inventoryDetail->stock_reserved += $qtyToAllocate;
+//            $inventoryDetail->stock_available -= $qtyToAllocate;
+//
+//            if (!$inventoryDetail->save()) {
+//                throw new \Exception("Failed updating inventory detail {$inventoryDetail->id}");
+//            }
+//
+//            $allocated += $qtyToAllocate;
+//            $item->qty_stock_available += $qtyToAllocate;
+//        }
+//
+//        return $allocated;
+//    }
+//
+//    private function allocateFromGeneralStock($item, $remainingQty) {
+//        if ($remainingQty <= 0) {
+//            return 0;
+//        }
+//
+//        $inventoryDetails = InventoryDetail::find()
+//                ->where([
+//                    'model_id' => $item->inventory_model_id,
+//                    'brand_id' => $item->inventory_brand_id,
+//                    'active_sts' => 2
+//                ])
+//                ->andWhere(['>', 'stock_available', 0])
+//                ->orderBy([
+//                    'stock_available' => SORT_DESC,
+//                    'created_at' => SORT_ASC
+//                ])
+//                ->all();
+//
+//        $allocated = 0;
+//
+//        foreach ($inventoryDetails as $inventoryDetail) {
+//            if ($allocated >= $remainingQty) {
+//                break;
+//            }
+//
+//            $qtyToAllocate = min($inventoryDetail->stock_available, $remainingQty - $allocated);
+//
+//            if ($qtyToAllocate <= 0) {
+//                continue;
+//            }
+//
+//            $this->createStockOutbound($inventoryDetail->id, $item->id, null, $qtyToAllocate);
+//
+//            $inventoryDetail->stock_reserved += $qtyToAllocate;
+//            $inventoryDetail->stock_available -= $qtyToAllocate;
+//
+//            if ($inventoryDetail->stock_available < 0) {
+//                throw new \Exception("Stock negative for inventory {$inventoryDetail->id}");
+//            }
+//
+//            if (!$inventoryDetail->save()) {
+//                throw new \Exception("Failed updating inventory detail {$inventoryDetail->id}");
+//            }
+//
+//            $allocated += $qtyToAllocate;
+//            $item->qty_stock_available += $qtyToAllocate;
+//        }
+//
+//        return $allocated;
+//    }
+//
+//    private function createStockOutbound($inventoryDetailId, $stockOutboundDetailId, $reserveItemId, $qty) {
+//        $record = new InventoryStockoutbound();
+//        $record->inventory_detail_id = $inventoryDetailId;
+//        $record->reference_type = "bomstockoutbound";
+//        $record->reference_id = $stockOutboundDetailId;
+//        $record->reserve_item_id = $reserveItemId;
+//        $record->qty = $qty;
+//
+//        if (!$record->save()) {
+//            throw new \Exception("Failed to save InventoryStockoutbound");
+//        }
+//    }
+//
+//    /**
+//     * Create reorder request for insufficient stock
+//     * Returns true on success, false on failure (will trigger rollback)
+//     */
+//    private function createOrderRequest(StockOutboundDetails $item, $balanceQty) {
+//        try {
+//            $orderRequest = new InventoryOrderRequest();
+//            $orderRequest->inventory_model_id = $item->inventory_model_id;
+//            $orderRequest->inventory_brand_id = $item->inventory_brand_id;
+//            $orderRequest->reference_type = 'bomstockoutbound';
+//            $orderRequest->reference_id = $item->id;
+//            $orderRequest->required_qty = $balanceQty;
+//
+//            if (!$orderRequest->save()) {
+//                throw new \Exception("Failed to save order request: " . json_encode($orderRequest->errors));
+//            }
+//
+//            return true;
+//        } catch (\Exception $e) {
+//            Yii::error("createOrderRequest failed: " . $e->getMessage());
+//            throw $e; // Re-throw to trigger rollback
+//        }
+//    }
 
     public function actionViewBom($productionPanelId, $justCreated = false) {
         $bomMaster = BomMaster::find()->where(['production_panel_id' => $productionPanelId])->one();
@@ -765,38 +954,174 @@ class StockoutboundController extends Controller {
         ]);
     }
 
-    public function actionUpdateItemDetail($productionPanelId, $stockDetailId) {
-        $item = StockOutboundDetails::findOne($stockDetailId);
-        $bomDetail = $item->bomDetail;
-
-        if (Yii::$app->request->post()) {
-            $postData = Yii::$app->request->post();
-            if (isset($postData['StockOutboundDetails'])) {
-                $stockDetails = $postData['StockOutboundDetails'];
-                $item->model_type = $stockDetails['model_type'];
-                $item->brand = $stockDetails['brand'];
-                $item->descriptions = $stockDetails['descriptions'];
-                $item->qty = $stockDetails['qty'];
-
-                if ($item->save()) {
-                    FlashHandler::success("Success! The detail has been updated successfully.");
-                } else {
-                    FlashHandler::err("Error! Failed to update the detail. " . json_encode($item->getErrors()));
-                }
-            }
-
-            return $this->redirect(['view-material-detail', 'productionPanelId' => $productionPanelId]);
-        }
-
-        $inventoryModel = new InventoryModel();
-        $data = $inventoryModel->prepareFormData($item);
-
-        return $this->renderAjax('_updateItemDetail', $data);
-        
+//    public function actionUpdateItemDetail($productionPanelId, $stockDetailId) {
+//        $item = StockOutboundDetails::findOne($stockDetailId);
+//        $bomDetail = $item->bomDetail;
+//        if ($Yii::$app->request->post()) {
+//            if (isset($postData['StockOutboundDetails'])) {
+//                $stockDetails = $postData['StockOutboundDetails'];
+//                $item->model_type = $stockDetails['model_type'];
+//                $item->brand = $stockDetails['brand'];
+//                $item->descriptions = $stockDetails['descriptions'];
+//                $item->qty = $stockDetails['qty'];
+//
+//                if ($item->save()) {
+//                    FlashHandler::success("Success! The detail has been updated successfully.");
+//                } else {
+//                    FlashHandler::err("Error! Failed to update the detail. " . json_encode($item->getErrors()));
+//                }
+//            }
+//
+//            return $this->redirect(['view-material-detail', 'productionPanelId' => $productionPanelId]);
+//        }
+//
 //        return $this->renderAjax('_updateItemDetail', [
 //                    'item' => $item,
 //                    'bomDetail' => $data
 //        ]);
+//    }
+
+    public function actionUpdateItemDetail(int $productionPanelId, int $stockDetailId) {
+        if ($productionPanelId <= 0 || $stockDetailId <= 0) {
+            throw new \yii\web\BadRequestHttpException('Invalid parameters.');
+        }
+
+        $item = StockOutboundDetails::findOne($stockDetailId);
+        if ($item === null) {
+            throw new \yii\web\NotFoundHttpException('Item not found.');
+        }
+
+        $actualPanelId = $item->bomDetail->bomMaster->productionPanel->id ?? null;
+        if ($actualPanelId !== $productionPanelId) {
+            throw new \yii\web\ForbiddenHttpException('Access denied.');
+        }
+
+        $oldQty = $item->qty;
+        $oldModelId = $item->inventory_model_id;
+        $oldBrandId = $item->inventory_brand_id;
+        $dispatchedQty = $item->dispatched_qty + $item->unacknowledged_qty;
+        $availableQty = $item->qty_stock_available;
+        $userId = $item->bomDetail->bomMaster->productionPanel->projProdMaster->created_by ?? null;
+
+        if ($userId === null) {
+            throw new \yii\web\ServerErrorHttpException('Could not resolve project coordinator for this item.');
+        }
+
+        if (!$item->load(Yii::$app->request->post())) {
+            return $this->renderAjax('_updateItemDetail', (new InventoryModel())->prepareFormData($item));
+        }
+
+        if (!$item->validate()) {
+            Yii::$app->session->setFlash('error', 'Please fix the errors below.');
+            return $this->renderAjax('_updateItemDetail', (new InventoryModel())->prepareFormData($item));
+        }
+
+        $post = Yii::$app->request->post('StockOutboundDetails', []);
+        $newQty = filter_var($post['qty'] ?? 0, FILTER_VALIDATE_INT);
+        $hasModelTypeInput = isset($post['model_type_input']) && $post['model_type_input'] !== null;
+
+        if ($newQty === false || $newQty < 0) {
+            Yii::$app->session->setFlash('error', 'Invalid quantity provided.');
+            return $this->renderAjax('_updateItemDetail', (new InventoryModel())->prepareFormData($item));
+        }
+
+        if ($hasModelTypeInput) {
+
+            // Compute how many additional units are needed
+            if ($oldModelId === null && $oldBrandId === null) {
+                $newRequiredQty = $newQty - $dispatchedQty;
+            } elseif ($oldModelId !== null && $oldBrandId !== null) {
+                $newRequiredQty = $newQty - $oldQty + ($oldQty - $dispatchedQty) - $availableQty;
+            } else {
+                // Mixed null/non-null state — reject rather than silently corrupt stock
+                Yii::$app->session->setFlash('error', 'Inconsistent inventory model/brand state.');
+                return $this->renderAjax('_updateItemDetail', (new InventoryModel())->prepareFormData($item));
+            }
+
+            if ($newRequiredQty > 0) {
+                if (!$item->inventory_model_id || !$item->inventory_brand_id) {
+                    Yii::$app->session->setFlash('error', 'No inventory model/brand specified.');
+                    return $this->renderAjax('_updateItemDetail', (new InventoryModel())->prepareFormData($item));
+                }
+
+                // Wrap all mutations in a transaction — partial failures roll back cleanly
+                $transaction = Yii::$app->db->beginTransaction();
+                try {
+                    InventoryOrderRequest::processInventoryItem($item, $newRequiredQty, $userId, 'bom_detail', $item->id);
+                    $item->updateAllQtyInStockDetail($item);
+                    $item->updateStockMasterStatus($productionPanelId);
+                    $transaction->commit();
+                } catch (\Exception $e) {
+                    $transaction->rollBack();
+                    Yii::error("actionUpdateItemDetail failed for item {$item->id}: " . $e->getMessage());
+                    FlashHandler::err("An error occurred while updating the item. " . $e->getMessage());
+                }
+
+                return $this->redirect(['view-material-detail', 'productionPanelId' => $productionPanelId]);
+            }
+        }
+
+        try {
+            if ($item->save()) {
+                $item->updateAllQtyInStockDetail($item);
+                $item->updateStockMasterStatus($productionPanelId);
+                FlashHandler::success('The detail has been updated successfully.');
+            } else {
+                FlashHandler::err("Error! Failed to update the detail. " . json_encode($item->getErrors()));
+            }
+        } catch (\Exception $e) {
+            Yii::error("updateAllQtyInStockDetail failed for item {$item->id}: " . $e->getMessage());
+            FlashHandler::err("An error occurred while updating the item. " . $e->getMessage());
+        }
+
+        return $this->redirect(['view-material-detail', 'productionPanelId' => $productionPanelId]);
+    }
+
+    public function actionViewInventoryStockoutboundDetail($id, $productionPanelId, $type) {
+        $stockDetail = StockOutboundDetails::findOne($id);
+        $inventoryStockoutbound = InventoryStockoutbound::find()
+                ->where(['reference_id' => $stockDetail->id])
+                ->andWhere(['reference_type' => $type])
+                ->all();
+
+        if (Yii::$app->request->post()) {
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                $postData = Yii::$app->request->post("InventoryStockoutbound");
+
+                foreach ($postData as $data) {
+                    $intStockoutbound = InventoryStockoutbound::findOne($data['id']);
+                    $newQty = $intStockoutbound->qty - $data['return_reserved_qty'];
+                    $intStockoutbound->qty = $newQty;
+
+                    if (!$intStockoutbound->save()) {
+                        throw new \Exception('Failed to save InventoryStockoutbound.');
+                    }
+
+                    $inventorydetail = InventoryDetail::findOne($data['inventory_detail_id']);
+                    $inventorydetail->stock_reserved -= $data['return_reserved_qty'];
+                    $inventorydetail->stock_available += $data['return_reserved_qty'];
+                    if (!$inventorydetail->save()) {
+                        throw new \Exception('Failed to update InventoryDetail.');
+                    }
+                }
+
+                $stockDetail->updateAllQtyInStockDetail($stockDetail);
+                $stockDetail->updateStockMasterStatus($productionPanelId);
+                $transaction->commit();
+                FlashHandler::success("Reserved quantities have been updated successfully");
+            } catch (\Throwable $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+            return $this->redirect(['view-material-detail', 'productionPanelId' => $productionPanelId]);
+        }
+
+        return $this->renderAjax('_formInventoryStockoutbound', [
+                    'stockDetail' => $stockDetail,
+                    'inventoryStockoutbound' => $inventoryStockoutbound,
+        ]);
     }
 
     public function actionDeactivateItem($id) {
@@ -818,14 +1143,14 @@ class StockoutboundController extends Controller {
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $dispatchId);
         $bomMaster = BomMaster::findOne(['production_panel_id' => $productionPanelId]);
         $model = StockDispatchMaster::findOne($dispatchId);
-        $acknowledged = StockDispatchMaster::findOne(['id' => $dispatchId, 'status' => 1]);
+//        $acknowledged = StockDispatchMaster::findOne(['id' => $dispatchId, 'status' => 1]);
 
         return $this->render('dispatchItemList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
                     'bomMaster' => $bomMaster,
                     'model' => $model,
-                    'acknowledged' => $acknowledged,
+//                    'acknowledged' => $acknowledged,
                     'action' => $action
         ]);
     }
@@ -892,13 +1217,15 @@ class StockoutboundController extends Controller {
         if (Yii::$app->request->post()) {
             $stockDetail = new StockOutboundDetails();
             if ($stockDetail->processStockDispatch($bomMaster, $productionPanelId, $postData, StockDispatchTrial::DISPATCH_STATUS)) {
-                $stockMasters = StockOutboundMaster::find()->where(['production_panel_id' => $productionPanelId])->all();
-                foreach ($stockMasters as $stockMaster) {
-                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
-                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
-                    $stockMaster->save();
-                }
+//                $stockMasters = StockOutboundMaster::find()->where(['production_panel_id' => $productionPanelId])->all();
+//                foreach ($stockMasters as $stockMaster) {
+//                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
+//                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
+//                    $stockMaster->save();
+//                }
 
+                $stockDetail->updateStockMasterStatus($productionPanelId);
+                FlashHandler::success("Success!");
                 Yii::$app->session->remove('postData');
                 return $this->redirect(['view-panels', 'id' => $bomMaster->productionPanel->projProdMaster->id]);
             }
@@ -930,18 +1257,20 @@ class StockoutboundController extends Controller {
     public function actionAdjustDispatchQuantity($dispatchId, $detailId) {
         $dispatchMaster = VStockDispatchMaster::findOne(['dispatch_id' => $dispatchId, 'stock_outbound_details_id' => $detailId]);
         $stockOutboundDetail = StockOutboundDetails::findOne($detailId);
-        $stockMasters = StockOutboundMaster::findAll(['production_panel_id' => $dispatchMaster->production_panel_id]);
+//        $stockMasters = StockOutboundMaster::findAll(['production_panel_id' => $dispatchMaster->production_panel_id]);
 
         if (Yii::$app->request->post()) {
             $postData = Yii::$app->request->post("dispatch");
             if ($stockOutboundDetail->processStockAdjustment($postData, $dispatchMaster, StockDispatchTrial::ADJUST_STATUS)) {
-                foreach ($stockMasters as $stockMaster) {
-                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
-                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
-                    if ($stockMaster->save()) {
-                        FlashHandler::success("Success! The quantity has been updated successfully.");
-                    }
-                }
+//                foreach ($stockMasters as $stockMaster) {
+//                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
+//                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
+//                    if ($stockMaster->save()) {
+//                        FlashHandler::success("Success! The quantity has been updated successfully.");
+//                    }
+//                }
+                $stockOutboundDetail->updateStockMasterStatus($dispatchMaster->production_panel_id);
+                FlashHandler::success("Success! The quantity has been updated successfully.");
             }
 
             return $this->redirect(['dispatch-item-list', 'productionPanelId' => $dispatchMaster->production_panel_id, 'dispatchId' => $dispatchId, 'action' => 'adjust']);
@@ -970,18 +1299,21 @@ class StockoutboundController extends Controller {
     public function actionReturnDispatchedQuantity($dispatchId, $detailId) {
         $dispatchMaster = VStockDispatchMaster::findOne(['dispatch_id' => $dispatchId, 'stock_outbound_details_id' => $detailId]);
         $stockOutboundDetail = StockOutboundDetails::findOne($detailId);
-        $stockMasters = StockOutboundMaster::findAll(['production_panel_id' => $dispatchMaster->production_panel_id]);
+//        $stockMasters = StockOutboundMaster::findAll(['production_panel_id' => $dispatchMaster->production_panel_id]);
 
         if (Yii::$app->request->post()) {
             $postData = Yii::$app->request->post("dispatch");
             if ($stockOutboundDetail->processStockReturn($postData, $dispatchMaster, StockDispatchTrial::RETURN_STATUS)) {
-                foreach ($stockMasters as $stockMaster) {
-                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
-                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
-                    if ($stockMaster->save()) {
-                        FlashHandler::success("Success! The return dispatched quantity has been saved successfully.");
-                    }
-                }
+//                foreach ($stockMasters as $stockMaster) {
+//                    $hasPendingDispatch = StockOutboundDetails::find()->where(['stock_outbound_master_id' => $stockMaster->id, 'fully_dispatch_status' => 0])->exists();
+//                    $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
+//                    if ($stockMaster->save()) {
+//                        FlashHandler::success("Success! The return dispatched quantity has been saved successfully.");
+//                    }
+//                }
+
+                $stockOutboundDetail->updateStockMasterStatus($dispatchMaster->production_panel_id);
+                FlashHandler::success("Success! The return dispatched quantity has been saved successfully.");
             }
 
             return $this->redirect(['dispatch-item-list', 'productionPanelId' => $dispatchMaster->production_panel_id, 'dispatchId' => $dispatchId, 'action' => 'return']);

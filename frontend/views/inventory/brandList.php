@@ -8,24 +8,45 @@ use common\models\myTools\MyFormatter;
 /* @var $searchModel frontend\models\inventory\InventorySupplierSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+}
+
 $this->title = 'Inventory Control';
 $this->params['breadcrumbs'][] = $this->title;
+$this->params['breadcrumbs'][] = $pageName;
 ?>
-<div class="inventory-supplier-index">
+<div class="inventory-brand-index">
 
-    <?= $this->render('__stockNavBar', ['module' => 'superior', 'pageKey' => '3']) ?>
+    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '3']) ?>
 
     <p>
+        <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'projcoorStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
+            <?=
+            Html::a("Add New Brand", "javascript:void(0)", [
+                'title' => "Add Brand",
+                "value" => yii\helpers\Url::to(['add-new-brand', 'type' => $moduleIndex]),
+                "class" => "modalButtonMedium btn btn-success ml-1",
+                'data-modaltitle' => 'Add Brand',
+            ]);
+            ?>
+            <?= Html::a('Upload Template', ['add-by-template-brand', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+        <?php } ?>
+
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
         <?=
-        Html::a("Add New Brand", "javascript:void(0)", [
-            'title' => "Add Brand",
-            "value" => yii\helpers\Url::to(['add-new-brand']),
-            "class" => "modalButtonMedium btn btn-success ml-1",
-            'data-modaltitle' => 'Add Brand',
-        ]);
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
         ?>
-        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
-        <?= Html::a('Add By Template', ['add-by-template-brand'], ['class' => 'btn btn-success']) ?>
     </p>
 
     <?=
@@ -44,8 +65,17 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'code',
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'col-sm-1'],
-                'value' => function ($model) {
-                    return $model->code;
+                'value' => function ($model) use ($moduleIndex) {
+                    if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'projcoorStock' || $moduleIndex === 'maintenanceHeadStock') {
+                        return Html::a($model->code, "javascript:void(0)", [
+                                    'title' => "View Brand",
+                                    'value' => yii\helpers\Url::to(['view-brand', 'id' => $model->id, 'type' => $moduleIndex]),
+                                    'class' => 'modalButtonMedium',
+                                    'data-modaltitle' => 'View Brand',
+                        ]);
+                    } else {
+                        return $model->code;
+                    }
                 }
             ],
             'name',
@@ -53,15 +83,15 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'active_sts',
                 'contentOptions' => ['class' => 'text-center col-sm-1'],
                 'value' => function ($model) {
-                    return $model->active_sts == 0 ? 'No' : 'Yes';
+                    return $model->active_sts == 2 ? 'Yes' : 'No';
                 },
                 'filter' => Html::activeDropDownList(
                         $searchModel,
                         'active_sts',
                         [
                             '' => 'All',
-                            '0' => 'No',
-                            '1' => 'Yes'
+                            '1' => 'No',
+                            '2' => 'Yes'
                         ],
                         ['class' => 'form-control text-center']
                 )
@@ -81,18 +111,18 @@ $this->params['breadcrumbs'][] = $this->title;
                     return $model->updatedBy ? $model->updatedBy->fullname . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
                 }
             ],
-            [
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center col-sm-1'],
-                'value' => function ($model) {
-                    return Html::a('View <i class="fa fa-eye"></i>', "javascript:void(0)", [
-                        'title' => "View Brand",
-                        'value' => yii\helpers\Url::to(['view-brand', 'id' => $model->id]),
-                        'class' => 'modalButtonMedium btn btn-sm btn-success text-center',
-                        'data-modaltitle' => 'View Brand',
-                    ]);
-                }
-            ],
+//            [
+//                'format' => 'raw',
+//                'contentOptions' => ['class' => 'text-center col-sm-1'],
+//                'value' => function ($model) {
+//                    return Html::a('View <i class="fa fa-eye"></i>', "javascript:void(0)", [
+//                        'title' => "View Brand",
+//                        'value' => yii\helpers\Url::to(['view-brand', 'id' => $model->id]),
+//                        'class' => 'modalButtonMedium btn btn-sm btn-success text-center',
+//                        'data-modaltitle' => 'View Brand',
+//                    ]);
+//                }
+//            ],
 //            ['class' => 'yii\grid\ActionColumn'],
         ],
     ]);

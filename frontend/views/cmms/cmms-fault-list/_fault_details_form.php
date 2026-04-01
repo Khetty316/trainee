@@ -132,15 +132,19 @@ use frontend\models\cmms\CmmsAssetList;
                             ); ?>
                     </td>
                     <td>
-                        <?php if ($moduleIndex === 'superior'): ?>
-                            <?= Html::encode(
-                                CmmsAssetList::getFaultType_by_ID($model->fault_asset_id)[$model->fault_type] ?? '-'
-                            ) ?>
-                            <?= Html::activeHiddenInput(
-                                $model,
-                                "fault_type"
-                            ) ?>
-                        <?php else: ?>
+                        <?php // if ($moduleIndex === 'superior'): ?>
+                            <?php 
+//                            = Html::encode(
+//                                CmmsAssetList::getFaultType_by_ID($model->fault_asset_id)[$model->fault_type] ?? '-'
+//                            ) 
+                                    ?>
+                            <?php
+//                            = Html::activeHiddenInput(
+//                                $model,
+//                                "fault_type"
+//                            ) 
+                                    ?>
+                        <?php // else: ?>
                         <?php if (!$isUpdate): ?>
                             <?=  
                                 $form->field($model, "fault_type")->dropDownList(
@@ -164,7 +168,7 @@ use frontend\models\cmms\CmmsAssetList;
                                 )->label(false);
                             ?>
                         <?php endif; ?>
-                        <?php endif; ?>
+                        <?php // endif; ?>
                     </td>
                     <td>
                         <?php if (!$isUpdate): ?>
@@ -179,15 +183,19 @@ use frontend\models\cmms\CmmsAssetList;
                                 )->label(false);
                             ?>
                         <?php else: ?>
-                            <?php if ($moduleIndex === 'superior'): ?>
-                                <?= Html::encode(
-                                    CmmsAssetList::getPrimaryFault_by_type($model->fault_type)[$model->fault_primary_detail] ?? '-'
-                                ) ?>
-                                <?= Html::activeHiddenInput(
-                                    $model,
-                                    "fault_primary_detail"
-                                ) ?>
-                            <?php else: ?>
+                            <?php // if ($moduleIndex === 'superior'): ?>
+                                <?php
+//                                = Html::encode(
+//                                    CmmsAssetList::getPrimaryFault_by_type($model->fault_type)[$model->fault_primary_detail] ?? '-'
+//                                ) 
+                                        ?>
+                                <?php
+//                                = Html::activeHiddenInput(
+//                                    $model,
+//                                    "fault_primary_detail"
+//                                ) 
+                                        ?>
+                            <?php // else: ?>
                             <?=
                                 $form->field($model, "fault_primary_detail")->dropDownList(
                                     CmmsAssetList::getPrimaryFault_by_type($model->fault_type),
@@ -199,7 +207,7 @@ use frontend\models\cmms\CmmsAssetList;
                                 )->label(false);
                             ?>
                         <?php endif; ?>
-                        <?php endif; ?>
+                        <?php // endif; ?>
                     </td>
                     <td>
                         <?php if (!$isUpdate): ?>
@@ -213,22 +221,26 @@ use frontend\models\cmms\CmmsAssetList;
                                 )->label(false);
                             ?>
                         <?php else: ?>
-                        <?php if ($moduleIndex === 'superior'): ?>
-                                <?= Html::encode(
-                                    CmmsAssetList::getSecondaryFault($model->fault_primary_detail)[$model->fault_secondary_detail] ?? '-'
-                                ) ?>
-                                <?= Html::activeHiddenInput(
-                                    $model,
-                                    "fault_secondary_detail"
-                                ) ?>
-                            <?php else: ?>
+                        <?php // if ($moduleIndex === 'superior'): ?>
+                                <?php 
+//                                = Html::encode(
+//                                    CmmsAssetList::getSecondaryFault($model->fault_primary_detail)[$model->fault_secondary_detail] ?? '-'
+//                                ) 
+                                        ?>
+                                <?php
+//                                = Html::activeHiddenInput(
+//                                    $model,
+//                                    "fault_secondary_detail"
+//                                ) 
+                                        ?>
+                            <?php // else: ?>
                             <?=
                                 $form->field($model, "fault_secondary_detail")->dropDownList(
                                       CmmsAssetList::getSecondaryFault($model->fault_primary_detail)  
                                 )->label(false);
                             ?>
                         <?php endif; ?>
-                        <?php endif; ?>
+                        <?php // endif; ?>
                     </td>
                     <td>
                         <?php 
@@ -241,24 +253,24 @@ use frontend\models\cmms\CmmsAssetList;
                         ?>
                     </td>
                     <td>
-                        <?php if ($moduleIndex === 'superior'): ?>
+                        <?php // if ($moduleIndex === 'superior'): ?>
 
-                        <?php if (!empty($model->machinePhotos)): ?>
+                        <?php // if (!empty($model->machinePhotos)): ?>
 
-                            <div class="d-flex flex-wrap gap-2">
-                                <?php foreach ($model->machinePhotos as $photo): ?>
-                                    <a href="<?= $photo->getUrl() ?>" target="_blank">
-                                        <img src="<?= $photo->getUrl() ?>"
+                            <!--<div class="d-flex flex-wrap gap-2">-->
+                                <?php // foreach ($model->machinePhotos as $photo): ?>
+<!--                                    <a href="<?php // = $photo->getUrl() ?>" target="_blank">
+                                        <img src="<?php //= $photo->getUrl() ?>"
                                              style="width:60px; height:60px; object-fit:cover;"
                                              class="img-thumbnail">
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
+                                    </a>-->
+                                <?php // endforeach; ?>
+                            <!--</div>-->
 
-                        <?php else: ?>
-                            <span class="text-muted">No photos</span>
-                        <?php endif; ?>
-                            <?php else: ?>
+                        <?php // else: ?>
+                            <!--<span class="text-muted">No photos</span>-->
+                        <?php // endif; ?>
+                            <?php // else: ?>
                         <?= 
                             Html::fileInput(
                                     "CmmsMachinePhotos[$key][]",
@@ -297,19 +309,21 @@ use frontend\models\cmms\CmmsAssetList;
                         <div class="delete-photo-inputs" data-key="<?= $key ?>"></div>
                         <!--<div class="delete-photo-inputs"></div>-->
                     </td>
-                    <?php endif; ?>
+                    <?php // endif; ?>
                     <td>
-                        <?php if ($moduleIndex === 'superior'): ?>
-                        <?= Html::encode($model->additional_remarks); ?>
-                        <?= Html::activeHiddenInput(
-                                    $model,
-                                    "additional_remarks"
-                                ) ?>
-                        <?php else: ?>
+                        <?php // if ($moduleIndex === 'superior'): ?>
+                        <?php //= Html::encode($model->additional_remarks); ?>
+                        <?php 
+//                        = Html::activeHiddenInput(
+//                                    $model,
+//                                    "additional_remarks"
+//                                ) 
+                                ?>
+                        <?php // else: ?>
                         <?=
                             $form->field($model, "additional_remarks")->textarea()->label(false);
                         ?>
-                        <?php endif; ?>
+                        <?php // endif; ?>
                     </td>
         </tr>
             </tbody>

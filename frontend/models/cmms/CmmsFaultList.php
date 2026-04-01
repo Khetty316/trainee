@@ -12,7 +12,6 @@ use Yii;
  * @property int|null $reported_by
  * @property int|null $reviewed_by
  * @property string|null $reviewed_at
- * @property int|null $cmms_work_order_id
  * @property int|null $status
  * @property int|null $is_deleted
  * @property string|null $reported_at
@@ -38,18 +37,25 @@ use Yii;
  * @property int|null $part_list_id
  * @property int|null $tool_list_id
  * @property string|null $safety_precautions
+ * @property int|null $cmms_corrective_work_order_id
+ * @property int|null $cmms_preventive_work_order_id
  *
  * @property CmmsCorrectiveWorkOrderMaster[] $cmmsCorrectiveWorkOrderMasters
+ * @property CmmsPreventiveWorkOrderMaster $cmmsPreventiveWorkOrder
  * @property CmmsAssetList $cmmsAssetList
  * @property RefMachinePriority $machinePriority
- * @property CmmsCorrectiveWorkOrderMaster $cmmsWorkOrder
  * @property RefCmmsStatus $status0
  * @property CmmsPartList $partList
  * @property CmmsToolList $toolList
+ * @property CmmsCorrectiveWorkOrderMaster $cmmsCorrectiveWorkOrder
  * @property CmmsMachinePhotos[] $cmmsMachinePhotos
+ * @property CmmsPreventiveMaintenanceDetails[] $cmmsPreventiveMaintenanceDetails
  */
 class CmmsFaultList extends \yii\db\ActiveRecord
 {
+    public $reviewed_by_name;
+    public $part_name;
+    public $tool_name;
     /**
      * {@inheritdoc}
      */
@@ -64,15 +70,17 @@ class CmmsFaultList extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['reported_by', 'reviewed_by', 'cmms_work_order_id', 'status', 'is_deleted', 'asset_id', 'superior_id', 'active_sts', 'machine_priority_id', 'cmms_asset_list_id', 'updated_by', 'frequency', 'part_list_id', 'tool_list_id'], 'integer'],
+            [['reviewed_by_name', 'part_name', 'tool_name'], 'safe'],
+            [['part_qty', 'tool_qty', 'reported_by', 'reviewed_by', 'status', 'is_deleted', 'asset_id', 'superior_id', 'active_sts', 'machine_priority_id', 'cmms_asset_list_id', 'updated_by', 'frequency', 'part_list_id', 'tool_list_id', 'cmms_corrective_work_order_id', 'cmms_preventive_work_order_id'], 'integer'],
             [['reviewed_at', 'reported_at', 'updated_at', 'last_record'], 'safe'],
             [['code', 'follow_up_required', 'maintenance_type', 'additional_remarks', 'fault_area', 'fault_section', 'fault_asset_id', 'fault_type', 'fault_primary_detail', 'fault_secondary_detail', 'remedial_actions', 'safety_precautions'], 'string', 'max' => 255],
+            [['cmms_preventive_work_order_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsPreventiveWorkOrderMaster::className(), 'targetAttribute' => ['cmms_preventive_work_order_id' => 'id']],
             [['cmms_asset_list_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsAssetList::className(), 'targetAttribute' => ['cmms_asset_list_id' => 'id']],
             [['machine_priority_id'], 'exist', 'skipOnError' => true, 'targetClass' => RefMachinePriority::className(), 'targetAttribute' => ['machine_priority_id' => 'id']],
-            [['cmms_work_order_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsCorrectiveWorkOrderMaster::className(), 'targetAttribute' => ['cmms_work_order_id' => 'id']],
             [['status'], 'exist', 'skipOnError' => true, 'targetClass' => RefCmmsStatus::className(), 'targetAttribute' => ['status' => 'id']],
             [['part_list_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsPartList::className(), 'targetAttribute' => ['part_list_id' => 'id']],
             [['tool_list_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsToolList::className(), 'targetAttribute' => ['tool_list_id' => 'id']],
+            [['cmms_corrective_work_order_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsCorrectiveWorkOrderMaster::className(), 'targetAttribute' => ['cmms_corrective_work_order_id' => 'id']],
         ];
     }
 
@@ -87,7 +95,6 @@ class CmmsFaultList extends \yii\db\ActiveRecord
             'reported_by' => 'Reported By',
             'reviewed_by' => 'Reviewed By',
             'reviewed_at' => 'Reviewed At',
-            'cmms_work_order_id' => 'Cmms Work Order ID',
             'status' => 'Status',
             'is_deleted' => 'Is Deleted',
             'reported_at' => 'Reported At',
@@ -113,6 +120,8 @@ class CmmsFaultList extends \yii\db\ActiveRecord
             'part_list_id' => 'Part List ID',
             'tool_list_id' => 'Tool List ID',
             'safety_precautions' => 'Safety Precautions',
+            'cmms_corrective_work_order_id' => 'Cmms Corrective Work Order ID',
+            'cmms_preventive_work_order_id' => 'Cmms Preventive Work Order ID',
         ];
     }
 
@@ -124,6 +133,16 @@ class CmmsFaultList extends \yii\db\ActiveRecord
     public function getCmmsCorrectiveWorkOrderMasters()
     {
         return $this->hasMany(CmmsCorrectiveWorkOrderMaster::className(), ['cmms_fault_list_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[CmmsPreventiveWorkOrder]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCmmsPreventiveWorkOrder()
+    {
+        return $this->hasOne(CmmsPreventiveWorkOrderMaster::className(), ['id' => 'cmms_preventive_work_order_id']);
     }
 
     /**
@@ -144,16 +163,6 @@ class CmmsFaultList extends \yii\db\ActiveRecord
     public function getMachinePriority()
     {
         return $this->hasOne(RefMachinePriority::className(), ['id' => 'machine_priority_id']);
-    }
-
-    /**
-     * Gets query for [[CmmsWorkOrder]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getCmmsWorkOrder()
-    {
-        return $this->hasOne(CmmsCorrectiveWorkOrderMaster::className(), ['id' => 'cmms_work_order_id']);
     }
 
     /**
@@ -187,6 +196,16 @@ class CmmsFaultList extends \yii\db\ActiveRecord
     }
 
     /**
+     * Gets query for [[CmmsCorrectiveWorkOrder]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCmmsCorrectiveWorkOrder()
+    {
+        return $this->hasOne(CmmsCorrectiveWorkOrderMaster::className(), ['id' => 'cmms_corrective_work_order_id']);
+    }
+
+    /**
      * Gets query for [[CmmsMachinePhotos]].
      *
      * @return \yii\db\ActiveQuery
@@ -194,6 +213,16 @@ class CmmsFaultList extends \yii\db\ActiveRecord
     public function getCmmsMachinePhotos()
     {
         return $this->hasMany(CmmsMachinePhotos::className(), ['cmms_fault_list_details_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[CmmsPreventiveMaintenanceDetails]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getCmmsPreventiveMaintenanceDetails()
+    {
+        return $this->hasMany(CmmsPreventiveMaintenanceDetails::className(), ['cmms_fault_list_id' => 'id']);
     }
     
     public static function getFrequency($primary_description, $secondary_description)

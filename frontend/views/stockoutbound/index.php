@@ -12,7 +12,8 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="stock-outbound-master-index">
 
-    <h4><?= Html::encode($this->title) ?></h4>
+    <!--<h4><?php //= Html::encode($this->title)  ?></h4>-->
+    <?= $this->render('__stockoutboundNavBar', ['module' => 'inventory', 'pageKey' => 1]) ?>
 
     <p>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>    

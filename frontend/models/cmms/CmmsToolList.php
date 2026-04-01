@@ -3,16 +3,19 @@
 namespace frontend\models\cmms;
 
 use Yii;
+use frontend\models\inventory\InventoryModel;
 
 /**
  * This is the model class for table "cmms_tool_list".
  *
  * @property int $id
  * @property string|null $description
- * @property int|null $inventory_id
+ * @property int|null $inventory_model_id
+ * @property int|null $qty
+ * @property string|null $name
  *
- * @property CmmsCorrectiveWorkOrderMaster[] $cmmsCorrectiveWorkOrderMasters
- * @property VInventoryModel $inventory
+ * @property CmmsFaultList[] $cmmsFaultLists
+ * @property InventoryModel $inventoryModel
  */
 class CmmsToolList extends \yii\db\ActiveRecord
 {
@@ -30,9 +33,9 @@ class CmmsToolList extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['inventory_id'], 'integer'],
-            [['description'], 'string', 'max' => 255],
-            [['inventory_id'], 'exist', 'skipOnError' => true, 'targetClass' => VInventoryModel::className(), 'targetAttribute' => ['inventory_id' => 'id']],
+            [['inventory_model_id', 'qty'], 'integer'],
+            [['description', 'name'], 'string', 'max' => 255],
+            [['inventory_model_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryModel::className(), 'targetAttribute' => ['inventory_model_id' => 'id']],
         ];
     }
 
@@ -44,27 +47,29 @@ class CmmsToolList extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'description' => 'Description',
-            'inventory_id' => 'Inventory ID',
+            'inventory_model_id' => 'Inventory Model ID',
+            'qty' => 'Qty',
+            'name' => 'Name',
         ];
     }
 
     /**
-     * Gets query for [[CmmsCorrectiveWorkOrderMasters]].
+     * Gets query for [[CmmsFaultLists]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getCmmsCorrectiveWorkOrderMasters()
+    public function getCmmsFaultLists()
     {
-        return $this->hasMany(CmmsCorrectiveWorkOrderMaster::className(), ['tool_id' => 'id']);
+        return $this->hasMany(CmmsFaultList::className(), ['tool_list_id' => 'id']);
     }
 
     /**
-     * Gets query for [[Inventory]].
+     * Gets query for [[InventoryModel]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getInventory()
+    public function getInventoryModel()
     {
-        return $this->hasOne(VInventoryModel::className(), ['id' => 'inventory_id']);
+        return $this->hasOne(InventoryModel::className(), ['id' => 'inventory_model_id']);
     }
 }

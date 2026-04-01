@@ -25,9 +25,9 @@ $this->params['breadcrumbs'][] = 'Update';
         'worklists' => $worklists,
         'hasSuperiorUpdate' => $hasSuperiorUpdate,
         'departmentList' => $departmentList,
-        'supplierList' => $supplierList,
-        'brandList' => $brandList,
-        'modelList' => $modelList
+//        'supplierList' => $supplierList,
+//        'brandList' => $brandList,
+//        'modelList' => $modelList
     ]) ?>
 
 </div>

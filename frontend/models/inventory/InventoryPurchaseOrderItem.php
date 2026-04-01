@@ -38,6 +38,7 @@ use yii\db\Expression;
  * @property string|null $deleted_at
  *
  * @property InventoryOrderRequest[] $inventoryOrderRequests
+ * @property InventoryOrderRequestAllocation[] $inventoryOrderRequestAllocations
  * @property InventoryPurchaseOrder $inventoryPo
  * @property User $deletedBy
  * @property User $createdBy
@@ -121,6 +122,15 @@ class InventoryPurchaseOrderItem extends \yii\db\ActiveRecord {
      */
     public function getInventoryOrderRequests() {
         return $this->hasMany(InventoryOrderRequest::className(), ['inventory_po_item_id' => 'id']);
+    }
+
+    /**
+     * Gets query for [[InventoryOrderRequestAllocations]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getInventoryOrderRequestAllocations() {
+        return $this->hasMany(InventoryOrderRequestAllocation::className(), ['inventory_po_item_id' => 'id']);
     }
 
     /**
@@ -227,6 +237,7 @@ class InventoryPurchaseOrderItem extends \yii\db\ActiveRecord {
 
     public function updateInventoryQtyPendingReceipt() {
         $detail = InventoryDetail::findOne($this->inventory_detail_id);
+        \common\models\myTools\Mydebug::dumpFileW($detail);
 
         if (!$detail) {
             throw new \Exception("Inventory detail ID {$this->inventory_detail_id} not found.");
@@ -244,6 +255,41 @@ class InventoryPurchaseOrderItem extends \yii\db\ActiveRecord {
 
         if (!$detail->save(false)) {
             throw new \Exception('Failed to update qty pending receipt: ' . json_encode($detail->errors));
+        }
+    }
+
+    public function updateOrderRequestAllocation($data) {
+        foreach ($data ?? [] as $itemData) {
+            $orderAllocation = InventoryOrderRequestAllocation::findOne($itemData['id']);
+            if ($orderAllocation === null) {
+                throw new \Exception("Order request allocation ID {$itemData['id']} not found.");
+            }
+
+            if ($itemData['removed'] == 1) {
+                if (!$orderAllocation->delete()) {
+                    throw new \Exception("Failed to delete order request allocation ID {$itemData['id']}.");
+                }
+            } else {
+                $orderAllocation->order_qty = $itemData['order_qty'];
+                if (!$orderAllocation->save(false)) {
+                    throw new \Exception("Failed to save order request allocation ID {$itemData['id']}.");
+                }
+            }
+
+            $request = InventoryOrderRequest::findOne($orderAllocation->inventory_order_request_id);
+            if ($request === null) {
+                throw new \Exception("Order request ID {$orderAllocation->inventory_order_request_id} not found.");
+            }
+
+            $request->order_qty = (int) (InventoryOrderRequestAllocation::find()
+                            ->where(['inventory_order_request_id' => $request->id])
+                            ->sum('order_qty') ?? 0);
+
+           $request->status = ($request->required_qty > $request->order_qty) ? 0 : 1;
+
+            if (!$request->save(false)) {
+                throw new \Exception("Failed to save order request ID {$request->id}.");
+            }
         }
     }
 }

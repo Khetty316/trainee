@@ -85,7 +85,7 @@ class LeavemgmtController extends Controller {
                         'roles' => [AuthItem::ROLE_HR_Senior],
                     ],
                     [
-                        'actions' => ['hr-all-leave'],
+                        'actions' => ['hr-all-leave', 'hr-leave-summary', 'hr-final-leave-summary'],
                         'allow' => true,
                         'roles' => [AuthItem::ROLE_FinanceExecutive],
                     ],
@@ -524,9 +524,9 @@ class LeavemgmtController extends Controller {
                     ]
                 ])
                 ->andWhere([
-            'or',
-            ['<=', 'YEAR(date_of_join)', $selectYear],
-            ['YEAR(date_of_join)' => null]
+                    'or',
+                    ['<=', 'YEAR(date_of_join)', $selectYear],
+                    ['YEAR(date_of_join)' => null]
         ]);
 
         $data = (new \yii\db\Query())
@@ -859,7 +859,7 @@ class LeavemgmtController extends Controller {
                 return ArrayHelper::merge(
                                 ActiveForm::validateMultiple($entitleDetails),
                                 ActiveForm::validate($leaveEntitle)
-                );
+                        );
             }
 
             $transaction = Yii::$app->db->beginTransaction();
@@ -1046,7 +1046,7 @@ class LeavemgmtController extends Controller {
 
             if (floatval($daysDeduct) > (intval($daysDeduct) + 0.5)) {
                 $deductedDays = intval($daysDeduct) + 1;
-            } else if ($daysDeduct < (intval($daysDeduct) + 0.5 )) {
+            } else if ($daysDeduct < (intval($daysDeduct) + 0.5)) {
                 $deductedDays = intval($daysDeduct) + 0.5;
             } else {
                 return 0;
@@ -1390,6 +1390,16 @@ class LeavemgmtController extends Controller {
 //        ]);
 //    }
 
+    public function actionDirectorCompulsoryLeave() {
+        $searchModel = new \frontend\models\office\leave\LeaveCompulsoryMasterSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render($this::mainViewPath . 'directorCompulsoryLeave', [
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+        ]);
+    }
+
     public function actionHrCompulsoryLeave() {
         $searchModel = new \frontend\models\office\leave\LeaveCompulsoryMasterSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
@@ -1404,27 +1414,28 @@ class LeavemgmtController extends Controller {
         $cMaster = LeaveCompulsoryMaster::findOne($id);
         $cDetails = $cMaster->leaveCompulsoryDetails;
 
-        $usersByType = [
-            RefUserDesignation::TYPE_Executive => [],
-            RefUserDesignation::TYPE_Office => [],
-            RefUserDesignation::TYPE_Production => [],
-        ];
-
-        foreach ($cDetails as $cDetail) {
-            $designationType = $cDetail->user->designation0->staff_type;
-            $usersByType[$designationType][] = $cDetail->user;
-        }
-
-        $exec = $usersByType[RefUserDesignation::TYPE_Executive];
-        $office = $usersByType[RefUserDesignation::TYPE_Office];
-        $prod = $usersByType[RefUserDesignation::TYPE_Production];
+//        $usersByType = [
+//            RefUserDesignation::TYPE_Executive => [],
+//            RefUserDesignation::TYPE_Office => [],
+//            RefUserDesignation::TYPE_Production => [],
+//        ];
+//
+//        foreach ($cDetails as $cDetail) {
+//            $designationType = $cDetail->user->designation0->staff_type;
+//            $usersByType[$designationType][] = $cDetail->user;
+//        }
+//
+//        $exec = $usersByType[RefUserDesignation::TYPE_Executive];
+//        $office = $usersByType[RefUserDesignation::TYPE_Office];
+//        $prod = $usersByType[RefUserDesignation::TYPE_Production];
 
         return $this->render($this::mainViewPath . '_viewCompulsoryLeave', [
                     'model' => $cMaster,
                     'cDetails' => $cDetails,
-                    'execs' => $exec,
-                    'offices' => $office,
-                    'prods' => $prod]);
+//                    'execs' => $exec,
+//                    'offices' => $office,
+//                    'prods' => $prod
+        ]);
     }
 
     public function actionApplyCompulsoryLeave() {
@@ -1437,6 +1448,7 @@ class LeavemgmtController extends Controller {
             $clm->requestor = Yii::$app->user->id;
             $clm->status = LeaveMaster::STATUS_GetDirectorApproval;
             $clm->days = \common\models\myTools\MyCommonFunction::countDays($clm->start_date, $clm->end_date) + 1;
+            \common\models\myTools\Mydebug::dumpFileW(Yii::$app->request->post());
 
             $transaction = Yii::$app->db->beginTransaction();
             try {
@@ -1474,9 +1486,10 @@ class LeavemgmtController extends Controller {
         return $this->render($this::mainViewPath . '_formCompulsoryLeave', [
                     'model' => $clm,
                     'cDetails' => LeaveCompulsoryDetail::findAll(['compulsory_master_id' => $clm->id]),
-                    'execs' => User::getStaffTypeList(RefUserDesignation::TYPE_Executive),
-                    'offices' => User::getStaffTypeList(RefUserDesignation::TYPE_Office),
-                    'prods' => User::getStaffTypeList(RefUserDesignation::TYPE_Production)
+                    'staffList' => User::getActiveStaffList()
+//                    'execs' => User::getStaffTypeList(RefUserDesignation::TYPE_Executive),
+//                    'offices' => User::getStaffTypeList(RefUserDesignation::TYPE_Office),
+//                    'prods' => User::getStaffTypeList(RefUserDesignation::TYPE_Production)
         ]);
     }
 
@@ -1526,9 +1539,10 @@ class LeavemgmtController extends Controller {
         return $this->render($this::mainViewPath . '_formCompulsoryLeave', [
                     'model' => $cMaster,
                     'cDetails' => $cDetails,
-                    'execs' => User::getStaffTypeList(RefUserDesignation::TYPE_Executive),
-                    'offices' => User::getStaffTypeList(RefUserDesignation::TYPE_Office),
-                    'prods' => User::getStaffTypeList(RefUserDesignation::TYPE_Production),
+                    'staffList' => User::getActiveStaffList()
+//                    'execs' => User::getStaffTypeList(RefUserDesignation::TYPE_Executive),
+//                    'offices' => User::getStaffTypeList(RefUserDesignation::TYPE_Office),
+//                    'prods' => User::getStaffTypeList(RefUserDesignation::TYPE_Production),
         ]);
     }
 
@@ -1536,57 +1550,69 @@ class LeavemgmtController extends Controller {
         $cMaster = LeaveCompulsoryMaster::findOne($id);
         $cDetails = $cMaster->leaveCompulsoryDetails;
 
-        $usersByType = [
-            RefUserDesignation::TYPE_Executive => [],
-            RefUserDesignation::TYPE_Office => [],
-            RefUserDesignation::TYPE_Production => [],
-        ];
-
-        foreach ($cDetails as $cDetail) {
-            $designationType = $cDetail->user->designation0->staff_type;
-            $usersByType[$designationType][] = $cDetail->user;
-        }
-
-        $exec = $usersByType[RefUserDesignation::TYPE_Executive];
-        $office = $usersByType[RefUserDesignation::TYPE_Office];
-        $prod = $usersByType[RefUserDesignation::TYPE_Production];
+//        $usersByType = [
+//            RefUserDesignation::TYPE_Executive => [],
+//            RefUserDesignation::TYPE_Office => [],
+//            RefUserDesignation::TYPE_Production => [],
+//        ];
+//        foreach ($cDetails as $cDetail) {
+//            $designationType = $cDetail->user->designation0->staff_type;
+//            $usersByType[$designationType][] = $cDetail->user;
+//        }
+//        $exec = $usersByType[RefUserDesignation::TYPE_Executive];
+//        $office = $usersByType[RefUserDesignation::TYPE_Office];
+//        $prod = $usersByType[RefUserDesignation::TYPE_Production];
 
         if ($cMaster->load(Yii::$app->request->post())) {
-            if ($this->processCompulsoryLeave($id)) {
-                $cMaster->approval_by = Yii::$app->user->id;
-                $cMaster->update(false);
-                if ($cMaster->status == LeaveMaster::STATUS_Approved) {
-                    FlashHandler::success('Compulsory Leave Approved');
-                } else if ($cMaster->status == LeaveMaster::STATUS_Rejected) {
-                    FlashHandler::success('Compulsory Leave Rejected');
-                }
-            } else {
-                FlashHandler::err('Compulsory Leave Not Approved');
-            }
-            return $this->redirect(['hr-compulsory-leave']);
-        }
+            $processErrors = [];
+            $cMaster->approval_by = Yii::$app->user->id;
+            $cMaster->approved_at = new \yii\db\Expression('NOW()');
 
+            if ($cMaster->status == LeaveMaster::STATUS_Approved) {
+                if ($this->processCompulsoryLeave($id, $processErrors)) {
+                    if (!$cMaster->update(false)) {
+                        \common\models\myTools\Mydebug::dumpFileW($cMaster->getErrors());
+                    }
+
+                    FlashHandler::success('Compulsory Leave Approved');
+                } else {
+                    $errorMsg = !empty($processErrors) ? json_encode($processErrors) : 'Unknown error';
+                    FlashHandler::err('Compulsory Leave Not Approved: ' . $errorMsg);
+                    return $this->redirect(['hr-compulsory-leave']);
+                }
+            } else if ($cMaster->status == LeaveMaster::STATUS_Rejected) {
+                $cMaster->update(false);
+                FlashHandler::success('Compulsory Leave Rejected');
+            }
+
+            return $this->redirect(['director-compulsory-leave']);
+        }
         return $this->render($this::mainViewPath . '_formApprovalCompulsoryLeave', [
                     'model' => $cMaster,
                     'cDetails' => $cDetails,
-                    'execs' => $exec,
-                    'offices' => $office,
-                    'prods' => $prod
+//                    'execs' => $exec,
+//                    'offices' => $office,
+//                    'prods' => $prod
         ]);
     }
 
-    public function processCompulsoryLeave($id) {
+    public function processCompulsoryLeave($id, &$errors = []) {
         $cMaster = LeaveCompulsoryMaster::findOne($id);
 
         if (!$cMaster) {
+            $errors[] = 'Compulsory Leave Master not found.';
+            \common\models\myTools\Mydebug::dumpFileW($cMaster);
             return false;
         }
 
-        $year = date('Y', strtotime($cMaster->start_date));
+//        $year = date('Y', strtotime($cMaster->start_date));
+        $startDate = new \DateTime($cMaster->start_date);
+        $year = $startDate->format('Y');
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
             foreach ($cMaster->leaveCompulsoryDetails as $cDetail) {
+
                 $leave = new LeaveMaster([
                     'requestor_id' => $cDetail->user_id,
                     'start_date' => $cMaster->start_date,
@@ -1598,9 +1624,16 @@ class LeavemgmtController extends Controller {
                     'emergency_leave' => 0,
                     'total_days' => $cMaster->days,
                     'leave_status' => LeaveMaster::STATUS_Approved,
-                    'compulsory_leave' => $cDetail->id,
+                    'compulsory_leave' => $cDetail->id
                 ]);
+
                 $leaveStatus = LeaveStatus::getPersonalLeaveStatus($cDetail->user_id, $year);
+
+                if (!$leaveStatus) {
+                    $errors[] = "Leave status not found for user {$cDetail->user_id}";
+                    $transaction->rollBack();
+                    return false;
+                }
 
                 if ($leaveStatus->annual_balanceCurrentCanApply > 0) {
                     $leave->leave_type_code = RefLeaveType::codeAnnual;
@@ -1608,8 +1641,12 @@ class LeavemgmtController extends Controller {
                     $leave->leave_type_code = RefLeaveType::codeUnpaid;
                 }
 
+                $leave->leave_code = $leave->generateLeaveCode($leave->leave_type_code);
+
                 if (!$leave->save(false)) {
+                    \common\models\myTools\Mydebug::dumpFileW($leave->getErrors());
                     $transaction->rollBack();
+                    $errors = $leave->getErrors();  // capture errors
                     return false;
                 }
 
@@ -1631,7 +1668,9 @@ class LeavemgmtController extends Controller {
                 $leaveDetail->days_unpaid = ($leave->leave_type_code == RefLeaveType::codeAnnual) ? 0 : $cMaster->days;
 
                 if (!$leaveDetail->save()) {
+                    \common\models\myTools\Mydebug::dumpFileW($leaveDetail->getErrors());
                     $transaction->rollBack();
+                    $errors = $leaveDetail->getErrors();  // capture errors
                     return false;
                 }
             }
@@ -1640,6 +1679,7 @@ class LeavemgmtController extends Controller {
             return true;
         } catch (Exception $e) {
             $transaction->rollBack();
+            $errors[] = $e->getMessage();
             return false;
         }
     }

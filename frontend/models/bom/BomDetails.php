@@ -65,7 +65,7 @@ class BomDetails extends \yii\db\ActiveRecord {
 //        ];
 //    }
 
-public function rules() {
+    public function rules() {
         return [
             [['bom_master', 'qty'], 'required'],
             [['bom_master', 'inventory_model_id', 'inventory_brand_id', 'active_status', 'created_by', 'is_finalized', 'inventory_sts'], 'integer'],
@@ -73,33 +73,27 @@ public function rules() {
             [['created_at'], 'safe'],
             [['model_type', 'brand', 'description', 'remark'], 'string', 'max' => 1000],
             [['model_type_input', 'brand_input'], 'integer'],
-            
             // Foreign key constraints
             [['bom_master'], 'exist', 'skipOnError' => true, 'targetClass' => BomMaster::className(), 'targetAttribute' => ['bom_master' => 'id']],
             [['inventory_model_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryModel::className(), 'targetAttribute' => ['inventory_model_id' => 'id']],
             [['inventory_brand_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryBrand::className(), 'targetAttribute' => ['inventory_brand_id' => 'id']],
-            
             // Validation: Either use dropdown system (model_type_input + brand_input) OR legacy (model_type + brand)
             ['model_type', 'required', 'when' => function ($model) {
-                // Model type is required if not using dropdown system
-                return empty($model->model_type_input);
-            }, 'message' => 'Model Type is required.'],
-            
+                    // Model type is required if not using dropdown system
+                    return empty($model->model_type_input);
+                }, 'message' => 'Model Type is required.'],
             ['brand', 'required', 'when' => function ($model) {
-                // Brand is required if not using dropdown system
-                return empty($model->brand_input);
-            }, 'message' => 'Brand is required.'],
-            
+                    // Brand is required if not using dropdown system
+                    return empty($model->brand_input);
+                }, 'message' => 'Brand is required.'],
             ['model_type_input', 'required', 'when' => function ($model) {
-                // Required if using new system (not legacy)
-                return empty($model->model_type);
-            }, 'message' => 'Please select a Model Type from the dropdown.'],
-            
+                    // Required if using new system (not legacy)
+                    return empty($model->model_type);
+                }, 'message' => 'Please select a Model Type from the dropdown.'],
             ['brand_input', 'required', 'when' => function ($model) {
-                // Required if using new system (not legacy)
-                return empty($model->brand);
-            }, 'message' => 'Please select a Brand from the dropdown.'],
-            
+                    // Required if using new system (not legacy)
+                    return empty($model->brand);
+                }, 'message' => 'Please select a Brand from the dropdown.'],
             // Custom validation
             ['model_type_input', 'validateModelInput', 'skipOnEmpty' => false],
             ['brand_input', 'validateBrandInput', 'skipOnEmpty' => false],
@@ -118,12 +112,12 @@ public function rules() {
             } else {
                 // Set the inventory_model_id for saving
                 $this->inventory_model_id = $this->model_type_input;
-                
+
                 // Auto-fill model_type from inventory
                 $this->model_type = $inventoryModel->type;
-                
+
                 $this->inventory_sts = 2;
-                
+
                 // Auto-fill description from inventory
                 if (!empty($inventoryModel->description)) {
                     $this->description = $inventoryModel->description;
@@ -147,7 +141,7 @@ public function rules() {
             } else {
                 // Set the inventory_brand_id for saving
                 $this->inventory_brand_id = $this->brand_input;
-                
+
                 // Auto-fill brand from inventory
                 $this->brand = $inventoryBrand->name;
             }

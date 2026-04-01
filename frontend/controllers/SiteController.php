@@ -181,6 +181,7 @@ class SiteController extends Controller {
         $totalPendingReliefLeave = $this->getTotalPendingReliefApprovalLeave();
         $totalPendingSuperiorLeave = $this->getTotalPendingSuperiorApprovalLeave();
         $totalPendingHrLeave = $this->getTotalPendingHrApprovalLeave();
+        $totalPendingDirectorLeave = $this->getTotalPendingDirectorApprovalLeave();
 
         $totalPendingSuperiorClaim = $this->getTotalPendingSuperiorApprovalClaim();
         $totalPendingFinanceClaim = $this->getTotalPendingFinanceApprovalClaim();
@@ -203,33 +204,34 @@ class SiteController extends Controller {
                     'totalPendingSuperiorClaimEntitlement' => $totalPendingSuperiorClaimEntitlement,
                     'totalPendingSuperiorPrf' => $totalPendingSuperiorPrf,
                     'totalNewPublicDoc' => $totalNewPublicDoc,
+                    'totalPendingDirectorLeave' => $totalPendingDirectorLeave,
         ]);
     }
 
-    public function actionPendingActionInventory() {
-        $newItemApprovedForPurchase = \frontend\models\office\preReqForm\PrereqFormMaster::find()
-                ->where(['source_module' => 2])
-                ->andWhere(['is_deleted' => 0])
-                ->andWhere(['status' => \frontend\models\RefGeneralStatus::STATUS_Approved])
-                ->andWhere(['inventory_flag' => 1])
-                ->count();
-
-        $newItemReadyForPo = \frontend\models\inventory\InventoryPurchaseRequest::find()
-                ->where(['source_type' => 1])
-                ->andWhere(['po_status' => 1])
-                ->count();
-
-        $reorderItemReadyForPo = \frontend\models\inventory\InventoryPurchaseRequest::find()
-                ->where(['source_type' => 2])
-                ->andWhere(['po_status' => 1])
-                ->count();
-
-        return $this->renderAjax('pending_action_inventory', [
-                    'newItemApprovedForPurchase' => $newItemApprovedForPurchase,
-                    'newItemReadyForPo' => $newItemReadyForPo,
-                    'reorderItemReadyForPo' => $reorderItemReadyForPo,
-        ]);
-    }
+//    public function actionPendingActionInventory() {
+//        $newItemApprovedForPurchase = \frontend\models\office\preReqForm\PrereqFormMaster::find()
+//                ->where(['source_module' => 2])
+//                ->andWhere(['is_deleted' => 0])
+//                ->andWhere(['status' => \frontend\models\RefGeneralStatus::STATUS_Approved])
+//                ->andWhere(['inventory_flag' => 1])
+//                ->count();
+//
+//        $newItemReadyForPo = \frontend\models\inventory\InventoryPurchaseRequest::find()
+//                ->where(['source_type' => 1])
+//                ->andWhere(['po_status' => 1])
+//                ->count();
+//
+//        $reorderItemReadyForPo = \frontend\models\inventory\InventoryPurchaseRequest::find()
+//                ->where(['source_type' => 2])
+//                ->andWhere(['po_status' => 1])
+//                ->count();
+//
+//        return $this->renderAjax('pending_action_inventory', [
+//                    'newItemApprovedForPurchase' => $newItemApprovedForPurchase,
+//                    'newItemReadyForPo' => $newItemReadyForPo,
+//                    'reorderItemReadyForPo' => $reorderItemReadyForPo,
+//        ]);
+//    }
 
     public function actionPendingPanelDefectReadStatus() {
         $staffId = Yii::$app->user->id;
@@ -847,6 +849,11 @@ class SiteController extends Controller {
                 ->andWhere(['project_production_master.created_by' => \Yii::$app->user->identity->id])
                 ->count();
 
+        return $totalPending;
+    }
+
+    private function getTotalPendingDirectorApprovalLeave() {
+        $totalPending = \frontend\models\office\leave\LeaveCompulsoryMaster::find()->where(['status' => LeaveMaster::STATUS_GetDirectorApproval])->count();
         return $totalPending;
     }
 

@@ -16,13 +16,45 @@ if ($moduleIndex === 'execPendingPurchasing') {
     $pageName = 'Purchasing - Executive';
     $module = 'execPurchasing';
     $key = 6;
-}else if ($moduleIndex === 'execPendingReceiving') {
+} else if ($moduleIndex === 'assistPendingPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
+    $key = 5;
+} else if ($moduleIndex === 'assistAllPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
+    $key = 6;
+} else if ($moduleIndex === 'maintenanceHeadPendingPurchasing') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 6;
+} else if ($moduleIndex === 'maintenanceHeadAllPurchasing') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 7;
+} else if ($moduleIndex === 'execPendingReceiving') {
     $pageName = 'Receiving - Executive';
     $module = 'execReceiving';
     $key = 1;
-}else if ($moduleIndex === 'execAllReceiving') {
+} else if ($moduleIndex === 'execAllReceiving') {
     $pageName = 'Receiving - Executive';
     $module = 'execReceiving';
+    $key = 2;
+} else if ($moduleIndex === 'assistPendingReceiving') {
+    $pageName = 'Receiving - Assistant';
+    $module = 'assistReceiving';
+    $key = 1;
+} else if ($moduleIndex === 'assistAllReceiving') {
+    $pageName = 'Receiving - Assistant';
+    $module = 'assistReceiving';
+    $key = 2;
+}else if ($moduleIndex === 'maintenanceHeadPendingReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
+    $module = 'maintenanceHeadReceiving';
+    $key = 1;
+} else if ($moduleIndex === 'maintenanceHeadAllReceiving') {
+    $pageName = 'Receiving - Head of Maintenance';
+    $module = 'maintenanceHeadReceiving';
     $key = 2;
 }
 
@@ -30,10 +62,16 @@ $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
 $this->params['breadcrumbs'][] = ['label' => $pageName];
 ?>
 <div class="po-create">
-    <?= $this->render('_purchasingNavBar', ['module' => $module, 'pageKey' => $key]) ?>
+    <?= $this->render('__inventoryNavBar', ['module' => $module, 'pageKey' => $key]) ?>
     <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
-
-    <div class="table-responsive">
+    <?=
+    Html::a(
+            'User Manual <i class="fas fa-book"></i>',
+            ['user-manual-inventory'],
+            ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+    )
+    ?>
+    <div class="table-responsive mt-2">
 
         <?=
         GridView::widget([
@@ -164,6 +202,24 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
                     }
                 ],
                 [
+                    'attribute' => 'active_sts',
+                    'headerOptions' => ['style' => 'width: 90px;'],
+                    'contentOptions' => ['class' => 'grid-wrap', 'style' => 'text-align: center;'],
+                    'value' => function ($model) {
+                        return $model->active_sts == 2 ? 'Yes' : 'No';
+                    },
+                    'filter' => Html::activeDropDownList(
+                            $searchModel,
+                            'active_sts',
+                            [
+                                '' => 'All',
+                                '1' => 'No',
+                                '2' => 'Yes'
+                            ],
+                            ['class' => 'form-control text-center']
+                    )
+                ],        
+                [
                     'attribute' => 'created_by',
                     'label' => 'Created By',
                     'headerOptions' => ['style' => 'width: 180px;'],
@@ -232,16 +288,16 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
                                 ]
                         );
 
-                    if ($module === "execReceiving") {
-                        if (($model->status === \frontend\models\RefInventoryStatus::STATUS_AwaitingDelivery || $model->status === \frontend\models\RefInventoryStatus::STATUS_PartiallyReceived)) {
-                            $html .= Html::a(
-                                    'Receive Items <i class="fas fa-clipboard-check"></i>',
-                                    ['update-receive-items', 'id' => $model->id],
-                                    ['class' => 'btn btn-sm btn-success mx-1',
-                                        'title' => 'Receive Items'],
-                            );
+                        if ($module === "execReceiving" || $module === 'assistReceiving' || $module === 'maintenanceHeadReceiving') {
+                            if (($model->status === \frontend\models\RefInventoryStatus::STATUS_AwaitingDelivery || $model->status === \frontend\models\RefInventoryStatus::STATUS_PartiallyReceived)) {
+                                $html .= Html::a(
+                                        'Receive Items <i class="fas fa-clipboard-check"></i>',
+                                        ['update-receive-items', 'id' => $model->id, 'moduleIndex' => $moduleIndex],
+                                        ['class' => 'btn btn-sm btn-success mx-1',
+                                            'title' => 'Receive Items'],
+                                );
+                            }
                         }
-                    }
                         return $html;
                     }
                 ],

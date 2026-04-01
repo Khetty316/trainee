@@ -14,8 +14,8 @@ $this->params['breadcrumbs'][] = $this->title;
     <?=
     $this->render('_form', [
         'model' => $model,
-            'modelBrandList' => $modelBrandList,
-            'isLegacy' => $isLegacy,
+        'modelBrandList' => $modelBrandList,
+        'isLegacy' => $isLegacy,
     ])
     ?>
 

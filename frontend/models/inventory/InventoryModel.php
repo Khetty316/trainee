@@ -76,7 +76,7 @@ class InventoryModel extends \yii\db\ActiveRecord {
             'description' => 'Description',
             'unit_type' => 'Unit Type',
             'image' => 'Image',
-            'active_sts' => 'Active Status',
+            'active_sts' => 'Active',
             'inventory_brand_id' => 'Brand',
             'created_by' => 'Created By',
             'created_at' => 'Created At',
@@ -178,6 +178,10 @@ class InventoryModel extends \yii\db\ActiveRecord {
         return parent::beforeSave($insert);
     }
 
+    public function getAllDropDownModelList() {
+        return \yii\helpers\ArrayHelper::map(self::find()->where(['active_sts' => 2])->orderBy(['type' => SORT_ASC])->all(), "id", "type");
+    }
+
     /**
      * NORMALIZE NAME and Brand
      * Normalizes a string by converting to uppercase and removing special characters
@@ -226,8 +230,7 @@ class InventoryModel extends \yii\db\ActiveRecord {
 
         return ['match' => false];
     }
-    
-    
+
     /**
      * Prepare form data for create/update views
      */
@@ -238,6 +241,11 @@ class InventoryModel extends \yii\db\ActiveRecord {
         // Check if this is a legacy record
         $isLegacy = $model->isLegacyRecord();
 
+        if (!$isLegacy) {
+            $model->model_type_input = $model->inventory_model_id;
+            $model->brand_input = $model->inventory_brand_id;
+        }
+        
         return [
             'model' => $model,
             'modelBrandList' => $modelBrandList,
@@ -249,15 +257,15 @@ class InventoryModel extends \yii\db\ActiveRecord {
      * Get all model-brand combinations for the dropdown
      * @return array
      */
-    private function getModelBrandCombinations() {
+    public function getModelBrandCombinations() {
         $combinations = [];
 
         // Get all active inventory models with their brands
         $models = InventoryModel::find()
-            ->with('inventoryBrand')
-            ->where(['active_sts' => 2])
-            ->orderBy(['type' => SORT_ASC])
-            ->all();
+                ->with('inventoryBrand')
+                ->where(['active_sts' => 2])
+                ->orderBy(['type' => SORT_ASC])
+                ->all();
 
         foreach ($models as $inventoryModel) {
             if ($inventoryModel->inventoryBrand) {

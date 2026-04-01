@@ -101,7 +101,7 @@ $stockMaster = new frontend\models\bom\StockOutboundMaster();
 
                                         if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal])) {
 //                                            if (!empty($panel->stockOutboundMasters) && $bomFinalized) {
-                                                if (!empty($panel->stockOutboundMasters)) {
+                                            if (!empty($panel->stockOutboundMasters)) {
                                                 echo Html::a(
                                                         '<i class="fas fa-edit"></i>',
                                                         ['view-material-detail', 'productionPanelId' => $panel->id],
@@ -112,8 +112,7 @@ $stockMaster = new frontend\models\bom\StockOutboundMaster();
                                         echo '</td>';
                                         echo '<td class="text-center tdnowrap">';
 //                                        if (!empty($panel->stockOutboundMasters) && $bomFinalized) {
-                                                                                        if (!empty($panel->stockOutboundMasters)) {
-
+                                        if (!empty($panel->stockOutboundMasters)) {
                                             echo Html::a(
                                                     '<i class="fas fa-list"></i>',
                                                     ['update-stock-dispatch', 'productionPanelId' => $panel->id],

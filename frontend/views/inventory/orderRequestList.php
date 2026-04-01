@@ -7,18 +7,35 @@ use common\models\myTools\MyFormatter;
 /* @var $this yii\web\View */
 /* @var $searchModel frontend\models\inventory\InventoryOrderRequestSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
+
 if ($moduleIndex === 'execPending') {
     $pageName = 'Purchasing - Executive';
-    $module = 'exec';
+    $module = 'execPurchasing';
     $key = 3;
-}else if ($moduleIndex === 'execAll') {
+} else if ($moduleIndex === 'execAll') {
     $pageName = 'Purchasing - Executive';
-    $module = 'exec';
+    $module = 'execPurchasing';
+    $key = 4;
+} else if ($moduleIndex === 'assistPending') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
+    $key = 3;
+} else if ($moduleIndex === 'assistAll') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
     $key = 4;
 } else if ($moduleIndex === 'projcoor') {
     $pageName = 'Purchasing - Project Coordinator';
     $module = 'projcoor';
     $key = 4;
+} else if ($moduleIndex === 'maintenanceHeadPending') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 4;
+} else if ($moduleIndex === 'maintenanceHeadAll') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 5;
 }
 
 $this->title = 'Order Requests';
@@ -27,19 +44,28 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
-<?= $this->render('_purchasingNavBar', ['module' => $module, 'pageKey' => $key]) ?>
-<?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
-
-<?php if ($module === 'exec') { ?>
+<?= $this->render('__inventoryNavBar', ['module' => $module, 'pageKey' => $key]) ?>
+<?=
+Html::a(
+        'User Manual <i class="fas fa-book"></i>',
+        ['user-manual-inventory'],
+        ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+)
+?>
+<?php if ($module === 'execPurchasing' || $module === 'assistPurchasing' || $module === 'maintenanceHeadPurchasing') { ?>
     <?=
-    Html::button('<i class="fa fa-check"></i> Confirm Selected', [
-        'class' => 'btn btn-success float-right mb-2',
+    Html::button('Confirm Selected <i class="fa fa-check"></i>', [
+        'class' => 'btn btn-success float-right mb-2 mr-1',
         'id' => 'order-selected'
     ])
     ?>
 <?php } ?>
 
-<div class="table-responsive">
+<?= Html::a('Add New Order Request', ['add-new-order-request', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+
+<?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
+
+<div class="table-responsive mt-1">
     <?=
     GridView::widget([
         'dataProvider' => $dataProvider,
@@ -56,8 +82,22 @@ $this->params['breadcrumbs'][] = $this->title;
                         'attribute' => 'inventory_detail_id',
                         'label' => 'Supplier',
                         'format' => 'raw',
-                        'value' => function ($model) {
-                            return $model->inventoryDetail->supplier->name ?? '-';
+                        'value' => function ($model) use ($moduleIndex, $module) {
+                            $typeLink = '';
+
+                            if (($model->status == 0) && ($module === 'execPurchasing' || $module === 'assistPurchasing')) {
+                                $typeLink = Html::a(
+                                        "<i class='far fa-edit m-1 float-right'></i>",
+                                        "javascript:void(0)",
+                                        [
+                                            'title' => "Edit Supplier",
+                                            'value' => yii\helpers\Url::to(['edit-supplier-order-request', 'id' => $model->id, 'type' => $moduleIndex]),
+                                            'class' => 'modalButton',
+                                            'data-modaltitle' => 'Edit Supplier',
+                                        ]
+                                );
+                            }
+                            return ($model->inventoryDetail->supplier->name ?? '-') . $typeLink;
                         }
                     ],
                     [
@@ -74,20 +114,28 @@ $this->params['breadcrumbs'][] = $this->title;
                         'format' => 'raw',
                         'value' => function ($model) {
                             return $model->inventoryModel->inventoryBrand->name ?? '-';
-                        },
-                        'filter' => Html::activeTextInput($searchModel, 'inventory_brand_id', [
-                            'class' => 'form-control'
-                        ])
+                        }
                     ],
                     [
                         'attribute' => 'reference_type',
                         'format' => 'raw',
-                        'filter' => false,
+                        'filter' => [
+                            'bom_detail' => 'Project - Bill of Material',
+                            'reserve' => 'Reservation',
+                            'cm' => 'Corrective Maintenance',
+                            'pm' => 'Preventive Maintenance'
+                        ],
                         'value' => function ($model) {
                             if ($model->reference_type === 'bom_detail') {
                                 $referenceType = 'Project - Bill of Material';
                             } else if ($model->reference_type === 'bomstockoutbound') {
                                 $referenceType = 'Project - Bill of Material';
+                            } else if ($model->reference_type === 'reserve') {
+                                $referenceType = 'Reservation';
+                            } else if ($model->reference_type === 'cm') {
+                                $referenceType = 'Corrective Maintenance';
+                            } else if ($model->reference_type === 'pm') {
+                                $referenceType = 'Preventive Maintenance';
                             }
                             return $referenceType ?? '-';
                         },
@@ -102,8 +150,11 @@ $this->params['breadcrumbs'][] = $this->title;
                             } else if ($model->reference_type === 'bomstockoutbound') {
                                 $id = frontend\models\bom\StockOutboundDetails::findOne($model->reference_id);
                                 $referenceId = $id->bomDetail->bomMaster->productionPanel->project_production_panel_code;
+                            } else if ($model->reference_type === 'reserve') {
+                                $id = common\models\User::findOne($model->reference_id);
+                                $referenceId = $id->fullname;
                             }
-                            return $referenceId ?? '-';
+                            return $referenceId ?? $model->reference_id;
                         },
                     ],
                     [
@@ -144,7 +195,32 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                     [
                         'attribute' => 'status',
-                        'value' => 'statusLabel',
+                        'format' => 'raw',
+                        'value' => function ($model) use ($moduleIndex) {
+                            $typeLink = '';
+
+                            if ($model->received_qty != 0) {
+                                $typeLink = Html::a(
+                                        "<i class='fas fa-external-link-alt'></i>",
+                                        "javascript:void(0)",
+                                        [
+                                            'title' => "View Log",
+                                            'value' => yii\helpers\Url::to([
+                                                'view-order-request-allocation',
+                                                'id' => $model->id,
+                                                'type' => $moduleIndex
+                                            ]),
+                                            'class' => 'modalButton',
+                                            'data-modaltitle' => 'View Log',
+                                        ]
+                                );
+                            }
+
+                            return "<div class='d-flex justify-content-between align-items-center'>
+                    <span class='mr-1'>{$model->statusLabel}</span>
+                    {$typeLink}
+                </div>";
+                        },
                         'filter' => Html::activeDropDownList(
                                 $searchModel,
                                 'status',
@@ -169,7 +245,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         }
                     ],
                 ],
-                $module === 'exec' ? [
+                ($module === 'execPurchasing' || $module === 'assistPurchasing' || $module === 'maintenanceHeadPurchasing') ? [
                     [
                         'class' => 'yii\grid\CheckboxColumn',
                         'header' => Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
@@ -189,7 +265,9 @@ $this->params['breadcrumbs'][] = $this->title;
     ?>
 </div>
 <script>
-    var moduleIndex = <?= json_encode($module) ?>;
+    var moduleIndex = <?= json_encode($moduleIndex) ?>;
+
+    console.log(moduleIndex);
 // Select All functionality
     $('#select-all').on('change', function () {
         var isChecked = $(this).is(':checked');

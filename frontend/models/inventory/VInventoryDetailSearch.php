@@ -17,7 +17,7 @@ class VInventoryDetailSearch extends VInventoryDetail {
     public function rules() {
         return [
             [['inventory_id', 'supplier_id', 'brand_id', 'model_id', 'minimum_qty', 'stock_level_sts', 'stock_on_hand', 'required_qty', 'reorder_qty', 'qty_pending_receipt', 'active_sts'], 'integer'],
-            [['supplier_display', 'brand_display', 'group', 'inventory_code', 'department_code', 'department_name', 'supplier_code', 'supplier_name', 'supplier_contact_name', 'supplier_contact_number', 'supplier_contact_email', 'supplier_contact_fax', 'supplier_agent_terms', 'brand_code', 'brand_name', 'model_type', 'model_description', 'unit_type', 'image', 'created_at', 'updated_at', 'created_by_fullname', 'updated_by_fullname'], 'safe'],
+            [['stock_in', 'stock_reserved', 'stock_out', 'stock_available', 'supplier_display', 'brand_display', 'group', 'inventory_code', 'department_code', 'department_name', 'supplier_code', 'supplier_name', 'supplier_contact_name', 'supplier_contact_number', 'supplier_contact_email', 'supplier_contact_fax', 'supplier_agent_terms', 'brand_code', 'brand_name', 'model_type', 'model_description', 'unit_type', 'image', 'created_at', 'updated_at', 'created_by_fullname', 'updated_by_fullname'], 'safe'],
         ];
     }
 
@@ -70,8 +70,12 @@ class VInventoryDetailSearch extends VInventoryDetail {
             'minimum_qty' => $this->minimum_qty,
             'stock_level_sts' => $this->stock_level_sts,
             'stock_on_hand' => $this->stock_on_hand,
-            'required_qty' => $this->required_qty,
-            'reorder_qty' => $this->reorder_qty,
+            'stock_in' => $this->stock_in,
+            'stock_reserved' => $this->stock_reserved,
+            'stock_out' => $this->stock_out,
+            'stock_available' => $this->stock_available,
+//            'required_qty' => $this->required_qty,
+//            'reorder_qty' => $this->reorder_qty,
             'qty_pending_receipt' => $this->qty_pending_receipt,
             'active_sts' => $this->active_sts,
             'created_at' => $this->created_at,
@@ -100,6 +104,12 @@ class VInventoryDetailSearch extends VInventoryDetail {
                 ->andFilterWhere(['like', 'created_by_fullname', $this->created_by_fullname])
                 ->andFilterWhere(['like', 'updated_by_fullname', $this->updated_by_fullname]);
 
+        $dataProvider->setSort([
+            'defaultOrder' => [
+                'inventory_id' => SORT_DESC
+            ],
+        ]);
+        
         return $dataProvider;
     }
 }

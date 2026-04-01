@@ -8,27 +8,47 @@ use common\models\myTools\MyFormatter;
 /* @var $searchModel frontend\models\inventory\InventorySupplierSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+}
+
 $this->title = 'Inventory Control';
 $this->params['breadcrumbs'][] = $this->title;
+$this->params['breadcrumbs'][] = $pageName;
 
 $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList();
 ?>
-<div class="inventory-supplier-index">
+<div class="inventory-model-index">
 
-    <?= $this->render('__stockNavBar', ['module' => 'superior', 'pageKey' => '4']) ?>
+    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '4']) ?>
 
     <p>
-        <?php
-//        =
-//        Html::a("Add New Model", "javascript:void(0)", [
-//            'title' => "Add Model",
-//            "value" => yii\helpers\Url::to(['add-new-model']),
-//            "class" => "modalButton btn btn-success ml-1",
-//            'data-modaltitle' => 'Add Model',
-//        ]);
+        <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'projcoorStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
+            <?=
+            Html::a("Add New Model", "javascript:void(0)", [
+                'title' => "Add Model",
+                "value" => yii\helpers\Url::to(['add-new-model', 'type' => $moduleIndex]),
+                "class" => "modalButton btn btn-success ml-1",
+                'data-modaltitle' => 'Add Model',
+            ]);
+            ?>        
+            <?= Html::a('Upload Template', ['add-by-template-model', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+        <?php } ?>
+
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
         ?>
-        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
-        <?= Html::a('Add By Template', ['add-by-template-model'], ['class' => 'btn btn-success']) ?>
     </p>
 
     <?=
@@ -46,18 +66,48 @@ $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList()
             [
                 'attribute' => 'type',
                 'format' => 'raw',
-                'value' => function ($model) {
-                    return $model->type;
+                'value' => function ($model) use ($moduleIndex) {
+                    $image = '';
+                    if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'projcoorStock' || $moduleIndex === 'maintenanceHeadStock') {
+                        $typeLink = Html::a(
+                                $model->type,
+                                "javascript:void(0)",
+                                [
+                                    'title' => "View Brand",
+                                    'value' => yii\helpers\Url::to(['view-model', 'id' => $model->id, 'type' => $moduleIndex]),
+                                    'class' => 'modalButton',
+                                    'data-modaltitle' => 'View Model',
+                                ]
+                        );
+                    } else {
+                        if ($model->image !== null) {
+                            $image = Html::a(
+                                    "<i class='far fa-file-alt fa-lg'></i>",
+                                    "javascript:void(0);",
+                                    [
+                                        'title' => "View Image",
+                                        'value' => "/inventory/inventory/get-model-image?filename=" . urlencode($model->image),
+                                        'class' => "docModal text-primary"
+                                    ]
+                            );
+                        }
+                        $typeLink = $model->type;
+                    }
+
+                    return '<div class="d-flex justify-content-between align-items-center">'
+                    . '<span>' . $typeLink . '</span>'
+                    . '<span>' . $image . '</span>'
+                    . '</div>';
                 }
             ],
             [
-                'attribute' => 'inventory_brand_id',
+                'attribute' => 'brand_name',
                 'value' => function ($model) {
-                    return $model->inventoryBrand->name ?? null;
+                    return $model->brand_name ?? null;
                 },
                 'filter' => Html::activeDropDownList(
                         $searchModel,
-                        'inventory_brand_id',
+                        'brand_name',
                         $brandList,
                         ['class' => 'form-control', 'prompt' => 'All']
                 )
@@ -114,15 +164,15 @@ $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList()
                 'attribute' => 'active_sts',
                 'contentOptions' => ['class' => 'text-center'],
                 'value' => function ($model) {
-                    return $model->active_sts == 0 ? 'No' : 'Yes';
+                    return $model->active_sts == 2 ? 'Yes' : 'No';
                 },
                 'filter' => Html::activeDropDownList(
                         $searchModel,
                         'active_sts',
                         [
                             '' => 'All',
-                            '0' => 'No',
-                            '1' => 'Yes'
+                            '1' => 'No',
+                            '2' => 'Yes'
                         ],
                         ['class' => 'form-control text-center']
                 )
@@ -131,32 +181,35 @@ $brandList = frontend\models\inventory\InventoryBrand::getAllDropDownBrandList()
                 'attribute' => 'created_by',
                 'contentOptions' => ['class' => 'col-sm-1'],
                 'value' => function ($model) {
-                    return ($model->createdBy->fullname) . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->created_at);
+                    return ($model->created_by_name) . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->created_at);
                 }
             ],
             [
                 'attribute' => 'updated_by',
                 'contentOptions' => ['class' => 'col-sm-1'],
                 'value' => function ($model) {
-                    return $model->updatedBy ? $model->updatedBy->fullname . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
+                    return $model->updated_by_name ? $model->updated_by_name . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
                 }
             ],
-            [
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center'],
-                'value' => function ($model) {
-                    return Html::a('View <i class="fa fa-eye"></i>', "javascript:void(0)", [
-                        'title' => "View Model",
-                        'value' => yii\helpers\Url::to(['view-model', 'id' => $model->id]),
-                        'class' => 'modalButton btn btn-sm btn-success text-center',
-                        'data-modaltitle' => 'View Model',
-                    ]);
-                }
-            ],
+//            [
+//                'format' => 'raw',
+//                'contentOptions' => ['class' => 'text-center'],
+//                'value' => function ($model) {
+//                    return Html::a('View <i class="fa fa-eye"></i>', "javascript:void(0)", [
+//                        'title' => "View Model",
+//                        'value' => yii\helpers\Url::to(['view-model', 'id' => $model->id]),
+//                        'class' => 'modalButton btn btn-sm btn-success text-center',
+//                        'data-modaltitle' => 'View Model',
+//                    ]);
+//                }
+//            ],
         //'updated_at',
 //            ['class' => 'yii\grid\ActionColumn'],
         ],
     ]);
     ?>
 
+    <?=
+    $this->render('/_docModal')
+    ?> 
 </div>

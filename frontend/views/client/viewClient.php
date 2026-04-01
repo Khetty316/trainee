@@ -7,7 +7,7 @@ use common\models\myTools\MyFormatter;
 
 /* @var $this yii\web\View */
 /* @var $model frontend\models\client\Clients */
-
+//
 $this->title = $model->company_name;
 $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;

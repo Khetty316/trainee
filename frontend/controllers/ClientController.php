@@ -83,316 +83,7 @@ class ClientController extends Controller {
         ]);
     }
 
-    //testing , check data
-    public function actionCheckClientData() {
-
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-
-        $clientData = Yii::$app->session->get('client_upload_data');
-
-        $existData = [];
-        $notExistData = [];
-
-        foreach ($clientData as $row) {
-
-            $columnMap = [
-                'TK' => 'ac_no_tk',
-                'TKE' => 'ac_no_tke',
-                'TKM' => 'ac_no_tkm',
-            ];
-
-            $companyGroup = $row['company_group'] ?? Yii::$app->session->get('companyGroup');
-
-            $row['company_group'] = $companyGroup;
-
-            $column = $columnMap[$companyGroup] ?? null;
-
-            $custNos = array_column($clientData, 'cust_no');
-
-            $allClients = Clients::find()
-                    ->where([$column => $custNos])
-                    ->all();
-
-            $clientMap = array_column($allClients, null, $column);
-
-            foreach ($clientData as $row) {
-
-                $row['company_group'] = $row['company_group'] ?? $companyGroup;
-
-                if (isset($clientMap[$row['cust_no']])) {
-                    $existData[] = $row;
-                } else {
-                    $notExistData[] = $row;
-                }
-            }
-
-            Yii::$app->session->set('exist_data', $existData);
-            Yii::$app->session->set('not_exist_data', $notExistData);
-
-            return $this->redirect(['confirm-submit']);
-        }
-    }
-
-    public function actionSaveExistClient() {
-
-        $existData = Yii::$app->session->get('exist_data') ?? [];
-        $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
-
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-
-        if (empty($existData) && empty($notExistData)) {
-            return $this->redirect(['add-by-template-clients']);
-        }
-
-        $transaction = Yii::$app->db->beginTransaction();
-
-        try {
-
-            $columnMap = [
-                'TK' => 'ac_no_tk',
-                'TKE' => 'ac_no_tke',
-                'TKM' => 'ac_no_tkm',
-            ];
-
-            $column = $columnMap[$companyGroup] ?? null;
-
-            $custNos = array_column($existData, 'cust_no');
-
-            $allClients = Clients::find()
-                    ->where([$column => $custNos])
-                    ->all();
-
-            $clientMap = array_column($allClients, null, $column);
-
-            $rows = [];
-
-            foreach ($existData as $row) {
-
-                $client = $clientMap[$row['cust_no']] ?? null;
-
-                if (!$client)
-                    continue;
-
-                //1. check if the client debt is exist check using client_id, tk_group_code, month, year
-                $oldClientDebt = ClientDebt::find()->where(['client_id' => $client->id, 'tk_group_code' => $companyGroup, 'year' => $year, 'month' => $month])->one();
-
-                //2. if not exist, insert new record
-                if ($oldClientDebt === null) {
-                    $newClientDebt = new ClientDebt();
-                    $newClientDebt->client_id = $client->id;
-                    $newClientDebt->tk_group_code = $companyGroup;
-                    $newClientDebt->year = $year;
-                    $newClientDebt->month = $month;
-                    $newClientDebt->balance = $row['balance'];
-
-                    $newClientDebt->save();
-                } else {
-                    //3. if exist replace the balance value with the new one
-                    $oldClientDebt->balance = $row['balance'];
-                    $oldClientDebt->update();
-                }
-
-                //4. check the latest month and year for that client, update the outstanding balance in client table
-                $latestRecord = ClientDebt::find()
-                        ->where(['client_id' => $client->id, 'tk_group_code' => $companyGroup])
-                        ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
-                        ->one();
-
-                //5. total up tk,tkm,tke balance
-                $fieldMap = [
-                    'TK' => 'tk_balance',
-                    'TKE' => 'tke_balance',
-                    'TKM' => 'tkm_balance',
-                ];
-
-                $field = $fieldMap[$companyGroup] ?? null;
-
-                if ($latestRecord && $field) {
-                    $client->$field = $latestRecord->balance;
-                }
-
-                // calculate total
-                $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
-                        ($client->tke_balance ?? 0) +
-                        ($client->tkm_balance ?? 0);
-
-                $client->save(false);
-
-                $rows[] = [
-                    $client->id,
-                    $companyGroup,
-                    $month,
-                    $year,
-                    $row['balance']
-                ];
-            }
-
-            $transaction->commit();
-            Yii::$app->session->setFlash('success', 'All clients saved successfully.');
-
-            //trigger download if have not found data
-            if (!empty($notExistData)) {
-                Yii::$app->session->setFlash('downloadNotFoundClient', true);
-            }
-
-            return $this->redirect(['index']);
-        } catch (\Exception $e) {
-            $transaction->rollBack();
-            Yii::$app->session->setFlash('error', $e->getMessage());
-            return $this->redirect(['index']);
-        }
-    }
-
-    public function actionExportNotFoundClients() {
-
-        $notExistData = Yii::$app->session->get('not_exist_data');
-
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-
-        if (empty($notExistData)) {
-            Yii::$app->session->setFlash('error', 'No not found client data to export.');
-            return $this->redirect(['index']);
-        }
-
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // ===== TITLE =====
-        $sheet->setCellValue('A1', 'Client Not Found Report');
-        $sheet->mergeCells('A1:D1');
-
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(
-                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
-        );
-
-        // ===== COMPANY INFO =====
-        $monthList = [
-            1 => 'January',
-            2 => 'February',
-            3 => 'March',
-            4 => 'April',
-            5 => 'May',
-            6 => 'June',
-            7 => 'July',
-            8 => 'August',
-            9 => 'September',
-            10 => 'October',
-            11 => 'November',
-            12 => 'December',
-        ];
-
-        $monthName = $monthList[$month] ?? $month;
-        $groupList = \frontend\models\common\RefCompanyGroupList::COMPANYGROUP3;
-        $groupName = $groupList[$companyGroup] ?? $companyGroup;
-
-        $sheet->setCellValue('A2', 'Company Group:');
-        $sheet->setCellValue('B2', $groupName);
-
-        $sheet->setCellValue('A3', 'Month:');
-        $sheet->setCellValue('B3', $monthName);
-
-        $sheet->setCellValue('A4', 'Year:');
-        $sheet->setCellValue('B4', $year);
-
-        $sheet->getStyle('A2:A4')->getFont()->setBold(true);
-
-        $sheet->getStyle('B2:B4')->getAlignment()->setHorizontal(
-                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
-        );
-
-        // ===== HEADER =====
-        $sheet->setCellValue('A6', 'Cust No');
-        $sheet->setCellValue('B6', 'Name');
-        $sheet->setCellValue('C6', 'Balance(RM)');
-        $sheet->setCellValue('D6', 'Company Group');
-
-        $sheet->getStyle('A6:D6')->getFont()->setBold(true);
-        $sheet->getStyle('A6:D6')->getAlignment()->setHorizontal(
-                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
-        );
-
-        // ===== DATA =====
-        $rowNum = 7;
-
-        foreach ($notExistData as $row) {
-            $sheet->setCellValue("A$rowNum", $row['cust_no'] ?? '');
-            $sheet->setCellValue("B$rowNum", $row['name'] ?? 'Not Found Client');
-            $sheet->setCellValue("C$rowNum", $row['balance'] ?? 0);
-            $sheet->setCellValue("D$rowNum", $row['company_group'] ?? '');
-            $rowNum++;
-        }
-
-        $lastRow = $rowNum - 1;
-
-        // ===== FORMAT BALANCE =====
-        $sheet->getStyle("C7:C$lastRow")->getNumberFormat()
-                ->setFormatCode('#,##0.00');
-
-        // ===== ALIGNMENT =====
-        $sheet->getStyle("C7:C$lastRow")->getAlignment()->setHorizontal(
-                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT
-        );
-
-        // ===== AUTO WIDTH =====
-        foreach (range('A', 'D') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        // ===== BORDER =====
-        $sheet->getStyle("A6:D$lastRow")->applyFromArray([
-            'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                ],
-            ],
-        ]);
-
-        // ===== OUTPUT =====
-        $writer = new Xlsx($spreadsheet);
-
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-
-        $monthMap = [
-            1 => 'January',
-            2 => 'February',
-            3 => 'March',
-            4 => 'April',
-            5 => 'May',
-            6 => 'June',
-            7 => 'July',
-            8 => 'August',
-            9 => 'September',
-            10 => 'October',
-            11 => 'November',
-            12 => 'December',
-        ];
-
-        $monthName = $monthMap[$month] ?? $month;
-
-        $fileName = trim($companyGroup . ' Client Not Found ' . $monthName . ' ' . $year) . '.xlsx';
-
-        if (ob_get_length())
-            ob_end_clean();
-
-        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        header("Content-Disposition: attachment;filename=\"$fileName\"");
-        header('Cache-Control: max-age=0');
-
-        $writer->save('php://output');
-        exit;
-    }
-
     //Mydebug::dumpFileW();
-
     public function actionAddByTemplateClients() {
         $model = new Clients();
         $clientDebt = new \frontend\models\client\ClientDebt();
@@ -638,112 +329,6 @@ class ClientController extends Controller {
                     'isUpdate' => false
         ]);
     }
-
-//    public function actionCreateClient() {
-//        $model = new \frontend\models\client\Clients();
-//        $contacts = [new \frontend\models\client\ClientContact()]; // start with one row
-//
-//        if ($model->load(Yii::$app->request->post())) {
-//            // dynamically create multiple contact models based on POST
-//            $contacts = \frontend\models\ModelHelper::createMultiple(
-//                    \frontend\models\client\ClientContact::class
-//            );
-//
-//            foreach ($contacts as $contact) {
-//                $contact->client_id = $model->id ?: 0; // or temporary dummy
-//            }
-//
-////        Yii::warning(['contactsCount' => count($contacts)], __METHOD__);
-////        $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
-////        if ($valid) {
-//            $transaction = Yii::$app->db->beginTransaction();
-//            try {
-//                if ($model->processAndSave()) {
-//                    $apiKey = "ad19915da90114ff03712278f513e26b";
-//
-//                    foreach ($contacts as $contact) {
-//                        $contact->client_id = $model->id;
-//                        if (!empty($contact->email_address)) {
-//
-//                            $ch = curl_init();
-//
-//                            // Set the URL that you want to GET by using the CURLOPT_URL option.
-//                            curl_setopt($ch, CURLOPT_URL, "https://emailreputation.abstractapi.com/v1/?api_key=b0a1b5fe90f34ba1bf5064296db85cdb&email=" . urlencode($contact->email_address));
-//
-//                            // Set CURLOPT_RETURNTRANSFER so that the content is returned as a variable.
-//                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//
-//                            // Set CURLOPT_FOLLOWLOCATION to true to follow redirects.
-//                            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-//
-//                            // Execute the request.
-//                            $response = curl_exec($ch);
-//                            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//
-//                            // Close the cURL handle.
-//                            curl_close($ch);
-//
-//                            if ($httpCode !== 200 || !$response) {
-//                                $transaction->rollBack();
-//                                FlashHandler::err("Failed to contact email validation API (HTTP $httpCode).");
-//                                return $this->render('createClient', [
-//                                            'model' => $model,
-//                                            'contactModels' => $contacts,
-//                                ]);
-//                            }
-//
-//                            $data = json_decode($response, true);
-//                            if (!is_array($data) || empty($data['email_deliverability'])) {
-//                                $transaction->rollBack();
-//                                FlashHandler::err("Invalid response from email validation API for {$contact->email_address}");
-//                                return $this->render('createClient', [
-//                                            'model' => $model,
-//                                            'contactModels' => $contacts,
-//                                ]);
-//                            }
-//
-//                            $isFormatValid = $data['email_deliverability']['is_format_valid'] ?? null;
-//                            $isSmtpValid = $data['email_deliverability']['is_smtp_valid'] ?? null;
-//                            if (!$isFormatValid || !$isSmtpValid) {
-//                                $transaction->rollBack();
-//                                FlashHandler::err("The email is either invalid or does not exist in any server: {$contact->email_address}");
-//                                return $this->render('createClient', [
-//                                            'model' => $model,
-//                                            'contactModels' => $contacts,
-//                                            'isUpdate' => false
-//                                ]);
-//                            }
-//                        }
-//
-//                        if (!$contact->save(false)) {
-//                            throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                        }
-//                    }
-//
-//                    $transaction->commit();
-//                    FlashHandler::success("Client and contacts updated successfully.");
-//                    return $this->redirect(['view-client', 'id' => $model->id]);
-//                }
-//            } catch (\Exception $e) {
-//                $transaction->rollBack();
-//                FlashHandler::err($e->getMessage());
-//                return $this->render('createClient', [
-//                            'model' => $model,
-//                            'contactModels' => $contacts,
-//                            'isUpdate' => false
-//                ]);
-//            }
-////        } else {
-////            FlashHandler::err("Validation failed. Please check the form.");
-////        }
-//        }
-//
-//        return $this->render('createClient', [
-//                    'model' => $model,
-//                    'contactModels' => $contacts ?: [new \frontend\models\client\ClientContact()],
-//                    'isUpdate' => false
-//        ]);
-//    }
 
     /**
      * Updates an existing Clients model.
@@ -1053,86 +638,6 @@ class ClientController extends Controller {
         ]);
     }
 
-    //testing
-    public function actionSaveClientDetails() {
-
-        $existData = Yii::$app->session->get('exist_data') ?? [];
-        $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
-
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-
-        // ❗ If no data → go back
-        if (empty($existData) && empty($notExistData)) {
-            return $this->redirect(['add-by-template-clients']);
-        }
-
-        $transaction = Yii::$app->db->beginTransaction();
-
-        try {
-
-            $columnMap = [
-                'TK' => 'ac_no_tk',
-                'TKE' => 'ac_no_tke',
-                'TKM' => 'ac_no_tkm',
-            ];
-
-            $column = $columnMap[$companyGroup] ?? null;
-
-            $custNos = array_column($existData, 'cust_no');
-
-            $allClients = Clients::find()
-                    ->where([$column => $custNos])
-                    ->all();
-
-            $clientMap = array_column($allClients, null, $column);
-
-            $rows = [];
-
-            foreach ($existData as $row) {
-
-                $client = $clientMap[$row['cust_no']] ?? null;
-
-                if (!$client)
-                    continue;
-
-                $rows[] = [
-                    $client->id,
-                    $companyGroup,
-                    $month,
-                    $year,
-                    $row['balance'],
-                ];
-            }
-
-            if (!empty($rows)) {
-                Yii::$app->db->createCommand()->batchInsert(
-                        'client_debt',
-                        ['client_id', 'tk_group_code', 'month', 'year', 'balance'],
-                        $rows
-                )->execute();
-            }
-
-            // =========================
-            // ? CASE 1: HAS INVALID → DOWNLOAD
-            // =========================
-            // =========================
-            // 🎯 CASE 2: ALL VALID
-            // =========================
-            Yii::$app->session->setFlash('success', 'All clients are valid. Data saved successfully.');
-
-            return $this->redirect(['index']);
-        } catch (\Exception $e) {
-
-            $transaction->rollBack();
-
-            Yii::$app->session->setFlash('error', $e->getMessage());
-
-            return $this->redirect(['index']);
-        }
-    }
-
     public function actionDownloadInvalidClients() {
         $notExistData = Yii::$app->session->get('not_exist_data');
 
@@ -1170,7 +675,6 @@ class ClientController extends Controller {
     }
 
     public function actionProcessClientData() {
-
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
@@ -1204,7 +708,7 @@ class ClientController extends Controller {
         return $this->redirect(['check-client-data']);
     }
 
-    //testing, progress
+    //progress
     public function actionProcessChunk() {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
@@ -1263,5 +767,329 @@ class ClientController extends Controller {
                     'month' => Yii::$app->session->get('month'),
                     'year' => Yii::$app->session->get('year'),
         ]);
+    }
+
+    //check data
+    public function actionCheckClientData() {
+        $companyGroup = Yii::$app->session->get('companyGroup');
+        $month = Yii::$app->session->get('month');
+        $year = Yii::$app->session->get('year');
+
+        $clientData = Yii::$app->session->get('client_upload_data');
+
+        $existData = [];
+        $notExistData = [];
+
+        $columnMap = [
+            'TK' => 'ac_no_tk',
+            'TKE' => 'ac_no_tke',
+            'TKM' => 'ac_no_tkm',
+        ];
+
+        $column = $columnMap[$companyGroup] ?? null;
+        $custNos = array_column($clientData, 'cust_no');
+
+        $allClients = Clients::find()
+                ->where([$column => $custNos])
+                ->all();
+
+        // Build a map that handles multiple clients with same ac_no
+        $clientMap = [];
+        foreach ($allClients as $client) {
+            $acNo = $client->$column;
+            if (!isset($clientMap[$acNo])) {
+                $clientMap[$acNo] = [];
+            }
+            $clientMap[$acNo][] = $client;
+        }
+
+        foreach ($clientData as $row) {
+            $row['company_group'] = $row['company_group'] ?? $companyGroup;
+
+            if (isset($clientMap[$row['cust_no']])) {
+                $existData[] = $row;
+            } else {
+                $notExistData[] = $row;
+            }
+        }
+
+        Yii::$app->session->set('exist_data', $existData);
+        Yii::$app->session->set('not_exist_data', $notExistData);
+
+        return $this->redirect(['confirm-submit']);
+    }
+
+    public function actionSaveExistClient() {
+        $existData = Yii::$app->session->get('exist_data') ?? [];
+        $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
+
+        $companyGroup = Yii::$app->session->get('companyGroup');
+        $month = Yii::$app->session->get('month');
+        $year = Yii::$app->session->get('year');
+
+        if (empty($existData) && empty($notExistData)) {
+            return $this->redirect(['add-by-template-clients']);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            $columnMap = [
+                'TK' => 'ac_no_tk',
+                'TKE' => 'ac_no_tke',
+                'TKM' => 'ac_no_tkm',
+            ];
+
+            $column = $columnMap[$companyGroup] ?? null;
+            $custNos = array_column($existData, 'cust_no');
+
+            $allClients = Clients::find()
+                    ->where([$column => $custNos])
+                    ->all();
+
+            // Build a map that handles multiple clients with same ac_no
+            $clientMap = [];
+            foreach ($allClients as $client) {
+                $acNo = $client->$column;
+                if (!isset($clientMap[$acNo])) {
+                    $clientMap[$acNo] = [];
+                }
+                $clientMap[$acNo][] = $client;
+            }
+
+            $rows = [];
+
+            foreach ($existData as $row) {
+                // Get all clients with this ac_no (could be multiple)
+                $clients = $clientMap[$row['cust_no']] ?? [];
+
+                if (empty($clients)) {
+                    continue;
+                }
+
+                // Process each client with the same ac_no
+                foreach ($clients as $client) {
+                    // 1. Check if the client debt exists
+                    $oldClientDebt = ClientDebt::find()
+                            ->where([
+                                'client_id' => $client->id,
+                                'tk_group_code' => $companyGroup,
+                                'year' => $year,
+                                'month' => $month
+                            ])
+                            ->one();
+
+                    // 2. If not exist, insert new record
+                    if ($oldClientDebt === null) {
+                        $newClientDebt = new ClientDebt();
+                        $newClientDebt->client_id = $client->id;
+                        $newClientDebt->tk_group_code = $companyGroup;
+                        $newClientDebt->year = $year;
+                        $newClientDebt->month = $month;
+                        $newClientDebt->balance = $row['balance'];
+                        $newClientDebt->save();
+                    } else {
+                        // 3. If exist, replace the balance value
+                        $oldClientDebt->balance = $row['balance'];
+                        $oldClientDebt->update();
+                    }
+
+                    // 4. Get latest record for this client
+                    $latestRecord = ClientDebt::find()
+                            ->where([
+                                'client_id' => $client->id,
+                                'tk_group_code' => $companyGroup
+                            ])
+                            ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
+                            ->one();
+
+                    // 5. Update balance fields
+                    $fieldMap = [
+                        'TK' => 'tk_balance',
+                        'TKE' => 'tke_balance',
+                        'TKM' => 'tkm_balance',
+                    ];
+
+                    $field = $fieldMap[$companyGroup] ?? null;
+
+                    if ($latestRecord && $field) {
+                        $client->$field = $latestRecord->balance;
+                    }
+
+                    // Calculate total
+                    $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
+                            ($client->tke_balance ?? 0) +
+                            ($client->tkm_balance ?? 0);
+
+                    $client->save(false);
+
+                    $rows[] = [
+                        $client->id,
+                        $companyGroup,
+                        $month,
+                        $year,
+                        $row['balance']
+                    ];
+                }
+            }
+
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'All clients saved successfully.');
+
+            // Trigger download if have not found data
+            if (!empty($notExistData)) {
+                Yii::$app->session->setFlash('downloadNotFoundClient', true);
+            }
+
+            return $this->redirect(['index']);
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', $e->getMessage());
+            return $this->redirect(['index']);
+        }
+    }
+
+    public function actionExportNotFoundClients() {
+
+        $notExistData = Yii::$app->session->get('not_exist_data');
+
+        $companyGroup = Yii::$app->session->get('companyGroup');
+        $month = Yii::$app->session->get('month');
+        $year = Yii::$app->session->get('year');
+
+        if (empty($notExistData)) {
+            Yii::$app->session->setFlash('error', 'No not found client data to export.');
+            return $this->redirect(['index']);
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // ===== TITLE =====
+        $sheet->setCellValue('A1', 'Client Not Found Report');
+        $sheet->mergeCells('A1:D1');
+
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+        );
+
+        // ===== COMPANY INFO =====
+        $monthList = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+
+        $monthName = $monthList[$month] ?? $month;
+        $groupList = \frontend\models\common\RefCompanyGroupList::COMPANYGROUP3;
+        $groupName = $groupList[$companyGroup] ?? $companyGroup;
+
+        $sheet->setCellValue('A2', 'Company Group:');
+        $sheet->setCellValue('B2', $groupName);
+
+        $sheet->setCellValue('A3', 'Month:');
+        $sheet->setCellValue('B3', $monthName);
+
+        $sheet->setCellValue('A4', 'Year:');
+        $sheet->setCellValue('B4', $year);
+
+        $sheet->getStyle('A2:A4')->getFont()->setBold(true);
+
+        $sheet->getStyle('B2:B4')->getAlignment()->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
+        );
+
+        // ===== HEADER =====
+        $sheet->setCellValue('A6', 'Cust No');
+        $sheet->setCellValue('B6', 'Name');
+        $sheet->setCellValue('C6', 'Balance(RM)');
+        $sheet->setCellValue('D6', 'Company Group');
+
+        $sheet->getStyle('A6:D6')->getFont()->setBold(true);
+        $sheet->getStyle('A6:D6')->getAlignment()->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+        );
+
+        // ===== DATA =====
+        $rowNum = 7;
+
+        foreach ($notExistData as $row) {
+            $sheet->setCellValue("A$rowNum", $row['cust_no'] ?? '');
+            $sheet->setCellValue("B$rowNum", $row['name'] ?? 'Not Found Client');
+            $sheet->setCellValue("C$rowNum", $row['balance'] ?? 0);
+            $sheet->setCellValue("D$rowNum", $row['company_group'] ?? '');
+            $rowNum++;
+        }
+
+        $lastRow = $rowNum - 1;
+
+        // ===== FORMAT BALANCE =====
+        $sheet->getStyle("C7:C$lastRow")->getNumberFormat()
+                ->setFormatCode('#,##0.00');
+
+        // ===== ALIGNMENT =====
+        $sheet->getStyle("C7:C$lastRow")->getAlignment()->setHorizontal(
+                \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT
+        );
+
+        // ===== AUTO WIDTH =====
+        foreach (range('A', 'D') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // ===== BORDER =====
+        $sheet->getStyle("A6:D$lastRow")->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ]);
+
+        // ===== OUTPUT =====
+        $writer = new Xlsx($spreadsheet);
+
+        $companyGroup = Yii::$app->session->get('companyGroup');
+        $month = Yii::$app->session->get('month');
+        $year = Yii::$app->session->get('year');
+
+        $monthMap = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+
+        $monthName = $monthMap[$month] ?? $month;
+
+        $fileName = trim($companyGroup . ' Client Not Found ' . $monthName . ' ' . $year) . '.xlsx';
+
+        if (ob_get_length())
+            ob_end_clean();
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header("Content-Disposition: attachment;filename=\"$fileName\"");
+        header('Cache-Control: max-age=0');
+
+        $writer->save('php://output');
+        exit;
     }
 }

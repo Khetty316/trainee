@@ -3,9 +3,24 @@
 use yii\helpers\Html;
 use yii\bootstrap4\ActiveForm;
 
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+    $url = 'inventory/inventory/model-list?type=execStock';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+    $url = 'inventory/inventory/model-list?type=assistStock';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+    $url = 'inventory/inventory/model-list?type=projcoorStock';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+    $url = 'inventory/inventory/model-list?type=maintenanceHeadStock';
+}
+
 $this->title = 'Add New Model';
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
-$this->params['breadcrumbs'][] = ['label' => 'Brand', 'url' => ['model-list']];
+$this->params['breadcrumbs'][] = $pageName;
+$this->params['breadcrumbs'][] = ['label' => 'Model List', 'url' => [$url]];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 
@@ -30,7 +45,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 ?>
             </div>
             <div class="col-md-12">
-                    <?php
+                <?php
                 echo Html::fileInput('excelTemplate', null, [
                     'accept' => '.xls', 'required' => true,
                 ]);
@@ -40,9 +55,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         ['class' => 'btn btn-success mb-2 mt-1']);
                 ActiveForm::end();
                 ?>
-                </div>
-                
-            
+            </div>
+
+
         </div>
     </div>
 </fieldset>

@@ -26,7 +26,7 @@ use common\models\User;
  */
 class InventoryPurchaseOrderItemDoc extends \yii\db\ActiveRecord {
 
-    CONST receivingDocType = ['1' => 'Delivery Order', '2' => 'Invoice'];
+    CONST receivingDocType = ['1' => 'Delivery Order', '2' => 'Invoice', '3' => 'Others'];
 
     /**
      * {@inheritdoc}

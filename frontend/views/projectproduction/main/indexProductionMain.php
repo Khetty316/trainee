@@ -136,8 +136,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         }
 
                         $fabPercent = $model->production_fab_complete_percent ?? $model->fab_complete_percent;
+                        $percent = $fabPercent > 100 ? 100 : $fabPercent;
                         $task = Html::a('<i class="fas fa-external-link-alt"></i>', ['/fab-task/index-fab-project-panels', 'id' => $model->id]);
-                        return MyFormatter::asDecimal2_emptyZero($fabPercent) . " % " . $task;
+                        return MyFormatter::asDecimal2_emptyZero($percent) . " % " . $task;
                     }
                 ],
                 [
@@ -150,8 +151,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         }
 
                         $elecPercent = $model->production_elec_complete_percent ?? $model->elec_complete_percent;
+                        $percent = $elecPercent > 100 ? 100 : $elecPercent;
                         $task = Html::a('<i class="fas fa-external-link-alt"></i>', ['/elec-task/index-elec-project-panels', 'id' => $model->id]);
-                        return MyFormatter::asDecimal2_emptyZero($elecPercent) . " % " . $task;
+                        return MyFormatter::asDecimal2_emptyZero($percent) . " % " . $task;
                     }
                 ],
                 [

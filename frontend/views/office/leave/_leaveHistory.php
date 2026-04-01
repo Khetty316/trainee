@@ -64,6 +64,11 @@ foreach ($leaveHistory as $leave) {
             $status = "$leave->leave_remark";
         }
     }
+
+    if($leave->compulsory_leave !== null){
+        $leave->reason = $leave->reason . ' </br><span class="text-info">(Compulsory Leave)</span>';
+    }
+    
     $reason = Html::a("<i class='fas fa-info-circle float-right p-1' ></i>", "javascript:",
                     [
                         'title' => "Reason",

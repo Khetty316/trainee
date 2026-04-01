@@ -17,7 +17,7 @@ $currencySign = $currency ? trim($currency->currency_sign) : 'RM';
 </table>
 
 <!-- Summary Section -->
-<table width="100%" cellspacing="0" cellpadding="0" style="margin-top:10px;">
+<table width="100%" cellspacing="0" cellpadding="0">
     <tr>
         <!-- LEFT -->
         <td width="60%" valign="top">
@@ -39,26 +39,26 @@ $currencySign = $currency ? trim($currency->currency_sign) : 'RM';
         <td width="40%" valign="top">
             <table width="100%" style="border:1px solid #000; border-collapse: collapse;" cellpadding="2" cellspacing="0">
                 <tr>
-                    <td>TOTAL</td>
-                    <td align="right"><?= number_format($po->total_amount, 2) ?></td>
+                    <td style="padding:4px;">TOTAL</td>
+                    <td style="padding:4px;" align="right"><?= number_format($po->total_amount, 2) ?></td>
                 </tr>
                 <tr>
-                    <td style="border-bottom: 1px solid #000;">DISCOUNT</td>
-                    <td align="right" style="border-bottom: 1px solid #000;">
+                    <td style="padding:4px; border-bottom: 1px solid #000;">DISCOUNT</td>
+                    <td align="right" style="padding:4px; border-bottom: 1px solid #000;">
                         <?= number_format($po->total_discount, 2) ?>
                     </td>
                 </tr>
                 <tr>
-                    <td>NET</td>
-                    <td align="right"><?= number_format($po->net_amount, 2) ?></td>
+                    <td style="padding:4px;">NET</td>
+                    <td style="padding:4px;" align="right"><?= number_format($po->net_amount, 2) ?></td>
                 </tr>
                 <tr>
-                    <td style="border-bottom: 1px solid #000;">TAX</td>
-                    <td align="right" style="border-bottom: 1px solid #000;"><?= number_format($po->tax_amount, 2) ?></td>
+                    <td style="padding:4px; border-bottom: 1px solid #000;">TAX</td>
+                    <td align="right" style="padding:4px; border-bottom: 1px solid #000;"><?= number_format($po->tax_amount, 2) ?></td>
                 </tr>
                 <tr>
-                    <td>GROSS</td>
-                    <td align="right">
+                    <td style="padding:4px;">GROSS</td>
+                    <td style="padding:4px;" align="right">
                         <?= Html::encode($currencySign) ?>
                         <?= number_format($po->gross_amount, 2) ?>
                     </td>

@@ -106,7 +106,7 @@ class CmmsAssetFaults extends \yii\db\ActiveRecord
         $faultTypes = self::find()
             ->select('fault_type')
             ->where(['<>', 'fault_type', ''])
-            ->andWhere(['is_deleted' => 0])
+            ->andWhere(['active_sts' => 1])
             ->column();
 
         return array_unique(array_filter($faultTypes));

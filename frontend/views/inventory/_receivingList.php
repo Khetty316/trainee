@@ -6,11 +6,19 @@ use common\models\myTools\MyFormatter;
 ?>
 <div class="inventory-purchase-order-receive-batch-index">
     <p>
-        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
     </p>
 
-    <?= GridView::widget([
-       'dataProvider' => $dataProvider,
+    <?=
+    GridView::widget([
+        'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'pager' => ['class' => yii\bootstrap4\LinkPager::class],
         'headerRowOptions' => ['class' => 'my-thead'],
@@ -19,7 +27,6 @@ use common\models\myTools\MyFormatter;
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn'],
-
 //            'id',
             [
                 'attribute' => 'inventory_po_id',
@@ -56,7 +63,7 @@ use common\models\myTools\MyFormatter;
                     ],
                 ]),
             ],
-                        [
+            [
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'col-sm-1 text-center'],
                 'value' => function ($model) use ($moduleIndex) {
@@ -69,10 +76,10 @@ use common\models\myTools\MyFormatter;
                     return $html;
                 }
             ],
-
 //            ['class' => 'yii\grid\ActionColumn'],
         ],
-    ]); ?>
+    ]);
+    ?>
 
 
 </div>

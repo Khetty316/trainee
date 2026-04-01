@@ -114,7 +114,7 @@ class CmmsCorrectiveWorkOrderMaster extends \yii\db\ActiveRecord
      */
     public function getCmmsFaultLists()
     {
-        return $this->hasMany(CmmsFaultList::className(), ['cmms_work_order_id' => 'id']);
+        return $this->hasMany(CmmsFaultList::className(), ['cmms_corrective_work_order_id' => 'id']);
     }
 
     /**
@@ -124,7 +124,7 @@ class CmmsCorrectiveWorkOrderMaster extends \yii\db\ActiveRecord
      */
     public function getAssignedPic()
     {
-        return $this->hasMany(RefAssignedPic::className(), ['work_order_master_id' => 'id']);
+        return $this->hasMany(RefAssignedPic::className(), ['corrective_work_order_master_id' => 'id']);
     }
     
     public function getSelectedParts() 
@@ -132,7 +132,8 @@ class CmmsCorrectiveWorkOrderMaster extends \yii\db\ActiveRecord
         $parts = [];
         foreach ($this->cmmsFaultLists as $fault) {
             if ($fault->partList) {
-                $parts[] = $fault->partList->inventory->brand_model;
+                $parts[] = $fault->partList->name;
+//                $parts[] = $fault->partList->inventory->brand_model;
             }
         }
         
@@ -144,10 +145,11 @@ class CmmsCorrectiveWorkOrderMaster extends \yii\db\ActiveRecord
         $tools = [];
         foreach ($this->cmmsFaultLists as $fault) {
             if ($fault->toolList) {
-                $tools[] = $fault->toolList->inventory->brand_model;
+                $tools[] = $fault->toolList->name;
+//                $tools[] = $fault->toolList->inventory->brand_model;
             }
         }
         
         return array_unique($tools);
-    }
+    }  
 }

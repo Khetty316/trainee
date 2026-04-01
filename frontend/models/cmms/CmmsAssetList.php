@@ -77,7 +77,7 @@ class CmmsAssetList extends \yii\db\ActiveRecord
      */
     public function getCmmsAssetFaults()
     {
-        return $this->hasMany(CmmsAssetFaults::className(), ['asset_id' => 'id']);
+        return $this->hasMany(CmmsAssetFaults::className(), ['asset_list_id' => 'id']);
     }
 
     /**
@@ -206,6 +206,7 @@ class CmmsAssetList extends \yii\db\ActiveRecord
                     'is_deleted' => 0
                 ])
                 ->andWhere(['IS NOT', 'fault_primary_detail', null])
+                ->andWhere("TRIM(fault_primary_detail) <> ''")
                 ->orderBy('fault_primary_detail')
                 ->asArray()
                 ->all(),
@@ -223,6 +224,7 @@ class CmmsAssetList extends \yii\db\ActiveRecord
                     'is_deleted' => 0
                 ])
                 ->andWhere(['IS NOT', 'fault_secondary_detail', null])
+                ->andWhere("TRIM(fault_secondary_detail) <> ''")
                 ->orderBy('fault_secondary_detail')
                 ->asArray()
                 ->all(),

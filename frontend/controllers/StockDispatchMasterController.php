@@ -156,7 +156,6 @@ class StockDispatchMasterController extends Controller {
                     $stockMaster->save();
                 }
 
-
                 $transaction->commit();
                 FlashHandler::success('Success');
             } catch (\Exception $e) {
@@ -194,7 +193,6 @@ class StockDispatchMasterController extends Controller {
                     $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
                     $stockMaster->save();
                 }
-
 
                 $transaction->commit();
                 FlashHandler::success('Success');
@@ -284,17 +282,6 @@ class StockDispatchMasterController extends Controller {
             } else {
                 // Un-acknowledging (toggle back)
                 $trial->current_sts = StockDispatchMaster::TO_BE_ACKNOWLEDGED;
-
-                // Reverse the inventory operation
-                if ($detail->qty_stock_available !== null) {
-                    if ($trial->dispatch_qty > 0) {
-                        // Was a dispatch, now revert it
-                        $detail->revertInventoryStockQty(abs($trial->dispatch_qty), $detail);
-                    } else if ($trial->dispatch_qty < 0) {
-                        // Was a return, now re-dispatch it
-                        $detail->updateInventoryStockQty(abs($trial->dispatch_qty), $detail);
-                    }
-                }
             }
 
             if (!$trial->save()) {
@@ -346,7 +333,7 @@ class StockDispatchMasterController extends Controller {
 
                 // Re-dispatch to inventory since we're un-acknowledging the return
                 if ($detail->qty_stock_available !== null) {
-                    $this->updateInventoryStockQty(abs($trial->dispatch_qty), $detail);
+                    $detail->updateInventoryStockQty(abs($trial->dispatch_qty), $detail);
                 }
             }
 

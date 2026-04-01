@@ -72,6 +72,12 @@ class InventoryBrandSearch extends InventoryBrand
                 ->andFilterWhere(['like', 'user.fullname', $this->created_by])
                 ->andFilterWhere(['like', 'user.fullname', $this->updated_by]);
 
+        $dataProvider->setSort([
+            'defaultOrder' => [
+                'id' => SORT_DESC
+            ],
+        ]);
+        
         return $dataProvider;
     }
 }

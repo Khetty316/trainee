@@ -3,6 +3,7 @@
 use yii\helpers\Html;
 
 $isDeleted = ($model->is_deleted == 1);
+$department = \frontend\models\common\RefUserDepartments::findOne($model->department_code);
 ?>
 <tr <?= $isDeleted ? 'class="deleted-row"' : '' ?> id="tr_<?= $key ?>" data-index="<?= $key ?>" name="currencyValue">
     <td class="text-center">
@@ -16,7 +17,8 @@ $isDeleted = ($model->is_deleted == 1);
                     $departmentList,
                     [
                         'class' => 'form-control department-select',
-                        'prompt' => 'Select Department'
+                        'prompt' => 'Select Department',
+                        'value' => $department ? $department->department_name : '-'
                     ]
             )->label(false)
             ?>
@@ -130,7 +132,6 @@ $isDeleted = ($model->is_deleted == 1);
         </td>
         <?php
     else:
-        $department = \frontend\models\common\RefUserDepartments::findOne($model->department_code);
         ?>
         <td><?= $department ? $department->department_name : '-' ?></td>
         <td><?= $model->supplier_name === null ? "-" : $model->supplier_name ?></td>

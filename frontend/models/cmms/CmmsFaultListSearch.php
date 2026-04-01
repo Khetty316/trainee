@@ -18,7 +18,7 @@ class CmmsFaultListSearch extends CmmsFaultList
     public function rules()
     {
         return [
-            [['updated_by', 'id', 'reported_by', 'reviewed_by', 'cmms_work_order_id', 'status', 'is_deleted', 'asset_id', 'superior_id', 'active_sts', 'machine_priority_id', 'cmms_asset_list_id'], 'integer'],
+            [['updated_by', 'id', 'reported_by', 'reviewed_by', 'cmms_corrective_work_order_id', 'cmms_preventive_work_order_id', 'status', 'is_deleted', 'asset_id', 'superior_id', 'active_sts', 'machine_priority_id', 'cmms_asset_list_id'], 'integer'],
             [['code', 'reviewed_at', 'updated_at','reported_at', 'follow_up_required', 'maintenance_type', 'additional_remarks', 'fault_area', 'fault_section', 'fault_asset_id', 'fault_type', 'fault_primary_detail', 'fault_secondary_detail'], 'safe'],
         ];
     }
@@ -97,7 +97,8 @@ class CmmsFaultListSearch extends CmmsFaultList
             'reported_by' => $this->reported_by,
             'reviewed_by' => $this->reviewed_by,
             'reviewed_at' => $this->reviewed_at,
-            'cmms_work_order_id' => $this->cmms_work_order_id,
+            'cmms_corrective_work_order_id' => $this->cmms_corrective_work_order_id,
+            'cmms_preventive_work_order_id' => $this->cmms_preventive_work_order_id,
             'status' => $this->status,
             'is_deleted' => $this->is_deleted,
             'reported_at' => $this->reported_at,

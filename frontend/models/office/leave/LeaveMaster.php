@@ -27,13 +27,15 @@ use frontend\models\office\leave\RefLeaveStatus;
  * @property string $end_date
  * @property int $end_section
  * @property int $year_of_leave
- * @property int $emergency_leave
- * @property int $back_date
+ * @property int|null $emergency_leave
+ * @property int|null $back_date
  * @property float|null $total_days
  * @property int|null $leave_status
- * @property boolean|null $compulsory_leave
  * @property string|null $support_doc
  * @property string $created_at
+ * @property int|null $parent_id
+ * @property int|null $claim_flag 1 = claimed
+ * @property int|null $compulsory_leave
  *
  * @property LeaveDetailBreakdown[] $leaveDetailBreakdowns
  * @property User $reliefUser
@@ -43,6 +45,10 @@ use frontend\models\office\leave\RefLeaveStatus;
  * @property RefLeaveStatus $leaveStatus
  * @property User $superior
  * @property RefLeaveType $leaveTypeCode
+ * @property LeaveMaster $parent
+ * @property LeaveMaster[] $leaveMasters
+ * @property LeaveMaster $parent0
+ * @property LeaveMaster[] $leaveMasters0
  * @property LeaveWorklist[] $leaveWorklists
  */
 class LeaveMaster extends \yii\db\ActiveRecord {
@@ -268,11 +274,15 @@ class LeaveMaster extends \yii\db\ActiveRecord {
             'end_date' => 'End Date',
             'end_section' => 'End Section',
             'year_of_leave' => 'Year Of Leave',
+            'emergency_leave' => 'Emergency Leave',
+            'back_date' => 'Back Date',
             'total_days' => 'Total Days',
             'leave_status' => 'Leave Status',
-            'compulsory_leave' => 'Compulsory Leave',
             'support_doc' => 'Support Doc',
             'created_at' => 'Created At',
+            'parent_id' => 'Parent ID',
+            'claim_flag' => 'Claim Flag',
+            'compulsory_leave' => 'Compulsory Leave',
         ];
     }
 
@@ -365,7 +375,7 @@ class LeaveMaster extends \yii\db\ActiveRecord {
 
         if ($this->relief_user_id) {
             $this->leave_status = $this::STATUS_GetReliefApproval;
-        } else if ($this->superior_id == "" || ($code != RefLeaveType::codeAnnual && $code != RefLeaveType::codeUnpaid)) {
+        } else if ($this->superior_id == "" || ($code != RefLeaveType::codeAnnual && $code != RefLeaveType::codeUnpaid && $code != RefLeaveType::codeTravel)) {
             $this->leave_status = $this::STATUS_GetHrApproval;
         } else {
             $this->leave_status = $this::STATUS_GetSuperiorApproval;
@@ -427,7 +437,7 @@ class LeaveMaster extends \yii\db\ActiveRecord {
         }
     }
 
-    private function generateLeaveCode($leaveTypeCode) {
+    public function generateLeaveCode($leaveTypeCode) {
         $currentYear = date("Y");
         $currentMonth = date("m");
         $currentYearShort = date("y");
@@ -485,13 +495,13 @@ class LeaveMaster extends \yii\db\ActiveRecord {
             $this->leave_status++;
         }
 
-        if ($this->leave_type_code != RefLeaveType::codeAnnual && $this->leave_type_code != RefLeaveType::codeUnpaid) {
+        if ($this->leave_type_code != RefLeaveType::codeAnnual && $this->leave_type_code != RefLeaveType::codeUnpaid && $this->leave_type_code != RefLeaveType::codeTravel) {
             if ($this->leave_status == self::STATUS_GetSuperiorApproval) {
                 $this->leave_status++;
             }
         }
 
-        if ($this->leave_type_code == RefLeaveType::codeAnnual || $this->leave_type_code == RefLeaveType::codeUnpaid) {
+        if ($this->leave_type_code == RefLeaveType::codeAnnual || $this->leave_type_code == RefLeaveType::codeUnpaid || $this->leave_type_code == RefLeaveType::codeTravel) {
             if ($this->leave_status == self::STATUS_GetHrApproval) {
                 $this->leave_status = self::STATUS_Approved;
             }

@@ -3,19 +3,21 @@
 namespace frontend\models\cmms;
 
 use Yii;
-use yii\helpers\ArrayHelper;
+use frontend\models\inventory\InventoryModel;
 
 /**
  * This is the model class for table "cmms_part_list".
  *
  * @property int $id
  * @property int|null $asset_id
- * @property int|null $inventory_id
+ * @property int|null $inventory_model_id
+ * @property int|null $qty
+ * @property string|null $name
  *
  * @property CmmsAssetList[] $cmmsAssetLists
- * @property CmmsCorrectiveWorkOrderMaster[] $cmmsCorrectiveWorkOrderMasters
+ * @property CmmsFaultList[] $cmmsFaultLists
  * @property CmmsAssetFaults $asset
- * @property VInventoryModel $inventory
+ * @property InventoryModel $inventoryModel
  */
 class CmmsPartList extends \yii\db\ActiveRecord
 {
@@ -33,9 +35,10 @@ class CmmsPartList extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['asset_id', 'inventory_id'], 'integer'],
+            [['asset_id', 'inventory_model_id', 'qty'], 'integer'],
+            [['name'], 'string', 'max' => 255],
             [['asset_id'], 'exist', 'skipOnError' => true, 'targetClass' => CmmsAssetFaults::className(), 'targetAttribute' => ['asset_id' => 'id']],
-            [['inventory_id'], 'exist', 'skipOnError' => true, 'targetClass' => VInventoryModel::className(), 'targetAttribute' => ['inventory_id' => 'id']],
+            [['inventory_model_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventoryModel::className(), 'targetAttribute' => ['inventory_model_id' => 'id']],
         ];
     }
 
@@ -47,7 +50,9 @@ class CmmsPartList extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'asset_id' => 'Asset ID',
-            'inventory_id' => 'Inventory ID',
+            'inventory_model_id' => 'Inventory Model ID',
+            'qty' => 'Qty',
+            'name' => 'Name',
         ];
     }
 
@@ -62,13 +67,13 @@ class CmmsPartList extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[CmmsCorrectiveWorkOrderMasters]].
+     * Gets query for [[CmmsFaultLists]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getCmmsCorrectiveWorkOrderMasters()
+    public function getCmmsFaultLists()
     {
-        return $this->hasMany(CmmsCorrectiveWorkOrderMaster::className(), ['part_id' => 'id']);
+        return $this->hasMany(CmmsFaultList::className(), ['part_list_id' => 'id']);
     }
 
     /**
@@ -82,12 +87,12 @@ class CmmsPartList extends \yii\db\ActiveRecord
     }
 
     /**
-     * Gets query for [[Inventory]].
+     * Gets query for [[InventoryModel]].
      *
      * @return \yii\db\ActiveQuery
      */
-    public function getInventory()
+    public function getInventoryModel()
     {
-        return $this->hasOne(VInventoryModel::className(), ['id' => 'inventory_id']);
+        return $this->hasOne(InventoryModel::className(), ['id' => 'inventory_model_id']);
     }
 }

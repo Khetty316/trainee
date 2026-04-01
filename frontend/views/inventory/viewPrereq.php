@@ -5,36 +5,61 @@ use common\models\myTools\MyFormatter;
 use common\models\User;
 use frontend\models\RefGeneralStatus;
 
-//if ($page === "newItem") {
-//    $label = "New Item";
-//    $url = 'executive-new-item-ready-for-po-list';
-//} else {
-//    $label = "Reorder Item";
-//    $url = 'executive-reorder-item-ready-for-po-list';
-//}
 $moduleIndex = 'inventory';
 
 if ($module === 'execPendingPurchasing') {
     $pageName = 'Purchasing - Executive';
-    $pageName2 = 'Pending Requisition Approvale';
-    $module = 'execPurchasing';
-    $url = 'executive-pre-requisition-pending-approval';
+    $pageName2 = 'Pending Requisition Approval';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingInventory'];
 } else if ($module === 'execAllPurchasing') {
     $pageName = 'Purchasing - Executive';
     $pageName2 = 'All Pre-Requisitions';
-    $module = 'execPurchasing';
-    $url = 'executive-pre-requisition-all-application';
-} else if ($module === 'projcoor') {
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'allInventory'];
+}
+
+else if ($module === 'assistPendingPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $pageName2 = 'Pending Requisition Approval';
+        $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingInventory'];
+
+} else if ($module === 'assistAllPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $pageName2 = 'All Pre-Requisitions';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'allInventory'];
+} 
+
+else if ($module === 'projcoorPendingApproval') {
+    $pageName = 'Purchasing - Project Coordinator';
+    $pageName2 = 'Pending Requisition Approval';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingApprovalInventoryProjcoor'];
+} else if ($module === 'projcoorReadyForProcurement') {
+    $pageName = 'Purchasing - Project Coordinator';
+    $pageName2 = 'Ready for Procurement';
+        $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingProcurementInventoryProjcoor'];
+} else if ($module === 'projcoorAllApproval') {
     $pageName = 'Purchasing - Project Coordinator';
     $pageName2 = 'All Pre-Requisitions';
-    $module = 'projcoor';
-    $url = 'projcoor-pre-requisition-pending-approval';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'allInventoryProjcoor'];
+} 
+
+else if ($module === 'maintenanceHeadPendingApproval') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $pageName2 = 'Pending Requisition Approval';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingApprovalInventoryMaintenanceHead'];
+} else if ($module === 'maintenanceHeadReadyForProcurement') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $pageName2 = 'Ready for Procurement';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'pendingProcurementInventoryMaintenanceHead'];
+} else if ($module === 'maintenanceHeadAllApproval') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $pageName2 = 'All Pre-Requisitions';
+    $url = ['pre-requisition-list', 'type' => $module, 'context' => 'allInventoryMaintenanceHead'];
 }
 
 $this->title = $master->prf_no;
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
 $this->params['breadcrumbs'][] = ['label' => $pageName];
-$this->params['breadcrumbs'][] = ['label' => $pageName2, 'url' => [$url]];
+$this->params['breadcrumbs'][] = ['label' => $pageName2, 'url' => $url];
 $this->params['breadcrumbs'][] = ['label' => $this->title];
 $this->params['breadcrumbs'][] = ['label' => "View"];
 \yii\web\YiiAsset::register($this);
@@ -65,7 +90,7 @@ $this->params['breadcrumbs'][] = ['label' => "View"];
         <div class="col-md-4 text-right">
             <?php if ($master->status === frontend\models\RefGeneralStatus::STATUS_GetSuperiorApproval): ?>
                 <?php if ($moduleIndex === 'inventory'): ?>
-                    <?= Html::a('Update', ['update-pre-requisition', 'id' => $master->id, 'moduleIndex' => $moduleIndex], ['class' => 'btn btn-primary']) ?>
+                    <?= Html::a('Update', ['update-pre-requisition', 'id' => $master->id, 'moduleIndex' => $module], ['class' => 'btn btn-primary']) ?>
                 <?php endif; ?>
             <?php endif; ?>
         </div>

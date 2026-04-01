@@ -67,13 +67,17 @@ if ($po->isNewRecord && empty($po->currency_id)) {
                                 <td style="width: 10px; padding: 2px 5px;">:</td>
                                 <td style="padding: 2px 5px;">
                                     <?php
+                                    $editable = ($po->status == frontend\models\RefInventoryStatus::STATUS_PoCreated || $po->status == frontend\models\RefInventoryStatus::STATUS_AwaitingDelivery);
+
+                                    $readonly = !$editable;
+                                    
                                     if (empty($po->po_date)) {
                                         $po->po_date = date('d/m/Y');
                                     }
                                     ?>
                                     <?=
                                     $form->field($po, 'po_date')->widget(yii\jui\DatePicker::className(), [
-                                        'options' => ['class' => 'form-control', 'style' => 'height: auto;'],
+                                        'options' => ['class' => 'form-control', 'style' => 'height: auto;', 'readonly' => $readonly],
                                         'dateFormat' => 'dd/MM/yyyy'
                                     ])
                                     ?>
@@ -83,7 +87,7 @@ if ($po->isNewRecord && empty($po->currency_id)) {
                                 <td style="text-align: right; padding: 2px 5px;">COMPANY GROUP</td>
                                 <td style="width: 10px; padding: 2px 5px;">:</td>
                                 <td style="padding: 2px 5px;">
-                                    <?= $form->field($po, 'company_group')->dropDownList($companyGroupList, ['class' => 'form-control', 'style' => 'height: auto;']) ?>
+                                    <?= $form->field($po, 'company_group')->dropDownList($companyGroupList, ['class' => 'form-control', 'style' => 'height: auto;', 'readonly' => $readonly]) ?>
                                 </td>
                             </tr>
                             <tr>
@@ -94,7 +98,7 @@ if ($po->isNewRecord && empty($po->currency_id)) {
                                     $form->field($po, 'currency_id')->dropDownList($currencyList, [
                                         'class' => 'form-control',
                                         'id' => 'inventorypurchaseorder-currency',
-                                        'style' => 'height: auto;'
+                                        'style' => 'height: auto;', 'readonly' => $readonly
                                     ])
                                     ?>
                                 </td>
@@ -164,19 +168,30 @@ if ($po->isNewRecord && empty($po->currency_id)) {
                                 <?= Html::encode($poItem->brand->name) ?>, <?= Html::encode($poItem->model_description) ?>
                                 <?php if ($isReceived): ?>
                                     <span class="badge badge-success ml-2">Has Received Record</span>
+                                    <?=
+                                    Html::a('View', "javascript:void(0)", [
+                                        'title' => "View",
+                                        'value' => yii\helpers\Url::to(['view-po-item-receive-allocation', 'poItemId' => $poItem->id, 'moduleIndex' => $moduleIndex]),
+                                        'class' => 'modalButton btn btn-sm btn-info p-0 pl-1 pr-1',
+                                        'data-modaltitle' => 'PO Item: ' . Html::encode($poItem->inventoryDetail->code),
+                                    ])
+                                    ?>
+
                                 <?php endif; ?>
                                 <br>MODEL: <?= Html::encode($poItem->model_type) ?>
                             </td>
                             <td style="padding: 8px 5px; vertical-align: top; border-bottom: 1px solid #ddd; text-align: center;">
                                 <span class="qty-display"><?= $quantity ?></span>
-                                <?=
-                                Html::a('<i class="fa fa-edit"></i>', "javascript:void(0)", [
-                                    'title' => "Edit Qty",
-                                    'value' => yii\helpers\Url::to(['view-po-item-detail', 'poItemId' => $poItem->id, 'moduleIndex' => $moduleIndex]),
-                                    'class' => 'modalButton ml-2',
-                                    'data-modaltitle' => 'Edit Qty',
-                                ])
-                                ?>
+                                <?php if (!$isReceived) { ?>
+                                    <?=
+                                    Html::a('<i class="fa fa-edit"></i>', "javascript:void(0)", [
+                                        'title' => "Edit Qty",
+                                        'value' => yii\helpers\Url::to(['view-po-item-detail', 'poItemId' => $poItem->id, 'moduleIndex' => $moduleIndex]),
+                                        'class' => 'modalButton ml-2',
+                                        'data-modaltitle' => 'Edit Qty',
+                                    ])
+                                    ?>
+                                <?php } ?>
                                 <?= Html::hiddenInput("POItem[$index][order_qty]", $quantity, ['class' => 'item-qty', 'data-index' => $index]) ?>
                             </td>
                             <td style="padding: 8px 5px; vertical-align: top; border-bottom: 1px solid #ddd; text-align: center;">
@@ -234,9 +249,17 @@ if ($po->isNewRecord && empty($po->currency_id)) {
 
         <!-- Add Item Button -->
         <div class="mt-2 mb-3">
-            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addItemModal">
-                <i class="fas fa-plus-circle"></i> Add Item
+            <?php if ($po->status !== frontend\models\RefInventoryStatus::STATUS_FullyReceived) { ?>
+                <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#addItemModal">
+                
+                 Add Item <i class="fas fa-plus-circle"></i>
             </button>
+            <?php } else { ?>
+            <button type="button" class="btn btn-sm btn-secondary" disabled="true">
+                
+                 Add Item <i class="fas fa-plus-circle"></i>
+            </button>
+            <?php } ?>
         </div>
 
         <?= Html::hiddenInput('removed_po_item_ids', '', ['id' => 'removed-po-item-ids']) ?>

@@ -17,10 +17,38 @@ if ($moduleIndex === 'execPendingPurchasing') {
     $pageName = 'Purchasing - Executive';
     $module = 'execPurchasing';
     $key = 2;
-} else if ($moduleIndex === 'projcoor') {
+} else if ($moduleIndex === 'assistPendingPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
+    $key = 1;
+} else if ($moduleIndex === 'assistAllPurchasing') {
+    $pageName = 'Purchasing - Assistant';
+    $module = 'assistPurchasing';
+    $key = 2;
+} else if ($moduleIndex === 'projcoorPendingApproval') {
     $pageName = 'Purchasing - Project Coordinator';
     $module = 'projcoor';
     $key = 1;
+} else if ($moduleIndex === 'projcoorReadyForProcurement') {
+    $pageName = 'Purchasing - Project Coordinator';
+    $module = 'projcoor';
+    $key = 2;
+} else if ($moduleIndex === 'projcoorAllApproval') {
+    $pageName = 'Purchasing - Project Coordinator';
+    $module = 'projcoor';
+    $key = 3;
+} else if ($moduleIndex === 'maintenanceHeadPendingApproval') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 1;
+} else if ($moduleIndex === 'maintenanceHeadReadyForProcurement') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 2;
+} else if ($moduleIndex === 'maintenanceHeadAllApproval') {
+    $pageName = 'Purchasing - Head of Maintenance';
+    $module = 'maintenanceHeadPurchasing';
+    $key = 3;
 }
 
 //$this->title = 'Pre-Requisition';
@@ -30,40 +58,29 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
 ?>
 <div class="prereq-form-master-index">
 
-    <?= $this->render('_purchasingNavBar', ['module' => $module, 'pageKey' => $key]) ?>
+    <?= $this->render('__inventoryNavBar', ['module' => $module, 'pageKey' => $key]) ?>
     <p>
-        <?php//        if ($page === 'newItem'):  ?>
+        <?php //        if ($page === 'newItem'):  ?>
         <?php //= Html::a('Pre-requisition', ['prerequisition', 'moduleIndex' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?=
-        Html::a('Pre-requisition', ['..\inventory\inventory\create-prerequisition', 'sourceModule' => 'inventory', 'referenceType' => null, 'referenceId' => null], [
+        Html::a('Pre-requisition', ['create-prerequisition', 'sourceModule' => 'inventory', 'moduleIndex' => $moduleIndex, 'referenceType' => null, 'referenceId' => null], [
             'class' => 'btn btn-success',
             'target' => '_blank',
             'rel' => 'noopener noreferrer'
         ])
         ?>    
         <?php // endif; ?>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
-
-        <?php
-//        if ($moduleIndex === 'personal') {
-//            $actionName = 'user-manual-personal';
-//        } else if ($moduleIndex === 'superior') {
-//            $actionName = 'user-manual-superior';
-//        } else {
-//            $actionName = 'user-manual-superuser';
-//        }
-        ?>
-        <?php
-//        =
-//        Html::a(
-//                'User Manual <i class="fas fa-book"></i>',
-//                [$actionName],
-//                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
-//        )
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex . '&context=' . $context, ['class' => 'btn btn-primary']) ?> 
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
         ?>
     </p>
 
-<?php // echo $this->render('_search', ['model' => $searchModel]);   ?>
+    <?php // echo $this->render('_search', ['model' => $searchModel]);   ?>
 
     <?=
     GridView::widget([
@@ -92,6 +109,41 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
                             ]
                     ) : "");
                 }
+            ],
+            [
+                'attribute' => 'reference_type',
+                'format' => 'raw',
+                'filter' => [
+                    'bom' => 'Project - Bill of Material',
+                    'reserve' => 'Reservation'
+                ],
+                'value' => function ($model) {
+                    if ($model->reference_type === 'bom') {
+                        $referenceType = 'Project - Bill of Material';
+                    } else if ($model->reference_type === 'bomstockoutbound') {
+                        $referenceType = 'Project - Bill of Material';
+                    } else if ($model->reference_type === 'reserve') {
+                        $referenceType = 'Reservation';
+                    }
+                    return $referenceType ?? '-';
+                },
+            ],
+            [
+                'attribute' => 'reference_id',
+                'format' => 'raw',
+                'value' => function ($model) {
+                    if ($model->reference_type === 'bom') {
+                        $bomMaster = frontend\models\bom\BomMaster::findOne($model->reference_id);
+                        $referenceId = $bomMaster->productionPanel->project_production_panel_code;
+                    } else if ($model->reference_type === 'bomstockoutbound') {
+                        $id = frontend\models\bom\StockOutboundDetails::findOne($model->reference_id);
+                        $referenceId = $id->bomDetail->bomMaster->productionPanel->project_production_panel_code;
+                    } else if ($model->reference_type === 'reserve') {
+                        $id = common\models\User::findOne($model->reference_id);
+                        $referenceId = $id->fullname;
+                    }
+                    return $referenceId ?? '-';
+                },
             ],
             [
                 'attribute' => 'date_of_material_required',
@@ -173,19 +225,23 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
             [
                 'format' => 'raw',
                 'contentOptions' => ['class' => 'col-sm-1 text-center'],
-                'value' => function ($model) use ($module, $pageName, $moduleIndex) {
+                'value' => function ($model) use ($moduleIndex, $module) {
 //                    if ($module === 'personal' || $module === 'inventory' || $module === 'superuser') {
                     $html = Html::a(
                             'View <i class="far fa-eye"></i>',
                             ['view-pre-requisition', 'id' => $model->id, 'moduleIndex' => $moduleIndex],
                             ['class' => 'btn btn-sm btn-primary mx-1']
                     );
-
+//                    print_r($model);
                     if ($model->source_module == 2 && $model->status == RefGeneralStatus::STATUS_Approved && $model->is_deleted == 0 && ($model->inventory_flag == 0 || $model->inventory_flag === null)) {
                         $html .= Html::a(
                                 'Send to Procurement <i class="fas fa-arrow-right"></i>',
-                                ['send-to-procurement', 'id' => $model->id, 'page' => $moduleIndex],
-                                ['class' => 'btn btn-sm btn-success mx-1']
+                                ['send-to-procurement', 'id' => $model->id, 'type' => $module],
+                                [
+                                    'class' => 'btn btn-sm btn-success mx-1',
+                                    'data-confirm' => 'Are you sure you want to send this item to Procurement?',
+                                    'data-method' => 'post', // Recommended for state-changing actions
+                                ]
                         );
                     }
                     return $html;

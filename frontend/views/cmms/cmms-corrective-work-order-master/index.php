@@ -29,6 +29,15 @@ $this->params['breadcrumbs'][] = $this->title;
 </style>
 <div class="cmms-corrective-work-order-master-index">
     <h1><?= Html::encode($this->title) ?></h1>
+    <p>
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual-inventory'],
+                ['class' => 'btn btn-warning float-right mb-1', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
+    </p>
 
     <?php if ($moduleStatus === 'superior'): ?>
         <?= GridView::widget([
@@ -43,6 +52,13 @@ $this->params['breadcrumbs'][] = $this->title;
                 [
                     'label' => 'Fault List IDs',
                     'format' => 'raw',
+                    'contentOptions' => [
+                        'style' => '
+                            max-width: 250px;
+                            white-space: normal;
+                            word-break: break-word;
+                        ',
+                    ],
                     'value' => function ($model) use ($moduleStatus) {
                         return Html::a(
                             'View',
@@ -62,18 +78,17 @@ $this->params['breadcrumbs'][] = $this->title;
                     }
                 ],
                 [
-                    'attribute' => 'id',
-                    'label' => 'CM WO ID',
-                    'value' => function ($model) {
-                        return $model->id ?? '-';
-    //                    return $model->cmmsFaultListDetails[0]->cmmsAssetList->asset_id ?? '-';
-                    }
-                ],
-                [
                     'attribute' => 'progress_status_id',
                     'label' => 'Progress Status',
+                    'contentOptions' => [
+                        'style' => '
+                            max-width: 250px;
+                            white-space: normal;
+                            word-break: break-word;
+                        ',
+                    ],
                     'value' => function ($model) {
-                        return $model->progress_status_id ?? '-';
+                        return $model->progressStatus->name ?? '-';
                     }
                 ],
                 [
@@ -107,6 +122,13 @@ $this->params['breadcrumbs'][] = $this->title;
                 [
                     'attribute' => 'duration',
                     'label' => 'Duration (days)',
+                    'contentOptions' => [
+                        'style' => '
+                            max-width: 250px;
+                            white-space: normal;
+                            word-break: break-word;
+                        ',
+                    ],
                     'value' => function ($model) {
                         return $model->duration ?? '-';
                     }
@@ -128,26 +150,33 @@ $this->params['breadcrumbs'][] = $this->title;
                     },
                 ],
                 [
-                    'label' => 'Selected Parts',
+                    'label' => 'Selected Parts/Tools',
                     'format' => 'raw',
                     'contentOptions' => [
-                        'style' => '
-                            max-width: 250px;
-                            white-space: normal;
-                            word-break: break-word;
-                        ',
+//                        'style' => '
+//                            max-width: 250px;
+//                            white-space: normal;
+//                            word-break: break-word;
+//                        ',
+                        'class' => 'col-sm-1 text-center'
                     ],
-                    'value' => function ($model) {
-                        $text = implode(', ', $model->getSelectedParts());
-
-                        return Html::tag(
-                                'span',
-                                Html::encode($text),
-                                [
-                                    'title' => $text,
-                                    'data-toggle' => 'tooltip',
-                                ]
-                        );
+                    'value' => function ($model) use ($moduleStatus) {
+                         return Html::a(
+                            '<i class="fas fa-external-link-alt"></i>',
+                            ['view-selected-material', 'id' => $model->id, 'moduleIndex' => $moduleStatus],
+                            ['class' => 'text-primary mx-1']
+                    );
+    
+//                        $text = implode(', ', $model->getSelectedParts());
+//
+//                        return Html::tag(
+//                                'span',
+//                                Html::encode($text),
+//                                [
+//                                    'title' => $text,
+//                                    'data-toggle' => 'tooltip',
+//                                ]
+//                        );
     //                    $parts = [];
     //                    
     //                    foreach ($model->cmmsFaultLists as $fault) {
@@ -161,9 +190,43 @@ $this->params['breadcrumbs'][] = $this->title;
     //                            : Html::tag('span', '-', ['class' => 'text-muted']);
                     },
                 ],
+//                [
+//                    'label' => 'Selected Tools',
+//                    'format' => 'raw',
+//                    'contentOptions' => [
+//                        'style' => '
+//                            max-width: 250px;
+//                            white-space: normal;
+//                            word-break: break-word;
+//                        ',
+//                    ],
+//                    'value' => function ($model) {
+//                        $text = implode(', ', $model->getSelectedTools());
+//
+//                        return Html::tag(
+//                                'span',
+//                                Html::encode($text),
+//                                [
+//                                    'title' => $text,
+//                                    'data-toggle' => 'tooltip',
+//                                ]
+//                        );
+//    //                    $tools = [];
+//
+//    //                    foreach ($model->cmmsFaultLists as $fault) {
+//    //                        if ($fault->toolList) {
+//    //                            $tools[] = Html::encode($fault->toolList->inventory->brand_model);
+//    //                        }
+//    //                    }
+//    //                    
+//    //                    return $tools
+//    //                            ? implode('<br>', array_unique($tools))
+//    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
+//                    },
+//                ],      
                 [
-                    'label' => 'Selected Tools',
-                    'format' => 'raw',
+                    'attribute' => 'remarks',
+                    'label' => 'Remarks',
                     'contentOptions' => [
                         'style' => '
                             max-width: 250px;
@@ -172,30 +235,9 @@ $this->params['breadcrumbs'][] = $this->title;
                         ',
                     ],
                     'value' => function ($model) {
-                        $text = implode(', ', $model->getSelectedTools());
-
-                        return Html::tag(
-                                'span',
-                                Html::encode($text),
-                                [
-                                    'title' => $text,
-                                    'data-toggle' => 'tooltip',
-                                ]
-                        );
-    //                    $tools = [];
-
-    //                    foreach ($model->cmmsFaultLists as $fault) {
-    //                        if ($fault->toolList) {
-    //                            $tools[] = Html::encode($fault->toolList->inventory->brand_model);
-    //                        }
-    //                    }
-    //                    
-    //                    return $tools
-    //                            ? implode('<br>', array_unique($tools))
-    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
-                    },
-                ],      
-                'remarks',
+                        return $model->remarks ?? '-';
+                    }
+                ],
                 [
                     'class' => 'yii\grid\ActionColumn',
                     'template' => '{update} {delete}',
@@ -269,13 +311,6 @@ $this->params['breadcrumbs'][] = $this->title;
                     }
                 ],
                 [
-                    'attribute' => 'id',
-                    'label' => 'CM WO ID',
-                    'value' => function ($model) {
-                        return $model->id ?? '-';
-                    }
-                ],
-                [
                     'attribute' => 'progress_status_id',
                     'label' => 'Progress Status',
                     'value' => function ($model) {
@@ -313,6 +348,13 @@ $this->params['breadcrumbs'][] = $this->title;
                 [
                     'attribute' => 'duration',
                     'label' => 'Duration (days)',
+                    'contentOptions' => [
+                        'style' => '
+                            max-width: 250px;
+                            white-space: normal;
+                            word-break: break-word;
+                        ',
+                    ],
                     'value' => function ($model) {
                         return $model->duration ?? '-';
                     }
@@ -333,9 +375,91 @@ $this->params['breadcrumbs'][] = $this->title;
                         ));
                     },
                 ],
-                [
-                    'label' => 'Selected Parts',
+//                [
+//                    'label' => 'Selected Parts',
+//                    'format' => 'raw',
+//                    'contentOptions' => [
+//                        'style' => '
+//                            max-width: 250px;
+//                            white-space: normal;
+//                            word-break: break-word;
+//                        ',
+//                    ],
+//                    'value' => function ($model) {
+//                        $text = implode(', ', $model->getSelectedParts());
+//
+//                        return Html::tag(
+//                                'span',
+//                                Html::encode($text),
+//                                [
+//                                    'title' => $text,
+//                                    'data-toggle' => 'tooltip',
+//                                ]
+//                        );
+//    //                    $parts = [];
+//    //                    
+//    //                    foreach ($model->cmmsFaultLists as $fault) {
+//    //                        if ($fault->partList) {
+//    //                            $parts[] = Html::encode($fault->partList->inventory->brand_model);
+//    //                        }
+//    //                    }
+//    //                    
+//    //                    return $parts
+//    //                            ? implode('<br>', array_unique($parts))
+//    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
+//                    },
+//                ],
+//                [
+//                    'label' => 'Selected Tools',
+//                    'format' => 'raw',
+//                    'contentOptions' => [
+//                        'style' => '
+//                            max-width: 250px;
+//                            white-space: normal;
+//                            word-break: break-word;
+//                        ',
+//                    ],
+//                    'value' => function ($model) {
+//                        $text = implode(', ', $model->getSelectedTools());
+//
+//                        return Html::tag(
+//                                'span',
+//                                Html::encode($text),
+//                                [
+//                                    'title' => $text,
+//                                    'data-toggle' => 'tooltip',
+//                                ]
+//                        );
+//    //                    $tools = [];
+//
+//    //                    foreach ($model->cmmsFaultLists as $fault) {
+//    //                        if ($fault->toolList) {
+//    //                            $tools[] = Html::encode($fault->toolList->inventory->brand_model);
+//    //                        }
+//    //                    }
+//    //                    
+//    //                    return $tools
+//    //                            ? implode('<br>', array_unique($tools))
+//    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
+//                    },
+//                ],  
+                             [
+                    'label' => 'Selected Parts/Tools',
                     'format' => 'raw',
+                    'contentOptions' => [
+                        'class' => 'col-sm-1 text-center'
+                    ],
+                    'value' => function ($model) use ($moduleStatus) {
+                         return Html::a(
+                            '<i class="fas fa-external-link-alt"></i>',
+                            ['view-selected-material', 'id' => $model->id, 'moduleIndex' => $moduleStatus],
+                            ['class' => 'text-primary mx-1']
+                    );
+                    },
+                ],
+                [
+                    'attribute' => 'remarks',
+                    'label' => 'Remarks',
                     'contentOptions' => [
                         'style' => '
                             max-width: 250px;
@@ -344,103 +468,48 @@ $this->params['breadcrumbs'][] = $this->title;
                         ',
                     ],
                     'value' => function ($model) {
-                        $text = implode(', ', $model->getSelectedParts());
-
-                        return Html::tag(
-                                'span',
-                                Html::encode($text),
-                                [
-                                    'title' => $text,
-                                    'data-toggle' => 'tooltip',
-                                ]
-                        );
-    //                    $parts = [];
-    //                    
-    //                    foreach ($model->cmmsFaultLists as $fault) {
-    //                        if ($fault->partList) {
-    //                            $parts[] = Html::encode($fault->partList->inventory->brand_model);
-    //                        }
-    //                    }
-    //                    
-    //                    return $parts
-    //                            ? implode('<br>', array_unique($parts))
-    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
-                    },
+                        return $model->remarks ?? '-';
+                    }
                 ],
-                [
-                    'label' => 'Selected Tools',
-                    'format' => 'raw',
-                    'contentOptions' => [
-                        'style' => '
-                            max-width: 250px;
-                            white-space: normal;
-                            word-break: break-word;
-                        ',
-                    ],
-                    'value' => function ($model) {
-                        $text = implode(', ', $model->getSelectedTools());
-
-                        return Html::tag(
-                                'span',
-                                Html::encode($text),
-                                [
-                                    'title' => $text,
-                                    'data-toggle' => 'tooltip',
-                                ]
-                        );
-    //                    $tools = [];
-
-    //                    foreach ($model->cmmsFaultLists as $fault) {
-    //                        if ($fault->toolList) {
-    //                            $tools[] = Html::encode($fault->toolList->inventory->brand_model);
-    //                        }
-    //                    }
-    //                    
-    //                    return $tools
-    //                            ? implode('<br>', array_unique($tools))
-    //                            : Html::tag('span', '-', ['class' => 'text-muted']);
-                    },
-                ],      
-                'remarks',
-                [
-                    'class' => 'yii\grid\ActionColumn',
-                    'template' => '{update} {delete}',
-                    'buttons' => [
-                        'update' => function ($url, $model) use ($moduleStatus) {
-                            return Html::a(
-    //                                Yii::$app->formatter->asRaw('<i class="bi bi-pencil"></i>'),
-                                '<i class="bi bi-pencil"></i>',
-                                'javascript:void(0);',
-                                [
-                                    'class' => 'modalButtonSingle text-success',
-                                    'title' => 'Update',
-                                    'data-url' => Url::to([
-                                        'update',
-                                        'id' => $model->id,
-                                        'moduleStatus' => $moduleStatus
-                                    ]),
-                                    'data-modaltitle' => 'Update Corrective Work Order Form',
-    //                                    'aria-label' => 'Update',
-                                ]
-                            );
-                        },
-                        'delete' => function ($url, $model) {
-                            return Html::a(
-                                '<i class="bi bi-trash"></i>',
-                                Url::to(['delete', 'id' => $model->id]),
-                                [
-                                    'class' => 'text-danger',
-                                    'title' => 'Delete',
-                                    'aria-label' => 'Delete',
-                                    'data' => [
-                                        'confirm' => 'Are you sure you want to delete this item?',
-                                        'method' => 'post',
-                                    ],
-                                ]
-                            );
-                        }
-                    ],
-                ],
+//                [
+//                    'class' => 'yii\grid\ActionColumn',
+//                    'template' => '{update} {delete}',
+//                    'buttons' => [
+//                        'update' => function ($url, $model) use ($moduleStatus) {
+//                            return Html::a(
+//    //                                Yii::$app->formatter->asRaw('<i class="bi bi-pencil"></i>'),
+//                                '<i class="bi bi-pencil"></i>',
+//                                'javascript:void(0);',
+//                                [
+//                                    'class' => 'modalButtonSingle text-success',
+//                                    'title' => 'Update',
+//                                    'data-url' => Url::to([
+//                                        'update',
+//                                        'id' => $model->id,
+//                                        'moduleStatus' => $moduleStatus
+//                                    ]),
+//                                    'data-modaltitle' => 'Update Corrective Work Order Form',
+//    //                                    'aria-label' => 'Update',
+//                                ]
+//                            );
+//                        },
+//                        'delete' => function ($url, $model) {
+//                            return Html::a(
+//                                '<i class="bi bi-trash"></i>',
+//                                Url::to(['delete', 'id' => $model->id]),
+//                                [
+//                                    'class' => 'text-danger',
+//                                    'title' => 'Delete',
+//                                    'aria-label' => 'Delete',
+//                                    'data' => [
+//                                        'confirm' => 'Are you sure you want to delete this item?',
+//                                        'method' => 'post',
+//                                    ],
+//                                ]
+//                            );
+//                        }
+//                    ],
+//                ],
             ],
         ]); ?>
     <?php endif; ?>
@@ -457,3 +526,11 @@ $this->params['breadcrumbs'][] = $this->title;
             .load(url);
     });
 </script>
+
+
+
+
+
+    
+    
+    

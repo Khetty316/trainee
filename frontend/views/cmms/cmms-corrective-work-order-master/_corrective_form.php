@@ -137,14 +137,18 @@ use common\models\User;
                                     <div class="tech-row mb-1">
                                         <?=
                                             $form->field($assigned_PIC, "[$a]name")->textInput([
-                                                'class' => 'form-control',
+                                                'class' => 'form-control pic-name',
                                                 'list' => 'users'
                                             ])->label(false)
                                         ?>
 
-                                        <?= yii\helpers\Html::activeHiddenInput($assigned_PIC, "[$a]id") ?>
+                                        <?= yii\helpers\Html::activeHiddenInput($assigned_PIC, "[$a]id", [
+                                            'class' => 'pic-id',
+                                        ]) ?>
 
-                                        <button type="button" class="btn btn-danger btn-sm remove-tech">x</button>
+                                        <button type="button" class="btn btn-danger btn-sm remove-tech">
+                                            x
+                                        </button>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -210,33 +214,89 @@ use common\models\User;
     JS);
 ?>
 <script>
-    let techIndex = <?= count($assignedPICs) ?>; // start index from existing assigned PICs
-
-    document.getElementById('add-tech').addEventListener('click', function () { 
-        document.getElementById('tech-wrapper').insertAdjacentHTML(
-            'beforeend',
-            `
+    window.techIndex = window.techIndex ?? <?= (int)count($assignedPICs) ?>; // start index from existing assigned PICs
+    
+    $(document).off('click', '#add-tech').on('click', '#add-tech', function () {
+       const techIndex = window.techIndex;
+       
+       $('#tech-wrapper').append(`
             <div class="tech-row mb-1">
                 <input type="text"
-                       name="RefAssignedPic[${techIndex}][name]"
-                       class="form-control"
-                       list="users"> <!-- add this to connect to your datalist -->
-
+                        name="RefAssignedPic[${techIndex}][name]"
+                        class="form-control pic-name"
+                        list="users">
+                
                 <input type="hidden"
-                       name="RefAssignedPic[${techIndex}][id]">
-
+                       name="RefAssignedPic[${techIndex}][id]"
+                       class="pic-id">
+                
                 <button type="button"
-                        class="btn btn-danger btn-sm remove-tech">x</button>
+                        class="btn btn-danger btn-sm remove-tech">X</button>
             </div>
-            `
-        );
-
-        techIndex++;
+        `);
+         window.techIndex++;
     });
+//    document.getElementById('add-tech').addEventListener('click', function () { 
+//        document.getElementById('tech-wrapper').insertAdjacentHTML(
+//            'beforeend',
+//            `
+//            <div class="tech-row mb-1">
+//                <input type="text"
+//                       name="RefAssignedPic[${techIndex}][name]"
+//                       class="form-control"
+//                       list="users"> <!-- add this to connect to your datalist -->
+//
+//                <input type="hidden"
+//                       name="RefAssignedPic[${techIndex}][id]">
+//
+//                <button type="button"
+//                        class="btn btn-danger btn-sm remove-tech">x</button>
+//            </div>
+//            `
+//        );
+//
+//        techIndex++;
+//    });
     
     document.addEventListener('click', function (e) {
         if (e.target.classList.contains('remove-tech')) {
             e.target.closest('.tech-row').remove();
         }
     });
+//    function getCsrfToken() {
+//        return $('meta[name="csrf-token"]').attr('content');
+//    }
+//
+//    $(document).on('click', '.remove-tech', function () {
+//        const row = $(this).closest('.tech-row');
+//        const nameVal = row.find('input.pic-name').val().trim();
+//        const picId = row.find('input.pic-id').val();
+//        
+//        if (nameVal === '') {
+//            row.remove();
+//            return;
+//        }
+//        
+//        if (!picId) {
+//            row.remove();
+//            return;
+//        }
+//        
+//        if (!confirm('Remove this technician?'))    return;
+//        
+//        $.ajax({
+//            url: "<? Url::to(['remove-pic']) ?>",
+//            type: "POST",
+//            data: { picID: picId, _csrf: getCsrfToken() },
+//            success: function () { row.remove(); },
+//            error: function () { alert('Failed to remove technician.'); },
+//        });
+//    });
+//    
+//    $(document).on('change', '.pic-name', function () {
+//        const row = $(this).closest('.tech-row');
+//        const chosen = $(this).val();
+//        const opt = $('#users option').filter(function() { return $(this).val() === chosen; });
+//        row.find('.pic-id').val(opt.data('id') || '');
+//    });
 </script>

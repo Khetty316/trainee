@@ -19,11 +19,11 @@ $panel = $bomMaster->productionPanel;
 <div class="bomdetails-index">
 
     <?php // if (($canReverse ?? false) && (MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super]))) { ?>
-        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? Html::a(" (Finalized)", 'javascript:void(0)', ['class' => 'text-primary', 'id' => 'revertBtn']) : "")          ?></h4>-->
+        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? Html::a(" (Finalized)", 'javascript:void(0)', ['class' => 'text-primary', 'id' => 'revertBtn']) : "")            ?></h4>-->
     <?php // } else { ?>
-        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? " <span class='text-warning'>(Finalized)</span>" : "")          ?></h4>-->
+        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? " <span class='text-warning'>(Finalized)</span>" : "")            ?></h4>-->
     <?php // } ?>
-    <!--<h5><?php //= $panel->project_production_panel_code . ": " . $panel->panel_description          ?></h5>-->
+    <!--<h5><?php //= $panel->project_production_panel_code . ": " . $panel->panel_description            ?></h5>-->
 
     <h4><?= Html::encode($this->title) ?></h4>
     <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super, AuthItem::ROLE_Bom_Normal])) { ?>
@@ -39,7 +39,7 @@ $panel = $bomMaster->productionPanel;
             ]);
             ?>
             <?=
-            Html::a('Pre-Requisition', ['..\inventory\inventory\create-prerequisition', 'sourceModule' => 'inventory', 'referenceType' => "bom", 'referenceId' => $bomMaster->id], [
+            Html::a('Pre-Requisition', ['..\inventory\inventory\create-prerequisition', 'sourceModule' => 'inventory', 'moduleIndex' => "projcoorPendingApproval", 'referenceType' => "bom", 'referenceId' => $bomMaster->id], [
                 'class' => 'btn btn-success',
                 'target' => '_blank',
                 'rel' => 'noopener noreferrer'
@@ -120,7 +120,6 @@ $panel = $bomMaster->productionPanel;
             'description',
             'qty',
             'remark',
-// COMBINED: Inventory Status + Pre-Req Checkbox with Select All
             [
                 'attribute' => 'inventory_sts',
                 'label' => '<div style="margin-bottom: 5px;">Inventory' .
@@ -132,34 +131,39 @@ $panel = $bomMaster->productionPanel;
                 'value' => function ($model) {
                     $canPreReq = MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super, AuthItem::ROLE_Bom_Normal]);
 
-                    switch ($model->inventory_sts) {
-                        case 1:
-                            return '<span class="badge badge-info">Pre-Req Submitted</span>';
-                        case 2:
-                            return '<span class="badge badge-success">This item exist in Inventory</span>';
-                        case 3:
-                            return '<span class="badge badge-danger">Pre-Requisite Rejected</span>';
-                        case 4:
-                            return '<span class="badge badge-warning">Awaiting Confirmation</span>';
-                        case 0:
-                            if ($canPreReq && $model->is_finalized == 1 && $model->active_status == 1) {
-                                return '<div>' .
-                                        '<span class="badge badge-danger">This item does not exist in Inventory. Please issue Pre-Requisite</span>' .
-                                        Html::checkbox('prereq_items[]', false, [
-                                            'value' => $model->id,
-                                            'class' => 'prereq-checkbox ml-2',
-                                            'title' => 'Select for pre-requisition'
-                                        ]) .
-                                        '</div>';
-                            } else {
-                                return '<span class="badge badge-danger">This item does not exist in Inventory.</span>';
-                            }
-                        default:
-                            return '<span class="text-muted">-</span>';
+                    if ($model->active_status == 1) {
+                        switch ($model->inventory_sts) {
+                            case 1:
+                                return '<span class="badge badge-info">Pre-Req Submitted</span>';
+                            case 2:
+                                return '<span class="badge badge-success">This item exist in Inventory</span>';
+                            case 3:
+                                return '<span class="badge badge-danger">Pre-Requisite Rejected</span>';
+                            case 4:
+                                return '<span class="badge badge-warning">Awaiting Confirmation</span>';
+                            case 5:
+                                return '<span class="badge badge-info">Purchasing in Progress</span>';
+                            case 0:
+                                if ($canPreReq && $model->is_finalized == 1 && $model->active_status == 1) {
+                                    return '<div>' .
+                                            '<span class="badge badge-danger">This item does not exist in Inventory. Please issue Pre-Requisite</span>' .
+                                            Html::checkbox('prereq_items[]', false, [
+                                                'value' => $model->id,
+                                                'class' => 'prereq-checkbox ml-2',
+                                                'title' => 'Select for pre-requisition'
+                                            ]) .
+                                            '</div>';
+                                } else {
+                                    return '<span class="badge badge-danger">This item does not exist in Inventory.</span>';
+                                }
+                            default:
+                                return '-';
+                        }
+                    } else {
+                        return '->';
                     }
                 }
             ],
-// COMBINED: Finalize Status + Checkbox with Select All
             [
                 'attribute' => 'is_finalized',
                 'label' => '<div style="margin-bottom: 5px;">Finalize' .
@@ -169,12 +173,11 @@ $panel = $bomMaster->productionPanel;
                 'headerOptions' => ['class' => 'text-center'],
                 'contentOptions' => ['class' => 'text-center'],
                 'value' => function ($model) {
-
                     $canFinalize = MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super, AuthItem::ROLE_Bom_Normal]);
 
-                    if ($model->is_finalized == 2) {
+                    if ($model->is_finalized == 2 && $model->active_status == 1) {
                         return '<span class="badge badge-success">Finalized</span>';
-                    } else if ($model->is_finalized == 1) {
+                    } else if ($model->is_finalized == 1 && $model->active_status == 1) {
                         if ($canFinalize && $model->inventory_sts == 2 && $model->active_status == 1) {
                             return '<div>' .
                                     '<span class="badge badge-warning">Pending</span>' .
@@ -187,15 +190,13 @@ $panel = $bomMaster->productionPanel;
                         } else {
                             return '<span class="badge badge-warning">Pending</span>';
                         }
-                    } else if ($model->is_finalized == 3) {
+                    } else if ($model->is_finalized == 3 && $model->active_status == 1) {
                         return '<span class="badge badge-secondary">Outbound</span>';
                     } else {
                         return '<span class="text-muted">-</span>';
                     }
                 }
             ],
-
-// COMBINED: Outbound Status + Checkbox with Select All
             MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super]) ? [
                 'label' => '<div style="margin-bottom: 5px;">Outbound' .
                 '<input type="checkbox" id="select-all-outbound" class="select-all-checkbox ml-2" title="Select all outbound items"></div>',
@@ -224,7 +225,6 @@ $panel = $bomMaster->productionPanel;
                     }
                 }
                     ] : null,
-// SEPARATE: Delete Checkbox with Select All
             ($bomMaster->finalized_status != 1 && MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super, AuthItem::ROLE_Bom_Normal])) ? [
                 'label' => '<div style="margin-bottom: 5px;">Delete' .
                 '<input type="checkbox" id="select-all-delete" class="select-all-checkbox ml-2" title="Select all items to delete"></div>',

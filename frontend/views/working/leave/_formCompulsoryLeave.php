@@ -18,7 +18,7 @@ $this->params['breadcrumbs'][] = 'Schedule Compulsory Leave';
     }
 
     .scrollable-table {
-        max-height: 250px;
+        max-height: 900px;
         overflow-y: auto;
     }
 
@@ -54,17 +54,6 @@ $this->params['breadcrumbs'][] = 'Schedule Compulsory Leave';
                         <button type="button" class="btn btn-success col-12" id="check-all-button" title="Check/Uncheck All"><i class="fas fa-check"></i> All</i></button>
                     </div>
                 </div>
-
-                <?php
-                $categories = [
-                    'Executive Staff' => $execs,
-                    'Office Staff' => $offices,
-                    'Production Staff' => $prods,
-                ];
-                ?>
-
-                <?php foreach ($categories as $categoryName => $categoryData): ?>
-                    <h5><?= $categoryName ?></h5>
                     <div class="scrollable-table">
                         <table class="table table-striped table-bordered table-sm" name="myList">
                             <thead class="thead-fixed">
@@ -75,14 +64,14 @@ $this->params['breadcrumbs'][] = 'Schedule Compulsory Leave';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($categoryData as $user): ?>
+                                <?php foreach ($staffList as $staff): ?>
                                     <tr>
-                                        <td><?= Html::encode($user['staff_id']) ?></td>
-                                        <td><?= Html::encode(ucwords(strtolower($user['fullname']))) ?></td>
+                                        <td><?= Html::encode($staff['staff_id']) ?></td>
+                                        <td><?= Html::encode(ucwords(strtolower($staff['fullname']))) ?></td>
                                         <td class="text-center">
                                             <?=
-                                            Html::checkbox("selectedUsers[]", in_array($user['id'], array_column($cDetails, 'user_id')),
-                                                    ['value' => $user['id'],])
+                                            Html::checkbox("selectedUsers[]", in_array($staff['id'], array_column($cDetails, 'user_id')),
+                                                    ['value' => $staff['id'],])
                                             ?>
                                         </td>
                                     </tr>
@@ -90,7 +79,7 @@ $this->params['breadcrumbs'][] = 'Schedule Compulsory Leave';
                             </tbody>
                         </table>
                     </div>
-                <?php endforeach; ?>
+
             </fieldset>
         </div>
         <div class="col-sm-12 col-md-6">

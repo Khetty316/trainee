@@ -168,7 +168,7 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
         return parent::beforeSave($insert);
     }
 
-    public static function checkInventoryDuplicate($department, $supplierId, $brandId, $modelName) {
+    public static function checkInventoryDuplicate($department, $supplierId, $brandId, $modelName, $excludeId = null) {
 
         // Normalize model name and find model ID
         $existingModel = \frontend\models\inventory\InventoryModel::find()
@@ -190,6 +190,9 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
                     'active_sts' => 2,
         ]);
 
+        if ($excludeId) {
+        $query->andWhere(['!=', 'id', $excludeId]);
+    }
         return $query->exists();
     }
 

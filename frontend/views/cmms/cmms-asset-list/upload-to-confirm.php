@@ -39,6 +39,9 @@ $this->params['breadcrumbs'][] = $this->title;
             <th>Serial no.</th>
             <th>Date of purchase</th>
             <th>Date of installation</th>
+            <th>Fault Type</th>
+            <th>Fault Primary Description</th>
+            <th>Fault Secondary Description</th>
             <th style="width: 1%;">Delete</th>
         </tr>
     </thead>
@@ -96,6 +99,15 @@ $this->params['breadcrumbs'][] = $this->title;
                         }
                     ?>
                     <?= Html::input('date', "CmmsAssetList[date_of_installation][$index]", $v2, ['class' => 'form-control']) ?>
+                </td>
+                <td>
+                    <?= Html::input('text', "CmmsAssetFaults[fault_type][$index]", $row['fault_type'], ['class' => 'form-control']) ?>
+                </td>
+                <td>
+                    <?= Html::input('text', "CmmsAssetFaults[fault_primary_detail][$index]", $row['fault_primary_detail'], ['class' => 'form-control']) ?>
+                </td>
+                <td>
+                    <?= Html::input('text', "CmmsAssetFaults[fault_secondary_detail][$index]", $row['fault_secondary_detail'], ['class' => 'form-control']) ?>
                 </td>
                 <td class="text-center" >
                     <button type="button" class="btn btn-danger btn-sm delete-row"><i class="far fa-trash-alt"></i></button>

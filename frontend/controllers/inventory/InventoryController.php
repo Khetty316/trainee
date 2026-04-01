@@ -28,6 +28,10 @@ use frontend\models\inventory\InventoryOrderRequest;
 use frontend\models\inventory\InventoryOrderRequestSearch;
 use frontend\models\inventory\InventoryPurchaseOrder;
 use frontend\models\inventory\InventoryPurchaseOrderItem;
+use frontend\models\inventory\InventoryReserveItem;
+use frontend\models\inventory\InventoryReserveItemSearch;
+use common\modules\auth\models\AuthItem;
+use yii\filters\AccessControl;
 
 /**
  * InventoryController implements the CRUD actions for InventorySupplier model.
@@ -49,48 +53,63 @@ class InventoryController extends Controller {
                     'delete' => ['POST'],
                 ],
             ],
+            'access' => [
+                'class' => AccessControl::className(),
+                'rules' => [
+                    [
+                        'allow' => true,
+                        'actions' => ['user-manual-inventory', 'item-list', 'supplier-list', 'brand-list', 'add-new-brand', 'view-brand', 'add-by-template-brand', 'save-brand-details', 'model-list', 'add-new-model', 'view-model', 'get-model-image', 'add-by-template-model', 'save-model-details', 'reserved-item-list', 'add-new-reserve-item', 'get-model-suppliers', 'edit-reservation', 'cancel-reservation', 'pre-requisition-list', 'order-request-list', 'add-new-order-request', 'view-order-request-allocation', 'edit-supplier-order-request', 'create-prerequisition', 'update-pre-requisition', 'send-to-procurement', 'ajax-add-form-item', 'inventory-check-duplicate', 'view-pre-requisition', 'proceed-to-procurement'],
+                        'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_MaintenanceHead],
+                    ],
+                    [
+                        'actions' => ['deactivate-po', 'view-item-detail', 'add-new-item', 'check-duplicate', 'add-new-supplier', 'view-supplier', 'add-by-template-supplier', 'save-supplier-details', 'confirm-order-request', 'create-purchase-orders', 'po', 'manage-po', 'view-po-item-detail', 'view-po-item-receive-allocation', 'search-inventory-items', 'get-quotation', 'get-po', 'update-receive-items', 'confirm-and-upload-attachment', 'receiving-history', 'view-batch-details', 'download-attachment', 'get-po-attachment'],
+                        'allow' => true,
+                        'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead],
+                    ],
+                ],
+            ],
         ];
     }
 
     /*     * ************* Item Detail ************************ */
 
-    public function actionItemList() {
+    public function actionItemList($type) {
         $searchModel = new VInventoryDetailSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('itemList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type,
         ]);
     }
 
-    public function actionViewItemDetail($id) {
+    public function actionViewItemDetail($id, $type) {
         $model = InventoryDetail::findOne($id);
         $vmodel = \frontend\models\inventory\VInventoryDetail::findOne($model->id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['item-list']);
+            return $this->redirect(['item-list', 'type' => $type]);
         }
 
         return $this->render('_formItemDetail', [
                     'model' => $model,
-                    'vmodel' => $vmodel
+                    'vmodel' => $vmodel,
+                    'moduleIndex' => $type,
         ]);
     }
 
-    //executive only
-    public function actionAddNewItem() {
+    public function actionAddNewItem($type) {
         $supplier = new InventorySupplier();
         $brand = new InventoryBrand();
         $modelClass = new InventoryModel();
         $supplierList = $supplier->getAllDropDownSupplierList();
-        $brandList = $brand->getAllDropDownBrandList();
-        $modelList = $modelClass->getAllDropDownModelList();
         $currencyList = RefCurrencies::getActiveDropdownlist_by_id();
         $itemList = [new InventoryDetail()];
         $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
+        $modelBrandList = $modelClass->getModelBrandCombinations();
 
-        if (Yii::$app->request->post()) {
+        if (Yii::$app->request->isPost) {
             $itemList = [];
             $postItems = Yii::$app->request->post('InventoryDetail', []);
 
@@ -102,10 +121,27 @@ class InventoryController extends Controller {
 
             $isValid = true;
 
-            // Validate each item
             foreach ($itemList as $index => $item) {
+
+                // Validate required fields manually since model_id and brand_id
+                // come from hidden inputs, not Yii form fields
+                if (empty($item->model_id)) {
+                    $item->addError('model_id', 'Please select a model type.');
+                    $isValid = false;
+                }
+
+                if (empty($item->brand_id)) {
+                    $item->addError('brand_id', 'Brand is required.');
+                    $isValid = false;
+                }
+
                 if (!$item->validate()) {
                     $isValid = false;
+                }
+
+                // Skip duplicate checks if basic validation already failed
+                if (!empty($item->getErrors())) {
+                    continue;
                 }
 
                 // Check for duplicates in database
@@ -119,29 +155,29 @@ class InventoryController extends Controller {
                         ->one();
 
                 if ($existing) {
-                    $supplier = InventorySupplier::findOne($item->supplier_id);
-                    $brand = InventoryBrand::findOne($item->brand_id);
-                    $model = InventoryModel::findOne($item->model_id);
-                    $department = \frontend\models\common\RefUserDepartments::findOne($item->department_code);
+                    $supplierModel = InventorySupplier::findOne($item->supplier_id);
+                    $brandModel = InventoryBrand::findOne($item->brand_id);
+                    $modelModel = InventoryModel::findOne($item->model_id);
+                    $departmentModel = \frontend\models\common\RefUserDepartments::findOne($item->department_code);
 
-                    $departmentName = $department ? $department->department_name : $item->department_code;
-                    $supplierName = $supplier ? $supplier->name : $item->supplier_id;
-                    $brandName = $brand ? $brand->name : $item->brand_id;
-                    $modelName = $model ? $model->description : $item->model_id;
+                    $departmentName = $departmentModel ? $departmentModel->department_name : $item->department_code;
+                    $supplierName = $supplierModel ? $supplierModel->name : $item->supplier_id;
+                    $brandName = $brandModel ? $brandModel->name : $item->brand_id;
+                    $modelName = $modelModel ? $modelModel->description : $item->model_id;
 
                     $item->addError('model_id', "Item already exists: {$departmentName} - {$supplierName} - {$brandName} - {$modelName}");
                     $isValid = false;
                 }
 
-                // Check for duplicates within the form submission
+                // Check for duplicates within the same form submission
                 foreach ($itemList as $compareIndex => $compareItem) {
                     if ($index !== $compareIndex &&
-                            $item->department_code === $compareItem->department_code &&
-                            $item->supplier_id === $compareItem->supplier_id &&
-                            $item->brand_id === $compareItem->brand_id &&
-                            $item->model_id === $compareItem->model_id) {
-
-                        $item->addError('model_id', "Duplicate entry found in row " . ($compareIndex + 1));
+                            $item->department_code == $compareItem->department_code &&
+                            $item->supplier_id == $compareItem->supplier_id &&
+                            $item->brand_id == $compareItem->brand_id &&
+                            $item->model_id == $compareItem->model_id
+                    ) {
+                        $item->addError('model_id', 'Duplicate entry found in row ' . ($compareIndex + 1));
                         $isValid = false;
                         break;
                     }
@@ -152,32 +188,39 @@ class InventoryController extends Controller {
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
                     foreach ($itemList as $item) {
+                        $item->stock_in = $item->stock_in ?? 0;
+                        $item->stock_out = 0;
+                        $item->stock_on_hand = $item->stock_in - $item->stock_out;
+                        $item->stock_reserved = 0;
+                        $item->stock_available = $item->stock_on_hand - $item->stock_reserved;
+                        $item->qty_pending_receipt = 0;
                         $item->is_new = 1;
+
                         if (!$item->save(false)) {
-                            throw new \Exception("Failed to save item");
+                            throw new \Exception('Failed to save item: ' . json_encode($item->getErrors()));
                         }
                     }
 
                     $transaction->commit();
-                    FlashHandler::success("Successfully saved all items");
-                    return $this->redirect(['item-list']);
+                    FlashHandler::success('Successfully saved all items.');
+                    return $this->redirect(['item-list', 'type' => $type]);
                 } catch (\Exception $e) {
                     $transaction->rollBack();
-                    FlashHandler::err("Failed to save items: " . $e->getMessage());
-                    Yii::error("Save items error: " . $e->getMessage(), __METHOD__);
+                    FlashHandler::err('Failed to save items: ' . $e->getMessage());
+                    Yii::error('Save items error: ' . $e->getMessage(), __METHOD__);
                 }
             } else {
-                FlashHandler::err("Please correct the validation errors");
+                FlashHandler::err('Please correct the validation errors.');
             }
         }
 
         return $this->render('createItemList', [
                     'itemList' => $itemList,
                     'supplierList' => $supplierList,
-                    'brandList' => $brandList,
-                    'modelList' => $modelList,
+                    'modelBrandList' => $modelBrandList,
                     'departmentList' => $departmentList,
-                    'currencyList' => $currencyList
+                    'currencyList' => $currencyList,
+                    'moduleIndex' => $type,
         ]);
     }
 
@@ -221,18 +264,19 @@ class InventoryController extends Controller {
 
     /*     * ************* Supplier ************************ */
 
-    public function actionSupplierList() {
+    public function actionSupplierList($type) {
         $searchModel = new InventorySupplierSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('supplierList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type
         ]);
     }
 
-    //executive
-    public function actionAddNewSupplier() {
+    //executive and assistant
+    public function actionAddNewSupplier($type) {
         $model = new InventorySupplier();
 
         if ($model->load(Yii::$app->request->post())) {
@@ -249,29 +293,31 @@ class InventoryController extends Controller {
 
             if ($model->save()) {
                 Yii::$app->session->setFlash('success', 'Supplier created successfully');
-                return $this->redirect(['supplier-list']);
+                return $this->redirect(['supplier-list', 'type' => $type]);
             }
         }
 
         return $this->render('createSupplier', [
                     'model' => $model,
+                    'moduleIndex' => $type
         ]);
     }
 
-    public function actionViewSupplier($id) {
+    public function actionViewSupplier($id, $type) {
         $model = $this->findModel($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             FlashHandler::success("The detail has been updated successfully");
-            return $this->redirect(['supplier-list']);
+            return $this->redirect(['supplier-list', 'type' => $type]);
         }
 
         return $this->render('updateSupplier', [
                     'model' => $model,
+                    'moduleIndex' => $type,
         ]);
     }
 
-    public function actionAddByTemplateSupplier() {
+    public function actionAddByTemplateSupplier($type) {
         $model = new InventorySupplier();
 
         if (Yii::$app->request->isPost) {
@@ -282,7 +328,6 @@ class InventoryController extends Controller {
 
                 if ($extension !== 'xls') {
                     Yii::$app->session->setFlash('error', 'Please upload only .xls files.');
-                    return $this->redirect(['add-by-template-supplier']);
                 }
 
                 try {
@@ -331,30 +376,29 @@ class InventoryController extends Controller {
                     }
 
                     if (!empty($buffer)) {
-                        return $this->render('uploadToConfirmSupplier', ['buffer' => $buffer]);
+                        return $this->render('uploadToConfirmSupplier', ['buffer' => $buffer, 'moduleIndex' => $type]);
                     } else {
                         \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the 'Name' column in your Excel file is not left blank.");
-                        return $this->redirect(['add-by-template-supplier']);
                     }
                 } catch (\Exception $e) {
                     Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
-                    return $this->redirect(['add-by-template-supplier']);
                 }
+                return $this->redirect(['add-by-template-supplier', 'type' => $type]);
             }
         }
 
         return $this->render('addByTemplateSupplier', [
                     'model' => $model,
+                    'moduleIndex' => $type
         ]);
     }
 
-    public function actionSaveSupplierDetails() {
+    public function actionSaveSupplierDetails($type) {
         if (Yii::$app->request->isPost) {
             $post = Yii::$app->request->post('InventorySupplier');
 
-            if (empty($post['type'])) {
+            if (empty($post['name'])) {
                 Yii::$app->session->setFlash('error', 'No supplier data to save.');
-                return $this->redirect(['add-supplier-by-template']);
             }
 
             $errors = [];
@@ -377,11 +421,12 @@ class InventoryController extends Controller {
                     Yii::$app->session->setFlash('error', $errorMessage);
                     return $this->render('uploadToConfirmSupplier', [
                                 'buffer' => $this->rebuildBufferSupplier($post),
-                                'errors' => []
+                                'errors' => [],
+                                'moduleIndex' => $type
                     ]);
                 }
 
-                foreach ($post['type'] as $index => $name) {
+                foreach ($post['name'] as $index => $name) {
                     // Check if supplier name already exists in database
                     $similarCheck = InventorySupplier::findSimilarSupplier($name, 80);
                     if ($similarCheck['match']) {
@@ -391,7 +436,7 @@ class InventoryController extends Controller {
 
                     // Create new supplier
                     $supplier = new InventorySupplier();
-                    $supplier->name = $post['type'][$index];
+                    $supplier->name = $post['name'][$index];
                     $supplier->address1 = $post['address1'][$index] ?? null;
                     $supplier->address2 = $post['address2'][$index] ?? null;
                     $supplier->address3 = $post['address3'][$index] ?? null;
@@ -415,30 +460,32 @@ class InventoryController extends Controller {
                     $transaction->rollBack();
                     return $this->render('uploadToConfirmSupplier', [
                                 'buffer' => $this->rebuildBufferSupplier($post),
-                                'errors' => $errors
+                                'errors' => $errors,
+                                'moduleIndex' => $type
                     ]);
                 }
 
                 $transaction->commit();
                 Yii::$app->session->setFlash('success', "{$successCount} supplier(s) added successfully.");
-                return $this->redirect(['supplier-list']);
+                return $this->redirect(['supplier-list', 'type' => $type]);
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 Yii::$app->session->setFlash('error', 'Error saving suppliers: ' . $e->getMessage());
                 return $this->render('uploadToConfirmSupplier', [
                             'buffer' => $this->rebuildBufferSupplier($post),
-                            'errors' => $errors
+                            'errors' => $errors,
+                            'moduleIndex' => $type
                 ]);
             }
         }
 
-        return $this->redirect(['add-supplier-by-template']);
+        return $this->redirect(['add-supplier-by-template', 'type' => $type]);
     }
 
 // Helper method to rebuild buffer from POST data
     private function rebuildBufferSupplier($post) {
         $buffer = [];
-        foreach ($post['type'] as $index => $name) {
+        foreach ($post['name'] as $index => $name) {
             $buffer[] = [
                 'name' => $name,
                 'addr1' => $post['address1'][$index] ?? '',
@@ -460,11 +507,11 @@ class InventoryController extends Controller {
         $errors = [];
 
         // Check if name array exists
-        if (!isset($post['type']) || !is_array($post['type'])) {
+        if (!isset($post['name']) || !is_array($post['name'])) {
             return $errors;
         }
 
-        foreach ($post['type'] as $index => $name) {
+        foreach ($post['name'] as $index => $name) {
             // Skip empty names
             if (empty($name)) {
                 continue;
@@ -479,7 +526,7 @@ class InventoryController extends Controller {
                     $errors[] = [
                         'row1' => $prevIndex + 1,
                         'row2' => $index + 1,
-                        'name1' => $post['type'][$prevIndex],
+                        'name1' => $post['name'][$prevIndex],
                         'name2' => $name,
                         'percent' => round($percent, 1),
                     ];
@@ -494,48 +541,50 @@ class InventoryController extends Controller {
 
     /*     * ************* Brand ************************ */
 
-    public function actionBrandList() {
+    public function actionBrandList($type) {
         $searchModel = new InventoryBrandSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('brandList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type
         ]);
     }
 
     //executive
-    public function actionAddNewBrand() {
+    public function actionAddNewBrand($type) {
         $model = new InventoryBrand();
 
         if ($model->load(Yii::$app->request->post())) {
             if ($model->save()) {
                 FlashHandler::success("Brand created successfully");
-                return $this->redirect(['brand-list']);
+                return $this->redirect(['brand-list', 'type' => $type]);
             }
 
             FlashHandler::err("Failed to save brand");
         }
 
         return $this->renderAjax('_formBrand', [
-                    'model' => $model,
+                    'model' => $model
         ]);
     }
 
-    public function actionViewBrand($id) {
+    public function actionViewBrand($id, $type) {
         $model = InventoryBrand::findOne($id);
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             FlashHandler::success("The detail has been updated successfully");
-            return $this->redirect(['brand-list']);
+            return $this->redirect(['brand-list', 'type' => $type]);
         }
 
         return $this->renderAjax('_formBrand', [
                     'model' => $model,
+                    'moduleIndex' => $type,
         ]);
     }
 
-    public function actionAddByTemplateBrand() {
+    public function actionAddByTemplateBrand($type) {
         $model = new InventorySupplier();
 
         if (Yii::$app->request->isPost) {
@@ -546,7 +595,6 @@ class InventoryController extends Controller {
 
                 if ($extension !== 'xls') {
                     Yii::$app->session->setFlash('error', 'Please upload only .xls files.');
-                    return $this->redirect(['add-by-template-brand']);
                 }
 
                 try {
@@ -577,30 +625,29 @@ class InventoryController extends Controller {
                     }
 
                     if (!empty($buffer)) {
-                        return $this->render('uploadToConfirmBrand', ['buffer' => $buffer]);
+                        return $this->render('uploadToConfirmBrand', ['buffer' => $buffer, 'moduleIndex' => $type]);
                     } else {
                         \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the 'Name' column in your Excel file is not left blank.");
-                        return $this->redirect(['add-by-template-brand']);
                     }
                 } catch (\Exception $e) {
                     Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
-                    return $this->redirect(['add-by-template-brand']);
                 }
+                return $this->redirect(['add-by-template-brand', 'type' => $type]);
             }
         }
 
         return $this->render('addByTemplateBrand', [
                     'model' => $model,
+                    'moduleIndex' => $type
         ]);
     }
 
-    public function actionSaveBrandDetails() {
+    public function actionSaveBrandDetails($type) {
         if (Yii::$app->request->isPost) {
             $post = Yii::$app->request->post('InventoryBrand');
 
-            if (empty($post['type'])) {
+            if (empty($post['name'])) {
                 Yii::$app->session->setFlash('error', 'No brand data to save.');
-                return $this->redirect(['add-brand-by-template']);
             }
 
             $errors = [];
@@ -623,11 +670,12 @@ class InventoryController extends Controller {
                     Yii::$app->session->setFlash('error', $errorMessage);
                     return $this->render('uploadToConfirmBrand', [
                                 'buffer' => $this->rebuildBufferBrand($post),
-                                'errors' => []
+                                'errors' => [],
+                                'moduleIndex' => $type
                     ]);
                 }
 
-                foreach ($post['type'] as $index => $name) {
+                foreach ($post['name'] as $index => $name) {
                     // Check if brand name already exists in database
                     $similarCheck = InventoryBrand::findSimilarBrand($name, 80);
                     if ($similarCheck['match']) {
@@ -637,7 +685,7 @@ class InventoryController extends Controller {
 
                     // Create new brand
                     $brand = new InventoryBrand();
-                    $brand->name = $post['type'][$index];
+                    $brand->name = $post['name'][$index];
                     $brand->active_sts = 2;
 
                     if ($brand->save()) {
@@ -652,30 +700,32 @@ class InventoryController extends Controller {
                     $transaction->rollBack();
                     return $this->render('uploadToConfirmBrand', [
                                 'buffer' => $this->rebuildBufferBrand($post),
-                                'errors' => $errors
+                                'errors' => $errors,
+                                'moduleIndex' => $type
                     ]);
                 }
 
                 $transaction->commit();
                 Yii::$app->session->setFlash('success', "{$successCount} brand(s) added successfully.");
-                return $this->redirect(['brand-list']);
+                return $this->redirect(['brand-list', 'type' => $type]);
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 Yii::$app->session->setFlash('error', 'Error saving brand: ' . $e->getMessage());
                 return $this->render('uploadToConfirmBrand', [
                             'buffer' => $this->rebuildBufferBrand($post),
-                            'errors' => $errors
+                            'errors' => $errors,
+                            'moduleIndex' => $type
                 ]);
             }
         }
 
-        return $this->redirect(['add-brand-by-template']);
+        return $this->redirect(['add-brand-by-template', 'type' => $type]);
     }
 
 // Helper method to rebuild buffer from POST data
     private function rebuildBufferBrand($post) {
         $buffer = [];
-        foreach ($post['type'] as $index => $name) {
+        foreach ($post['name'] as $index => $name) {
             $buffer[] = [
                 'name' => $name,
             ];
@@ -688,11 +738,11 @@ class InventoryController extends Controller {
         $errors = [];
 
         // Check if name array exists
-        if (!isset($post['type']) || !is_array($post['type'])) {
+        if (!isset($post['name']) || !is_array($post['name'])) {
             return $errors;
         }
 
-        foreach ($post['type'] as $index => $name) {
+        foreach ($post['name'] as $index => $name) {
             // Skip empty names
             if (empty($name)) {
                 continue;
@@ -707,7 +757,7 @@ class InventoryController extends Controller {
                     $errors[] = [
                         'row1' => $prevIndex + 1,
                         'row2' => $index + 1,
-                        'name1' => $post['type'][$prevIndex],
+                        'name1' => $post['name'][$prevIndex],
                         'name2' => $name,
                         'percent' => round($percent, 1),
                     ];
@@ -722,18 +772,19 @@ class InventoryController extends Controller {
 
     /*     * ************* Model ************************ */
 
-    public function actionModelList() {
-        $searchModel = new InventoryModelSearch();
+    public function actionModelList($type) {
+        $searchModel = new \frontend\models\inventory\VInventoryModelSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('modelList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type
         ]);
     }
 
-    //executive
-    public function actionAddNewModel() {
+    //executive and assistant
+    public function actionAddNewModel($type) {
         $model = new InventoryModel();
         if ($model->load(Yii::$app->request->post())) {
             $model->scannedFile = \yii\web\UploadedFile::getInstance($model, 'scannedFile');
@@ -754,7 +805,7 @@ class InventoryController extends Controller {
 
             if ($model->save()) {
                 FlashHandler::success("Success");
-                return $this->redirect(['model-list']);
+                return $this->redirect(['model-list', 'type' => $type]);
             }
         }
 
@@ -763,7 +814,7 @@ class InventoryController extends Controller {
         ]);
     }
 
-    public function actionViewModel($id) {
+    public function actionViewModel($id, $type) {
         $model = InventoryModel::findOne($id);
 
         if ($model->load(Yii::$app->request->post())) {
@@ -797,12 +848,13 @@ class InventoryController extends Controller {
 
             if ($model->save()) {
                 FlashHandler::success("The detail has been updated successfully");
-                return $this->redirect(['model-list']);
+                return $this->redirect(['model-list', 'type' => $type]);
             }
         }
 
         return $this->renderAjax('_formModel', [
                     'model' => $model,
+                    'moduleIndex' => $type
         ]);
     }
 
@@ -823,7 +875,7 @@ class InventoryController extends Controller {
         throw new \yii\web\NotFoundHttpException('File not found.');
     }
 
-    public function actionAddByTemplateModel() {
+    public function actionAddByTemplateModel($type) {
         $model = new InventoryModel();
 
         if (Yii::$app->request->isPost) {
@@ -834,7 +886,6 @@ class InventoryController extends Controller {
 
                 if ($extension !== 'xls') {
                     Yii::$app->session->setFlash('error', 'Please upload only .xls files.');
-                    return $this->redirect(['add-by-template-model']);
                 }
 
                 try {
@@ -858,7 +909,7 @@ class InventoryController extends Controller {
                         $desc = $data[3];
                         $group = $data[4];
                         $unitType = $data[5];
-                        $stockonhand = $data[6];
+//                        $stockonhand = $data[6];
 
                         if (empty($name) || empty($brand)) {
                             break;
@@ -870,35 +921,34 @@ class InventoryController extends Controller {
                             'desc' => $desc,
                             'group' => $group,
                             'unitType' => $unitType,
-                            'stockonhand' => $stockonhand,
+//                            'stockonhand' => $stockonhand,
                         ];
                     }
 
                     if (!empty($buffer)) {
-                        return $this->render('uploadToConfirmModel', ['buffer' => $buffer, 'errors' => []]);
+                        return $this->render('uploadToConfirmModel', ['buffer' => $buffer, 'errors' => [], 'moduleIndex' => $type]);
                     } else {
                         \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the 'Name/Type' or 'Brand' column in your Excel file is not left blank.");
-                        return $this->redirect(['add-by-template-model']);
                     }
                 } catch (\Exception $e) {
                     Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
-                    return $this->redirect(['add-by-template-model']);
                 }
+                return $this->redirect(['add-by-template-model', 'type' => $type]);
             }
         }
 
         return $this->render('addByTemplateModel', [
                     'model' => $model,
+                    'moduleIndex' => $type
         ]);
     }
 
-    public function actionSaveModelDetails() {
+    public function actionSaveModelDetails($type) {
         if (Yii::$app->request->isPost) {
             $post = Yii::$app->request->post('InventoryModel');
 
             if (empty($post['type']) || empty($post['inventory_brand_id'])) {
                 Yii::$app->session->setFlash('error', 'No model data to save.');
-                return $this->redirect(['add-by-template-model']);
             }
 
             $errors = [];
@@ -921,7 +971,8 @@ class InventoryController extends Controller {
                     Yii::$app->session->setFlash('error', $errorMessage);
                     return $this->render('uploadToConfirmModel', [
                                 'buffer' => $this->rebuildBufferModel($post),
-                                'errors' => []
+                                'errors' => [],
+                                'moduleIndex' => $type
                     ]);
                 }
 
@@ -954,7 +1005,7 @@ class InventoryController extends Controller {
                     $model->description = $post['description'][$index] ?? null;
                     $model->group = $post['group'][$index] ?? null;
                     $model->unit_type = $post['unit_type'][$index] ?? null;
-                    $model->total_stock_on_hand = $post['total_stock_on_hand'][$index] ?? null;
+//                    $model->total_stock_on_hand = $post['total_stock_on_hand'][$index] ?? null;
                     $model->active_sts = 2;
 
                     if ($model->save()) {
@@ -969,24 +1020,26 @@ class InventoryController extends Controller {
                     $transaction->rollBack();
                     return $this->render('uploadToConfirmModel', [
                                 'buffer' => $this->rebuildBufferModel($post),
-                                'errors' => $errors
+                                'errors' => $errors,
+                                'moduleIndex' => $type
                     ]);
                 }
 
                 $transaction->commit();
                 Yii::$app->session->setFlash('success', "{$successCount} model(s) added successfully.");
-                return $this->redirect(['model-list']);
+                return $this->redirect(['model-list', 'type' => $type]);
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 Yii::$app->session->setFlash('error', 'Error saving models: ' . $e->getMessage());
                 return $this->render('uploadToConfirmModel', [
                             'buffer' => $this->rebuildBufferModel($post),
-                            'errors' => $errors
+                            'errors' => $errors,
+                            'moduleIndex' => $type
                 ]);
             }
         }
 
-        return $this->redirect(['add-by-template-model']);
+        return $this->redirect(['add-by-template-model', 'type' => $type]);
     }
 
     /**
@@ -1080,131 +1133,286 @@ class InventoryController extends Controller {
         return $errors;
     }
 
-    /*     * ************* New Item ************************ */
+    /*     * ************* Reservation ************************ */
 
-    public function actionExecutivePreRequisitionPendingApproval() {
-        $searchModel = new PrereqFormMasterSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'pendingInventory');
+    public function actionReservedItemList($type) {
+        $searchModel = new InventoryReserveItemSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
 
-        return $this->render('prereqFormList', [
+        return $this->render('reserveItemList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
-                    'approvalStatus' => 'pending',
-                    'moduleIndex' => 'execPendingPurchasing',
-            'key' => 1
+                    'moduleIndex' => $type
         ]);
     }
 
-    public function actionExecutivePreRequisitionAllApplication() {
-        $searchModel = new PrereqFormMasterSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'allInventory');
+    public function actionAddNewReserveItem($type) {
+        $model = new InventoryReserveItem();
+        $modelBrandList = InventoryModel::getModelBrandCombinations();
+        $items = [new InventoryReserveItem()];
+        $staffList = \common\models\User::getActiveExexGradeDropDownList();
+        $itemList = InventoryDetail::findAll(['active_sts' => 2]);
 
-        return $this->render('prereqFormList', [
-                    'searchModel' => $searchModel,
-                    'dataProvider' => $dataProvider,
-                    'approvalStatus' => 'all',
-                    'moduleIndex' => 'execAllPurchasing',
-            'key' => 2
-        ]);
-    }
+        if (Yii::$app->request->post()) {
+            $reserveData = Yii::$app->request->post('InventoryReserveItem');
+            $reserveList = Yii::$app->request->post('ReserveItem');
 
-    public function actionExecutivePrerequisition() {
-        $master = new PrereqFormMaster();
-        $vmodel = new VPrereqFormMasterDetail();
-        $items = [new PrereqFormItem()];
-        $worklists = [];
-        $hasSuperiorUpdate = false;
-
-        if (Yii::$app->request->isPost) {
             $transaction = Yii::$app->db->beginTransaction();
-
             try {
-                // ===== SAVE MASTER =====
-                $postMaster = Yii::$app->request->post('PrereqFormMaster');
-                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
-                $master->prf_no = $master->generatePrfNo();
-                $master->superior_id = Yii::$app->user->identity->superior_id;
-                $master->status = RefGeneralStatus::STATUS_GetSuperiorApproval;
-                $master->is_deleted = 0;
-                $master->source_module = 2; //inventory
 
-                if (!$master->save()) {
-                    throw new \Exception('Master save failed: ' . json_encode($master->getErrors()));
+                foreach ($reserveList as $item) {
+                    if (empty($item['inventory_detail_id']) || empty($item['reserved_qty'])) {
+                        continue;
+                    }
+
+                    $inventoryDetail = InventoryDetail::findOne(['id' => $item['inventory_detail_id'], 'active_sts' => 2]);
+
+                    if ($inventoryDetail === null) {
+                        throw new \Exception('Item not found in inventory');
+                    }
+
+                    $inventoryDetail->stock_reserved += $item['reserved_qty'];
+                    $inventoryDetail->stock_available -= $item['reserved_qty'];
+                    if (!$inventoryDetail->save(false)) {
+                        throw new \Exception(json_encode($inventoryDetail->errors));
+                    }
+
+                    $newReserveItem = new InventoryReserveItem();
+                    $newReserveItem->user_id = $reserveData['user_id'];
+                    $newReserveItem->inventory_detail_id = $item['inventory_detail_id'];
+                    $newReserveItem->reference_type = 'reserve';
+                    $newReserveItem->reference_id = $reserveData['user_id'];
+                    $newReserveItem->reserved_qty = $item['reserved_qty'];
+                    $newReserveItem->available_qty = $item['reserved_qty'];
+                    if (!$newReserveItem->save()) {
+                        throw new \Exception(json_encode($newReserveItem->errors));
+                    }
                 }
-
-                // ===== SAVE ITEMS =====
-                $moduleIndex = 'inventory';
-                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-                $master->saveItems($master->id, $postItems, false, $moduleIndex);
 
                 $transaction->commit();
-                FlashHandler::success('Purchase Requisition Form created successfully!');
-                return $this->redirect(['executive-pre-requisition-pending-approval']);
-            } catch (\Exception $e) {
+                FlashHandler::success('Add new reserve item submit successfully!');
+                return $this->redirect(['reserved-item-list', 'type' => $type]);
+            } catch (\Exception $ex) {
                 $transaction->rollBack();
-
-                $master->load(Yii::$app->request->post());
-
-                $items = [];
-                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-
-                foreach ($postItems as $index => $itemData) {
-                    $item = new VPrereqFormMasterDetail();
-                    $item->setAttributes($itemData, false);
-                    $items[$index] = $item;
-                }
-
-                FlashHandler::err($e->getMessage());
+                FlashHandler::err('Failed to save form: ' . $ex->getMessage());
             }
         }
 
-        // ===== DROPDOWN DATA =====
-        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
-        $supplierList = InventorySupplier::getAllDropDownSupplierList();
-        $brandList = InventoryBrand::getAllDropDownBrandList();
-        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
-
-        return $this->render('applyPrereq', [
-                    'master' => $master,
+        return $this->render('_formReserveItem', [
+                    'model' => $model,
                     'items' => $items,
-                    'vmodel' => $vmodel,
-                    'isUpdate' => false,
-                    'isView' => false,
-                    'moduleIndex' => 'inventory',
-                    'worklists' => $worklists,
-                    'hasSuperiorUpdate' => $hasSuperiorUpdate,
-                    'departmentList' => $departmentList,
-                    'supplierList' => $supplierList,
-                    'brandList' => $brandList,
-                    'currencyList' => $currencyList,
+                    'modelBrandList' => $modelBrandList,
+                    'moduleIndex' => $type,
+                    'staffList' => $staffList,
+                    'itemList' => $itemList,
         ]);
     }
 
-    public function actionProjcoorPreRequisitionPendingApproval() {
+    public function actionGetModelSuppliers($modelId) {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        // Use COALESCE to treat NULL as 0 in the query
+        $details = InventoryDetail::find()
+                ->with('supplier')
+                ->where([
+                    'model_id' => $modelId,
+                    'active_sts' => 2
+                ])
+                ->andWhere(['>', 'COALESCE(stock_available, 0)', 0]) // COALESCE handles NULL as 0
+                ->all();
+
+        $suppliers = [];
+        foreach ($details as $detail) {
+            if ($detail->supplier) {
+                $suppliers[] = [
+                    'id' => $detail->id,
+                    'supplier_id' => $detail->supplier_id,
+                    'supplier_name' => $detail->supplier->name ?? 'Unknown',
+                    'available_qty' => (int) ($detail->stock_available ?? 0),
+                ];
+            }
+        }
+
+        return $suppliers;
+    }
+
+    public function actionEditReservation($id, $type) {
+        $model = InventoryReserveItem::findOne($id);
+
+        if ($model === null) {
+            FlashHandler::err('Reservation item not found');
+            return $this->redirect(['reserved-item-list', 'type' => $type]);
+        }
+
+        if (Yii::$app->request->isPost) {
+            $postData = Yii::$app->request->post('InventoryReserveItem');
+            $newReservedQty = isset($postData['reserved_qty']) ? (int) $postData['reserved_qty'] : 0;
+
+            // Validate quantity
+            if ($newReservedQty < 0) {
+                FlashHandler::err('Quantity cannot be negative');
+                return $this->redirect(['reserved-item-list', 'type' => $type]);
+            }
+
+            // Calculate the difference
+            $qtyDifference = $newReservedQty - $model->reserved_qty;
+
+            // If no change, just redirect
+            if ($qtyDifference == 0) {
+                FlashHandler::info('No changes were made');
+                return $this->redirect(['reserved-item-list', 'type' => $type]);
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                // Find inventory detail with lock to prevent race conditions
+                $inventoryDetail = InventoryDetail::find()
+                        ->where(['id' => $model->inventory_detail_id, 'active_sts' => 2])
+                        ->one();
+
+                if ($inventoryDetail === null) {
+                    throw new \Exception('Item not found in inventory or is inactive');
+                }
+
+                // Check if increasing reservation and if enough stock is available
+                if ($qtyDifference > 0) {
+                    $availableToReserve = ($inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved);
+                    if ($qtyDifference > $availableToReserve) {
+                        throw new \Exception('Not enough stock available. Only ' . $availableToReserve . ' units can be reserved.');
+                    }
+                }
+
+                // Update inventory stock
+                $inventoryDetail->stock_reserved += $qtyDifference;
+                $inventoryDetail->stock_available = $inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved;
+
+                // Validate before saving
+                if ($inventoryDetail->stock_available < 0) {
+                    throw new \Exception('Stock calculation resulted in negative available stock');
+                }
+
+                if (!$inventoryDetail->save(false)) {
+                    throw new \Exception('Failed to update inventory stock: ' . json_encode($inventoryDetail->errors));
+                }
+
+                // Update reservation
+                $model->reserved_qty = $newReservedQty;
+                $model->available_qty = $model->reserved_qty - ($model->dispatched_qty ?? 0);
+
+                // Ensure available_qty is not negative
+                if ($model->available_qty < 0) {
+                    throw new \Exception('Available quantity cannot be negative (dispatched quantity exceeds reserved)');
+                }
+
+                if (!$model->save(false)) {
+                    throw new \Exception('Failed to update reserved item quantity: ' . json_encode($model->errors));
+                }
+
+                $transaction->commit();
+
+                // Success message with proper context
+                $action = $qtyDifference > 0 ? 'increased by ' . $qtyDifference : 'decreased by ' . abs($qtyDifference);
+                FlashHandler::success('Reservation quantity ' . $action . ' successfully!');
+
+                return $this->redirect(['reserved-item-list', 'type' => $type]);
+            } catch (\Exception $ex) {
+                $transaction->rollBack();
+                Yii::error('Failed to update reservation: ' . $ex->getMessage(), __METHOD__);
+                FlashHandler::err('Failed to update reservation: ' . Html::encode($ex->getMessage()));
+            }
+        }
+
+        return $this->renderAjax('_formReserveItemDetail', [
+                    'model' => $model,
+                    'moduleIndex' => $type,
+        ]);
+    }
+
+    /**
+     * Cancel a reservation item
+     * @param int $id The reservation item ID
+     * @param string $type The module type
+     * @return \yii\web\Response
+     */
+    public function actionCancelReservation($id, $type) {
+        $model = InventoryReserveItem::findOne($id);
+
+        if ($model === null) {
+            FlashHandler::err('Reservation item not found');
+            return $this->redirect(['reserved-item-list', 'type' => $type]);
+        }
+
+        // Check if reservation can be cancelled
+        if ($model->status != 2) {
+            FlashHandler::err('This reservation cannot be cancelled because it is not active');
+            return $this->redirect(['reserved-item-list', 'type' => $type]);
+        }
+
+        // Check if any items have been dispatched
+        if ($model->dispatched_qty > 0) {
+            FlashHandler::err('Cannot cancel reservation because ' . $model->dispatched_qty . ' item(s) have already been dispatched');
+            return $this->redirect(['reserved-item-list', 'type' => $type]);
+        }
+        $originalReservedQty = $model->reserved_qty;
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            // Find the inventory detail
+            $inventoryDetail = InventoryDetail::find()
+                    ->where(['id' => $model->inventory_detail_id])
+                    ->one();
+
+            if ($inventoryDetail === null) {
+                throw new \Exception('Associated inventory item not found');
+            }
+
+            // Update inventory stock - release the reserved quantity
+            $inventoryDetail->stock_reserved -= $model->reserved_qty;
+            $inventoryDetail->stock_available = $inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved;
+
+            // Validate stock doesn't go negative
+            if ($inventoryDetail->stock_reserved < 0) {
+                throw new \Exception('Stock reserved cannot be negative');
+            }
+
+            if ($inventoryDetail->stock_available < 0) {
+                throw new \Exception('Stock available cannot be negative');
+            }
+
+            if (!$inventoryDetail->save(false)) {
+                throw new \Exception('Failed to update inventory stock: ' . json_encode($inventoryDetail->errors));
+            }
+
+            // Update reservation status to cancelled
+            $model->status = 1; // 1 = Cancelled/Inactive
+            $model->cancelled_at = new \yii\db\Expression('NOW()');
+            $model->cancelled_by = Yii::$app->user->identity->id;
+            if (!$model->save(false)) {
+                throw new \Exception('Failed to update reservation: ' . json_encode($model->errors));
+            }
+
+            $transaction->commit();
+            FlashHandler::success('Reservation has been cancelled successfully. ' . $originalReservedQty . ' item(s) released back to inventory.');
+        } catch (\Exception $ex) {
+            $transaction->rollBack();
+            FlashHandler::err('Failed to cancel reservation: ' . Html::encode($ex->getMessage()));
+        }
+
+        return $this->redirect(['reserved-item-list', 'type' => $type]);
+    }
+
+    /*     * ************* New Item ************************ */
+
+    public function actionPreRequisitionList($type, $context) {
         $searchModel = new PrereqFormMasterSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'pendingApprovalInventoryProjcoor');
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $context);
 
         return $this->render('prereqFormList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
-                    'approvalStatus' => 'pending',
-                    'moduleIndex' => 'projcoor',
-                    'page' => 'newItem',
-                    'key' => 1
-        ]);
-    }
-
-    public function actionProjcoorReadyForProcurement() {
-        $searchModel = new PrereqFormMasterSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'pendingProcurementInventoryProjcoor');
-
-        return $this->render('prereqFormList', [
-                    'searchModel' => $searchModel,
-                    'dataProvider' => $dataProvider,
-                    'approvalStatus' => 'pending',
-                    'moduleIndex' => 'projcoor',
-                    'page' => 'newItem',
-                    'key' => 2
+                    'moduleIndex' => $type,
+                    'context' => $context,
         ]);
     }
 
@@ -1224,7 +1432,6 @@ class InventoryController extends Controller {
         $grouped = [];
 
         foreach ($models as $model) {
-
             $supplierId = $model->inventoryDetail->supplier->id ?? 0;
             $supplierName = $model->inventoryDetail->supplier->name ?? 'No Supplier';
 
@@ -1244,7 +1451,7 @@ class InventoryController extends Controller {
 
         if (empty($ids)) {
             Yii::$app->session->setFlash('error', 'No order requests selected.');
-            return $this->redirect(['pending-order-request-list', 'type' => $moduleIndex]);
+            return $this->redirect(['order-request-list', 'type' => $moduleIndex]);
         }
 
         $models = InventoryOrderRequest::find()
@@ -1266,7 +1473,6 @@ class InventoryController extends Controller {
         $transaction = Yii::$app->db->beginTransaction();
         try {
             foreach ($grouped as $supplierId => $items) {
-
                 // --- Create Purchase Order ---
                 $po = new InventoryPurchaseOrder();
                 $po->po_date = date('Y-m-d');
@@ -1293,7 +1499,7 @@ class InventoryController extends Controller {
                             'requests' => [],
                         ];
                     }
-                    $mergedItems[$detailId]['order_qty'] += $item->required_qty; // sum required_qty → order_qty
+                    $mergedItems[$detailId]['order_qty'] += ($item->required_qty - $item->order_qty);
                     $mergedItems[$detailId]['requests'][] = $item;
                 }
 
@@ -1315,7 +1521,7 @@ class InventoryController extends Controller {
                     $poItem->model_group = $model->group ?? null;
                     $poItem->model_description = $model->description ?? null;
                     $poItem->order_qty = $merged['order_qty'];
-                    $poItem->unit_type = $detail->unit_type ?? null;
+                    $poItem->unit_type = $model->unit_type ?? null;
                     $poItem->currency_id = $detail->currency_id ?? null;
                     $poItem->unit_price = $detail->unit_price ?? 0;
                     $poItem->discount_amt = null;
@@ -1332,9 +1538,17 @@ class InventoryController extends Controller {
                     $totalQty += $merged['order_qty'];
                     $totalAmount += $poItem->total_price;
 
-                    // --- Update each Order Request ---
+                    // ---Create each Order Request allocation ---
                     foreach ($merged['requests'] as $request) {
-                        $request->inventory_po_item_id = $poItem->id;
+                        $allocation = new \frontend\models\inventory\InventoryOrderRequestAllocation();
+                        $allocation->inventory_po_item_id = $poItem->id;
+                        $allocation->inventory_order_request_id = $request->id;
+                        $allocation->order_qty = ($request->required_qty - $request->order_qty);
+
+                        if (!$allocation->save()) {
+                            throw new \Exception('Failed to allocation PO Item: ' . json_encode($allocation->errors));
+                        }
+
                         $request->order_qty = $request->required_qty; // order_qty = required_qty
                         $request->status = 1;
 
@@ -1362,10 +1576,10 @@ class InventoryController extends Controller {
             Yii::$app->session->setFlash('error', 'Error: ' . $e->getMessage());
         }
 
-        return $this->redirect(['pending-order-request-list', 'type' => $moduleIndex]);
+        return $this->redirect(['order-request-list', 'type' => $moduleIndex]);
     }
 
-    public function actionPendingOrderRequestList($type = null) {
+    public function actionOrderRequestList($type) {
         $searchModel = new InventoryOrderRequestSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
 
@@ -1376,37 +1590,160 @@ class InventoryController extends Controller {
         ]);
     }
 
-    public function actionAllOrderRequestList($type = null) {
-        $searchModel = new InventoryOrderRequestSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
+    public function actionAddNewOrderRequest($type) {
+        $model = new InventoryOrderRequest();
+        $items = [new InventoryOrderRequest()];
+        $staffList = \common\models\User::getActiveExexGradeDropDownList();
+        $reserve = new \frontend\models\inventory\InventoryReserveItem();
+        $supplierList = \frontend\models\inventory\InventorySupplier::getAllDropDownSupplierList();
+        // Get model-brand combinations with supplier info
+        $modelBrandList = \frontend\models\inventory\VInventoryModel::find()
+                ->select([
+                    'v_inventory_model.id as model_id',
+                    'v_inventory_model.type as model_name',
+                    'v_inventory_model.inventory_brand_id as brand_id',
+                    'v_inventory_model.brand_name',
+                    'v_inventory_model.description',
+                    'inventory_detail.supplier_id'
+                ])
+                ->leftJoin('inventory_detail',
+                        'v_inventory_model.id = inventory_detail.model_id 
+         AND inventory_detail.active_sts = 2
+         AND v_inventory_model.inventory_brand_id = inventory_detail.brand_id')  // Add brand_id condition
+                ->where(['v_inventory_model.active_sts' => 2])
+                ->asArray()
+                ->all();
 
-        return $this->render('orderRequestList', [
-                    'searchModel' => $searchModel,
-                    'dataProvider' => $dataProvider,
+        // Group models by supplier
+        $modelsBySupplier = [];
+        foreach ($modelBrandList as $modelCombo) {
+            $supplierId = $modelCombo['supplier_id'] ?? '0';
+            if (!isset($modelsBySupplier[$supplierId])) {
+                $modelsBySupplier[$supplierId] = [];
+            }
+            $modelsBySupplier[$supplierId][] = $modelCombo;
+        }
+
+        // Also create a list of all models for "all suppliers" option
+        $allModels = $modelBrandList;
+        $supplierDetails = [];
+        foreach ($supplierList as $id => $name) {
+            $supplierDetails[] = ['id' => $id, 'name' => $name];
+        }
+
+        if (Yii::$app->request->post()) {
+            $reserveData = Yii::$app->request->post('InventoryReserveItem');
+            $orderRequestList = Yii::$app->request->post('InventoryOrderRequest');
+
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+
+                foreach ($orderRequestList as $orderRequest) {
+                    if (empty($orderRequest['inventory_model_id']) || empty($orderRequest['required_qty'])) {
+                        continue;
+                    }
+
+                    $inventoryDetail = InventoryDetail::findOne(['supplier_id' => $orderRequest['supplier_id'], 'model_id' => $orderRequest['inventory_model_id'], 'active_sts' => 2]);
+                    if ($inventoryDetail === null) {
+                        throw new \Exception('No record found in item list');
+                    }
+
+                    $newOrderRequest = new InventoryOrderRequest();
+                    $newOrderRequest->inventory_detail_id = $inventoryDetail->id;
+                    $newOrderRequest->inventory_model_id = $orderRequest['inventory_model_id'];
+                    $newOrderRequest->reference_type = 'reserve';
+                    $newOrderRequest->reference_id = $reserveData['user_id'];
+                    $newOrderRequest->required_qty = $orderRequest['required_qty'];
+                    if (!$newOrderRequest->save()) {
+                        throw new \Exception(json_encode($newOrderRequest->errors));
+                    }
+                }
+
+                $transaction->commit();
+                FlashHandler::success('Add new order request submit successfully!');
+                return $this->redirect(['order-request-list', 'type' => $type]);
+            } catch (\Exception $ex) {
+                $transaction->rollBack();
+                FlashHandler::err('Failed to save form: ' . $ex->getMessage());
+            }
+        }
+
+        return $this->render('_formOrderRequest', [
+                    'model' => $model,
+                    'items' => $items,
+                    'modelBrandList' => $modelBrandList,
+                    'allModels' => $allModels, // Pass all models
                     'moduleIndex' => $type,
+                    'staffList' => $staffList,
+                    'reserve' => $reserve,
+                    'modelsBySupplier' => $modelsBySupplier,
+                    'supplierList' => $supplierList,
+                    'supplierDetails' => $supplierDetails,
         ]);
     }
 
-    public function actionProjcoorPreRequisitionAllApplication() {
-        $searchModel = new PrereqFormMasterSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, 'allInventoryProjcoor');
+    public function actionViewOrderRequestAllocation($id, $type) {
+        $orderRequest = InventoryOrderRequest::findOne($id);
+        $orderRequestAllocations = \frontend\models\inventory\InventoryOrderRequestAllocation::findAll([
+            'inventory_order_request_id' => $orderRequest->id
+        ]);
 
-        return $this->render('prereqFormList', [
-                    'searchModel' => $searchModel,
-                    'dataProvider' => $dataProvider,
-                    'approvalStatus' => 'all',
-                    'moduleIndex' => 'projcoor',
-                    'page' => 'newItem',
-                    'key' => 3
+        $details = [];
+
+        foreach ($orderRequestAllocations as $orderRequestAllocation) {
+            $receiveAllocations = \frontend\models\inventory\InventoryPoItemReceiveAllocation::findAll([
+                'inventory_order_request_allocation_id' => $orderRequestAllocation->id
+            ]);
+
+            $details[$orderRequestAllocation->id] = [
+                'allocation' => $orderRequestAllocation,
+                'receives' => $receiveAllocations
+            ];
+        }
+
+        return $this->renderAjax('_orderRequestAllocation', [
+                    'orderRequest' => $orderRequest,
+                    'details' => $details,
         ]);
     }
 
-    public function actionCreatePrerequisition($sourceModule = 'inventory', $referenceType = null, $referenceId = null, $selectedIds = null) {
+    public function actionEditSupplierOrderRequest($id, $type) {
+        $orderRequest = InventoryOrderRequest::findOne($id);
+
+        $suppliers = InventoryDetail::find()
+                ->joinWith('supplier')
+                ->where(['model_id' => $orderRequest->inventory_model_id])
+                ->andWhere(['brand_id' => $orderRequest->inventoryModel->inventoryBrand->id])
+                ->andWhere(['inventory_detail.active_sts' => 2])
+                ->all();
+
+        $supplierList = \yii\helpers\ArrayHelper::map(
+                $suppliers,
+                'id', // value (inventory_detail_id)
+                'supplier.name' // label shown in dropdown
+        );
+
+        if ($orderRequest->load(Yii::$app->request->post())) {
+            if ($orderRequest->save(false)) {
+                FlashHandler::success("The supplier has been updated successfully");
+                return $this->redirect(['order-request-list', 'type' => $type]);
+            }
+        }
+
+        return $this->renderAjax('_formSupplierOrderRequest', [
+                    'orderRequest' => $orderRequest,
+                    'supplierList' => $supplierList,
+        ]);
+    }
+
+    public function actionCreatePrerequisition($sourceModule = "inventory", $moduleIndex, $referenceType = "reserve", $referenceId = null, $selectedIds = null) {
         // ===== INITIAL MODELS FOR FIRST LOAD =====
         $master = new PrereqFormMaster();
         $items = [];
         $vmodel = [];
-
+        $master->reference_type = $referenceType;
+        $master->reference_id = $referenceId;
         // ===== PRE-FILL ITEMS IF SELECTED =====
         if ($selectedIds) {
             $ids = explode(',', $selectedIds);
@@ -1440,33 +1777,36 @@ class InventoryController extends Controller {
         // Create vmodel array matching items
         $vmodel = $items;
 
-        if ($referenceType === "bom") {
-            $url = 'projcoor-pre-requisition-pending-approval';
-        } else if ($referenceType === "exec") {
-            $url = 'executive-pre-requisition-pending-approval';
+        if ($moduleIndex === 'execPendingPurchasing' || $moduleIndex === 'execAllPurchasing') {
+            $url = ['pre-requisition-list', 'type' => 'execPendingPurchasing', 'context' => 'pendingInventory'];
+        } else if ($moduleIndex === 'assistPendingPurchasing' || $moduleIndex === 'assistAllPurchasing') {
+            $url = ['pre-requisition-list', 'type' => 'assistPendingPurchasing', 'context' => 'pendingInventory'];
+        } else if ($moduleIndex === 'projcoorAllApproval' || $moduleIndex === 'projcoorPendingApproval') {
+            $url = ['pre-requisition-list', 'type' => 'projcoorPendingApproval', 'context' => 'pendingApprovalInventoryProjcoor'];
+        } else if ($moduleIndex === 'maintenanceHeadAllApproval' || $moduleIndex === 'maintenanceHeadPendingApproval') {
+            $url = ['pre-requisition-list', 'type' => 'maintenanceHeadPendingApproval', 'context' => 'pendingApprovalInventoryMaintenanceHead'];
         }
 
         if (Yii::$app->request->isPost) {
-
-            \common\models\myTools\Mydebug::dumpFileW(Yii::$app->request->post());
+            $PrereqFormMaster = Yii::$app->request->post('PrereqFormMaster');
 
             $db = Yii::$app->db;
             $transaction = $db->beginTransaction();
             try {
                 // ===== MAIN CREATE LOGIC =====
-                $master = PrereqFormMaster::createWithItems(Yii::$app->request->post(), $sourceModule, $referenceType, $referenceId);
+                $master = PrereqFormMaster::createWithItems(Yii::$app->request->post(), $sourceModule, $PrereqFormMaster['reference_type'], $PrereqFormMaster['reference_id']);
                 $transaction->commit();
                 FlashHandler::success('Pre-Requisition Form created successfully!');
-                return $this->redirect([$url]);
+                return $this->redirect($url);
             } catch (\Throwable $e) {
                 $transaction->rollBack();
+                // Debug the actual error
+                $errorMessage = $e->getMessage();
                 $master->load(Yii::$app->request->post());
-
-                // Reload items from POST with all submitted values
                 $items = $this->reloadItemsFromPost(Yii::$app->request->post());
                 $vmodel = $items;
 
-                FlashHandler::err($e->getMessage());
+                FlashHandler::err(is_array($errorMessage) ? json_encode($errorMessage) : $errorMessage);
             }
         }
 
@@ -1477,12 +1817,104 @@ class InventoryController extends Controller {
                     'isUpdate' => false,
                     'isView' => false,
                     'moduleIndex' => $sourceModule,
+                    'module' => $moduleIndex,
                     'worklists' => [],
                     'hasSuperiorUpdate' => false,
                     'departmentList' => RefUserDepartments::getDropDownList(),
                     'supplierList' => InventorySupplier::getAllDropDownSupplierList(),
                     'brandList' => InventoryBrand::getAllDropDownBrandList(),
                     'currencyList' => RefCurrencies::getCurrencyActiveDropdownlist(),
+        ]);
+    }
+
+    /**
+     * Update existing PRF (before superior approval)
+     */
+    public function actionUpdatePreRequisition($id, $moduleIndex) {
+        $master = PrereqFormMaster::findOne($id);
+        if (!$master) {
+            FlashHandler::err('Record not found');
+            return $this->redirect(['executive-pre-requisition-pending-approval']);
+        }
+
+        $vmodel = VPrereqFormMasterDetail::find()
+                ->where(['master_id' => $id])
+                ->all();
+
+//        $items = $master->prereqFormItems;
+        $items = [];
+        foreach ($master->prereqFormItems as $index => $item) {
+            $v = new VPrereqFormMasterDetail();
+            $v->setAttributes($item->attributes, false);
+            $v->item_id = $item->id; // important for form
+            $items[] = $v;
+        }
+        $worklists = [];
+        $hasSuperiorUpdate = false;
+
+        if ($moduleIndex === 'execPendingPurchasing' || $moduleIndex === 'execAllPurchasing') {
+            $url = ['pre-requisition-list', 'type' => 'execPendingPurchasing', 'context' => 'pendingInventory'];
+        } else if ($moduleIndex === 'assistPendingPurchasing' || $moduleIndex === 'assistAllPurchasing') {
+            $url = ['pre-requisition-list', 'type' => 'assistPendingPurchasing', 'context' => 'pendingInventory'];
+        } else if ($moduleIndex === 'projcoorAllApproval' || $moduleIndex === 'projcoorPendingApproval') {
+            $url = ['pre-requisition-list', 'type' => 'projcoorPendingApproval', 'context' => 'pendingApprovalInventoryProjcoor'];
+        } else if ($moduleIndex === 'maintenanceHeadAllApproval' || $moduleIndex === 'maintenanceHeadPendingApproval') {
+            $url = ['pre-requisition-list', 'type' => 'maintenanceHeadPendingApproval', 'context' => 'pendingApprovalInventoryMaintenanceHead'];
+        }
+
+        if (Yii::$app->request->isPost) {
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                // ===== UPDATE MASTER =====
+                $postMaster = Yii::$app->request->post('PrereqFormMaster');
+                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
+                $master->updated_by = Yii::$app->user->id;
+                $master->updated_at = date('Y-m-d H:i:s');
+
+                if (!$master->save()) {
+                    throw new \Exception('Master update failed: ' . json_encode($master->getErrors()));
+                }
+
+                // ===== MARK OLD ITEMS AS DELETED =====
+                PrereqFormItem::updateAll(
+                        ['is_deleted' => 1],
+                        ['prereq_form_master_id' => $id, 'is_deleted' => 0]
+                );
+
+                // ===== SAVE NEW/UPDATED ITEMS =====
+                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
+                $master->saveItems($master->id, $postItems, $sourceModule = 'inventory', $master->reference_type, $master->reference_id);
+
+                $transaction->commit();
+                FlashHandler::success('Purchase Requisition Form updated successfully!');
+                return $this->redirect($url);
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                FlashHandler::err('Failed to update form: ' . $e->getMessage());
+                Yii::error('Update PRF Error: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+
+        // ===== DROPDOWN DATA =====
+        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
+        $supplierList = InventorySupplier::getAllDropDownSupplierList();
+        $brandList = InventoryBrand::getAllDropDownBrandList();
+        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
+
+        return $this->render('updatePrereq', [
+                    'master' => $master,
+                    'items' => $items,
+                    'vmodel' => $vmodel,
+                    'isUpdate' => true,
+                    'isView' => false,
+                    'module' => $moduleIndex,
+                    'worklists' => $worklists,
+                    'hasSuperiorUpdate' => $hasSuperiorUpdate,
+                    'departmentList' => $departmentList,
+                    'supplierList' => $supplierList,
+                    'brandList' => $brandList,
+                    'currencyList' => $currencyList,
         ]);
     }
 
@@ -1512,17 +1944,10 @@ class InventoryController extends Controller {
         return $items;
     }
 
-    public function actionSendToProcurement($id, $page) {
-        if ($page === "projcoor") {
-            $url = 'projcoor-pre-requisition-all-application';
-        } else if ($page === "exec") {
-            $url = 'executive-pre-requisition-all-application';
-        }
-
+    public function actionSendToProcurement($id, $type) {
         $master = PrereqFormMaster::findOne($id);
         if (!$master) {
             FlashHandler::err('Record not found');
-            return $this->redirect([$url]);
         }
 
         // Get items related to this master record
@@ -1536,7 +1961,6 @@ class InventoryController extends Controller {
 
         if (empty($items)) {
             FlashHandler::err('No items found to process');
-            return $this->redirect([$url]);
         }
 
         // Use transaction for data integrity
@@ -1555,8 +1979,8 @@ class InventoryController extends Controller {
                         'type' => $item->model_name,
                         'group' => $item->model_group,
                         'description' => $item->item_description,
-                        'active_sts' => 2,
                         'unit_type' => $item->model_unit_type,
+                        'active_sts' => 2,
                         'inventory_brand_id' => $item->brand_id
                     ]);
 
@@ -1574,9 +1998,9 @@ class InventoryController extends Controller {
                 ]);
 
                 if (!$detail) {
-                    $currency = RefCurrencies::findOne(['currency_code' => $item->currency]);
+                    $currency = RefCurrencies::findOne(['currency_code' => $item->currency_approved]);
                     if (!$currency) {
-                        throw new \Exception('Currency not found: ' . $item->currency);
+                        throw new \Exception('Currency not found: ' . $item->currency_approved);
                     }
 
                     $detail = new InventoryDetail([
@@ -1621,8 +2045,8 @@ class InventoryController extends Controller {
                     $bomDetail->brand = $item->brand_id;
                     $bomDetail->description = $item->item_description;
                     $bomDetail->qty = $orderRequest->required_qty;
-                    $bomDetail->is_finalized = 2;
-                    $bomDetail->inventory_sts = 2;
+                    $bomDetail->is_finalized = 1; // default 1 not finalize yet
+                    $bomDetail->inventory_sts = 5; //Purchasing in Progress
 
                     if (!$bomDetail->save(false)) {
                         throw new \Exception('Failed to update BOM Detail: ' . json_encode($bomDetail->errors));
@@ -1638,12 +2062,12 @@ class InventoryController extends Controller {
 
             $transaction->commit();
             FlashHandler::success('Successfully sent to procurement');
-            return $this->redirect(['order-request-list', 'type' => $page]);
         } catch (\Exception $e) {
             $transaction->rollBack();
             FlashHandler::err('Error: ' . $e->getMessage());
-            return $this->redirect([$url]);
         }
+
+        return $this->redirect(['order-request-list', 'type' => $type]);
     }
 
     public function actionAjaxAddFormItem($key, $masterId, $moduleIndex, $hasSuperiorUpdate) {
@@ -1746,81 +2170,6 @@ class InventoryController extends Controller {
                     'supplierList' => $supplierList,
                     'brandList' => $brandList,
                     'currencyList' => $currencyList,
-//                    'page' => $page
-        ]);
-    }
-
-    /**
-     * Update existing PRF (before superior approval)
-     */
-    public function actionUpdatePreRequisition($id, $moduleIndex) {
-        $master = PrereqFormMaster::findOne($id);
-        if (!$master) {
-            FlashHandler::err('Record not found');
-            return $this->redirect(['executive-pre-requisition-pending-approval']);
-        }
-
-        $vmodel = VPrereqFormMasterDetail::find()
-                ->where(['master_id' => $id])
-                ->all();
-
-        $items = $master->prereqFormItems;
-        $worklists = [];
-        $hasSuperiorUpdate = false;
-
-        if (Yii::$app->request->isPost) {
-            $transaction = Yii::$app->db->beginTransaction();
-
-            try {
-                // ===== UPDATE MASTER =====
-                $postMaster = Yii::$app->request->post('PrereqFormMaster');
-                $master->date_of_material_required = $postMaster['date_of_material_required'] ?? null;
-                $master->updated_by = Yii::$app->user->id;
-                $master->updated_at = date('Y-m-d H:i:s');
-
-                if (!$master->save()) {
-                    throw new \Exception('Master update failed: ' . json_encode($master->getErrors()));
-                }
-
-                // ===== MARK OLD ITEMS AS DELETED =====
-                PrereqFormItem::updateAll(
-                        ['is_deleted' => 1],
-                        ['prereq_form_master_id' => $id, 'is_deleted' => 0]
-                );
-
-                // ===== SAVE NEW/UPDATED ITEMS =====
-                $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-                $master->saveItems($master->id, $postItems, false, $moduleIndex);
-
-                $transaction->commit();
-                FlashHandler::success('Purchase Requisition Form updated successfully!');
-                return $this->redirect(['executive-pre-requisition-pending-approval']);
-            } catch (\Exception $e) {
-                $transaction->rollBack();
-                FlashHandler::err('Failed to update form: ' . $e->getMessage());
-                Yii::error('Update PRF Error: ' . $e->getMessage(), __METHOD__);
-            }
-        }
-
-        // ===== DROPDOWN DATA =====
-        $departmentList = \frontend\models\common\RefUserDepartments::getDropDownList();
-        $supplierList = InventorySupplier::getAllDropDownSupplierList();
-        $brandList = InventoryBrand::getAllDropDownBrandList();
-        $currencyList = \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist();
-
-        return $this->render('updatePrereq', [
-                    'master' => $master,
-                    'items' => $items,
-                    'vmodel' => $vmodel,
-                    'isUpdate' => true,
-                    'isView' => false,
-                    'moduleIndex' => $moduleIndex,
-                    'worklists' => $worklists,
-                    'hasSuperiorUpdate' => $hasSuperiorUpdate,
-                    'departmentList' => $departmentList,
-                    'supplierList' => $supplierList,
-                    'brandList' => $brandList,
-                    'currencyList' => $currencyList,
         ]);
     }
 
@@ -1891,6 +2240,8 @@ class InventoryController extends Controller {
         return $this->redirect(['executive-new-item-ready-for-po-list']);
     }
 
+    /*     * ************* Purchase Order ************************ */
+
     public function actionPo($type) {
         $searchModel = new \frontend\models\inventory\InventoryPurchaseOrderSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
@@ -1902,40 +2253,42 @@ class InventoryController extends Controller {
         ]);
     }
 
-    /*     * ************* Purchase Order ************************ */
+    public function actionDeactivatePo($id, $moduleIndex) {
+        $url = \Yii::$app->request->referrer;
+        $po = InventoryPurchaseOrder::findOne($id);
+
+        if (!$po) {
+            throw new NotFoundHttpException('Purchase Order not found');
+        }
+
+        try {
+            $po->deactivatePoProcess();
+
+            Yii::$app->session->setFlash('success', 'Purchase Order has been deactivated.');
+            return $this->redirect(['po', 'type' => $moduleIndex]);
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', $e->getMessage());
+            return $this->redirect($url);
+        }
+    }
+
     public function actionManagePo($id, $moduleIndex) {
         $po = InventoryPurchaseOrder::findOne($id);
         if (!$po) {
             throw new NotFoundHttpException('Purchase Order not found');
         }
 
-//        $purchaseOrderItems = $po->inventoryPurchaseOrderItems;
         $purchaseOrderItems = InventoryPurchaseOrderItem::find()->where(['inventory_po_id' => $po->id, 'is_deleted' => 0])->all();
-
-        if ($moduleIndex === 'execPendingPurchasing') {
-            $url = 'po?type=execPendingPurchasing';
-        } else if ($moduleIndex === 'execAllPurchasing') {
-            $url = 'po?type=execAllPurchasing';
-        } else if ($moduleIndex === 'execPendingReceiving') {
-            $url = 'po?type=execPendingReceiving';
-        } else if ($moduleIndex === 'asistPendingPurchasing') {
-            $url = 'po?type=assistPendingPurchasing';
-        } else if ($moduleIndex === 'asistAllPurchasing') {
-            $url = 'po?type=assistAllPurchasing';
-        } else if ($moduleIndex === 'asistReceiving') {
-            $url = 'po?type=execPending';
-        }
 
         $currencies = RefCurrencies::find()->select(['currency_id', 'currency_code', 'currency_name', 'currency_sign'])->asArray()->all();
         $currencyList = RefCurrencies::getActiveDropdownlist_by_id();
         $companyGroupList = \frontend\models\common\RefCompanyGroupList::getDropDownList();
 
         if (Yii::$app->request->isPost) {
-            $data = Yii::$app->request->post();
             try {
                 $po->updatePoProcess(Yii::$app->request->post('InventoryPurchaseOrder'), Yii::$app->request->post('POItem'));
                 Yii::$app->session->setFlash('success', 'Purchase Order updated successfully.');
-                return $this->redirect([$url]);
+                return $this->redirect(['po', 'type' => $moduleIndex]);
             } catch (\Exception $e) {
                 Yii::$app->session->setFlash('error', $e->getMessage());
             }
@@ -1953,38 +2306,22 @@ class InventoryController extends Controller {
 
     public function actionViewPoItemDetail($poItemId, $moduleIndex) {
         $poItem = InventoryPurchaseOrderItem::findOne($poItemId);
-        $orderRequests = $poItem->inventoryOrderRequests;
+        if ($poItem === null) {
+            throw new \yii\web\NotFoundHttpException("PO item ID {$poItemId} not found.");
+        }
 
-        if (Yii::$app->request->post()) {
+        $allocation = $poItem->inventoryOrderRequestAllocations;
+
+        if (Yii::$app->request->isPost) {
             $data = Yii::$app->request->post();
-
             $transaction = Yii::$app->db->beginTransaction();
+
             try {
-                if (isset($data['InventoryOrderRequests'])) {
-                    foreach ($data['InventoryOrderRequests'] as $itemData) {
-                        $request = InventoryOrderRequest::findOne($itemData['id']);
-                        if ($request === null) {
-                            throw new \Exception("Order request ID {$itemData['id']} not found.");
-                        }
-
-                        if ($itemData['removed'] == 1) {
-                            $request->inventory_po_item_id = null;
-                            $request->order_qty = null;
-                            $request->status = 0;
-                        } else {
-                            $request->order_qty = $itemData['order_qty'];
-                        }
-
-                        if (!$request->save(false)) {
-                            throw new \Exception("Failed to save order request ID {$itemData['id']}.");
-                        }
-                    }
-                }
+                $poItem->updateOrderRequestAllocation($data['InventoryOrderRequestAllocation']);
 
                 $poItem->order_qty = $data['total_order_qty'];
                 $poItem->remaining_qty = $data['total_order_qty'] - $poItem->received_qty;
-                $poItem->status = ($poItem->order_qty == $poItem->received_qty) ? 1 : 0;
-
+                $poItem->status = ($poItem->order_qty === $poItem->received_qty) ? 1 : 0;
                 if (!$poItem->save(false)) {
                     throw new \Exception("Failed to save PO item ID {$poItem->id}.");
                 }
@@ -1994,31 +2331,56 @@ class InventoryController extends Controller {
                     throw new \Exception("Purchase order not found for PO item ID {$poItem->id}.");
                 }
 
-                $hasPendingReceive = InventoryPurchaseOrderItem::find()
+                $hasPending = InventoryPurchaseOrderItem::find()
                         ->where(['inventory_po_id' => $po->id, 'status' => 0, 'is_deleted' => 0])
                         ->exists();
 
-                if (!$hasPendingReceive) {
-                    $po->status = \frontend\models\RefInventoryStatus::STATUS_FullyReceived;
-                    if (!$po->save(false)) {
-                        throw new \Exception("Failed to update PO status for PO ID {$po->id}.");
-                    }
+                if ($po->status !== \frontend\models\RefInventoryStatus::STATUS_PoCreated) {
+                    $po->status = $hasPending ? \frontend\models\RefInventoryStatus::STATUS_PartiallyReceived : \frontend\models\RefInventoryStatus::STATUS_FullyReceived;
+                }
+
+                $totalQty = InventoryPurchaseOrderItem::find()
+                        ->where(['inventory_po_id' => $po->id, 'is_deleted' => 0])
+                        ->sum('order_qty');
+
+                $po->total_qty = $totalQty;
+                if (!$po->save(false)) {
+                    throw new \Exception("Failed to update PO status for PO ID {$po->id}.");
                 }
 
                 $poItem->updateInventoryQtyPendingReceipt();
 
                 $transaction->commit();
-                FlashHandler::success("The quantity has been updated successfully");
-                return $this->redirect(['manage-po', 'id' => $poItem->inventory_po_id, 'moduleIndex' => $moduleIndex]);
+                FlashHandler::success("The quantity has been updated successfully.");
             } catch (\Exception $e) {
                 $transaction->rollBack();
-                FlashHandler::error("Update failed: " . $e->getMessage());
+                FlashHandler::err("Update failed: " . $e->getMessage());
             }
+
+            return $this->redirect(['manage-po', 'id' => $poItem->inventory_po_id, 'moduleIndex' => $moduleIndex]);
         }
 
         return $this->renderAjax('_formPoItemDetail', [
                     'poItem' => $poItem,
-                    'orderRequests' => $orderRequests,
+                    'allocation' => $allocation,
+        ]);
+    }
+
+    public function actionViewPoItemReceiveAllocation($poItemId) {
+        $poItem = InventoryPurchaseOrderItem::findOne($poItemId);
+        if ($poItem === null) {
+            throw new \yii\web\NotFoundHttpException("PO item ID {$poItemId} not found.");
+        }
+
+        // Get all receive records for this PO item
+        $receives = \frontend\models\inventory\InventoryPurchaseOrderItemReceive::find()
+                ->where(['inventory_po_item_id' => $poItemId])
+                ->with(['inventoryPoItemReceiveAllocations.inventoryOrderRequestAllocation'])
+                ->all();
+
+        return $this->renderAjax('_formPoItemReceiveAllocation', [
+                    'poItem' => $poItem,
+                    'receives' => $receives,
         ]);
     }
 
@@ -2100,7 +2462,6 @@ class InventoryController extends Controller {
             $completePath = $uploadDir . $filename;
 
             // Generate new PDF
-//            $items = $po->inventoryPurchaseOrderItems;
             $items = InventoryPurchaseOrderItem::find()->where(['inventory_po_id' => $po->id, 'is_deleted' => 0])->all();
 
             $po->amountWords = $this->convertNumberToWords((float) $po->gross_amount);
@@ -2116,6 +2477,7 @@ class InventoryController extends Controller {
     }
 
     private function generatePoPdf($po, $items) {
+
         ini_set("pcre.backtrack_limit", "10000000");
         ini_set("memory_limit", "1024M");
 
@@ -2125,42 +2487,33 @@ class InventoryController extends Controller {
             'margin_left' => 5,
             'margin_right' => 5,
             'margin_top' => 80,
-            'margin_bottom' => 5,
+            'margin_bottom' => 60, // reserve enough space for footer
             'margin_header' => 10,
             'margin_footer' => 10,
             'shrink_tables_to_fit' => 1,
-            'showImageErrors' => true,
+            'use_kwt' => true,
         ]);
 
-        // Set HTML Header
+        // Header
         $headerHtml = $this->renderPartial('_poHeaderPdf', [
             'po' => $po,
         ]);
         $mpdf->SetHTMLHeader($headerHtml);
 
-        // Body content
+        // Body
         $htmlBody = $this->renderPartial("_poFormPdf", [
             'po' => $po,
             'items' => $items,
         ]);
 
-        // Write HTML in chunks
         $this->writeHtmlInChunks($mpdf, $htmlBody);
 
-        // Get footer HTML
+        // Footer (ONLY last page)
         $footerHtml = $this->renderPartial('_poFooterPdf', [
             'po' => $po,
         ]);
 
-        // Add spacer to push footer to bottom if needed
-        $mpdf->WriteHTML('
-        <div style="page-break-after: avoid;">
-            <div style="height: 100mm;"></div>
-            <div style="position: fixed; left: 0; right: 0; padding: 0 5mm;">
-                ' . $footerHtml . '
-            </div>
-        </div>
-    ');
+        $mpdf->SetHTMLFooter($footerHtml);
 
         return $mpdf;
     }
@@ -2248,7 +2601,7 @@ class InventoryController extends Controller {
 
     /*     * ************* Receiving ************************ */
 
-    public function actionUpdateReceiveItems($id) {
+    public function actionUpdateReceiveItems($id, $moduleIndex) {
         $po = \frontend\models\inventory\InventoryPurchaseOrder::findOne($id);
 //        $poItems = $po->inventoryPurchaseOrderItems;
         $poItems = InventoryPurchaseOrderItem::find()->where(['inventory_po_id' => $po->id, 'is_deleted' => 0])->all();
@@ -2279,7 +2632,7 @@ class InventoryController extends Controller {
                     'receive' => $filteredDataReceive
                 ];
                 Yii::$app->session->set('postData', $combinedData);
-                return $this->redirect(['confirm-and-upload-attachment', 'id' => $po->id]);
+                return $this->redirect(['confirm-and-upload-attachment', 'id' => $po->id, 'moduleIndex' => $moduleIndex]);
             }
 
             \common\models\myTools\FlashHandler::err("No item has been selected");
@@ -2288,35 +2641,70 @@ class InventoryController extends Controller {
         return $this->render('_updateReceiveItem', [
                     'po' => $po,
                     'poItems' => $poItems,
+                    'moduleIndex' => $moduleIndex
         ]);
     }
 
-    public function actionConfirmAndUploadAttachment($id) {
+    public function actionConfirmAndUploadAttachment($id, $moduleIndex) {
         $postData = Yii::$app->session->get('postData');
         $po = \frontend\models\inventory\InventoryPurchaseOrder::findOne($id);
+
+        // Check if PO exists
+        if (!$po) {
+            \common\models\myTools\FlashHandler::err("Purchase Order with ID {$id} not found.");
+            return $this->redirect(['po', 'type' => $moduleIndex]);
+        }
+
         $attachments = new \frontend\models\inventory\InventoryPurchaseOrderItemDoc();
 
-        if (Yii::$app->request->post()) {
+        if (Yii::$app->request->isPost) {
+            $lockKey = 'po_receive_lock_' . $id . '_' . Yii::$app->user->id;
+            $cache = Yii::$app->cache;
+
+            if ($cache->get($lockKey)) {
+                \common\models\myTools\FlashHandler::err("Duplicate submission detected. Please try again.");
+                return $this->redirect(['po', 'type' => $moduleIndex]);
+            }
+
+            // Lock for 10 seconds
+            $cache->set($lockKey, true, 10);
+
             $batch = new \frontend\models\inventory\InventoryPurchaseOrderReceiveBatch();
             $batch->inventory_po_id = $po->id;
 
             try {
-                if ($batch->processOrderReceive($po, $postData, Yii::$app->request->post())) {
+                if ($batch->processOrderReceive($po, Yii::$app->request->post())) {
+                    $cache->delete($lockKey);
                     Yii::$app->session->remove('postData');
                     \common\models\myTools\FlashHandler::success("Order received successfully with attachments.");
-                    return $this->redirect(['executive-pending-receive-purchase-order']);
+                    return $this->redirect(['po', 'type' => $moduleIndex]);
                 }
             } catch (\Exception $e) {
-                \common\models\myTools\FlashHandler::err("Error: " . $e->getMessage());
+                $cache->delete($lockKey);
+
+                // Log the full stack trace for debugging
+                Yii::error([
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                        ], 'po_receive_error');
+
+                \common\models\myTools\FlashHandler::err("Error: " . $e->getMessage() . " (Line: " . $e->getLine() . " in " . basename($e->getFile()) . ")");
+                return $this->redirect(Yii::$app->request->referrer ?: ['po', 'type' => $moduleIndex]);
             }
         }
 
-        // Flatten the nested array for easier display
+        // Flatten session postData for display
         $flattenedData = [];
         if (isset($postData['receive'])) {
             foreach ($postData['receive'] as $key => $items) {
-                foreach ($items as $itemId => $data) {
-                    $flattenedData[] = $data;
+                if (isset($items['id'])) {
+                    $flattenedData[] = $items;
+                } else {
+                    foreach ($items as $itemId => $data) {
+                        $flattenedData[] = $data;
+                    }
                 }
             }
         }
@@ -2324,18 +2712,19 @@ class InventoryController extends Controller {
         return $this->render('confirmOrderReceive', [
                     'postData' => $flattenedData,
                     'po' => $po,
-                    'attachments' => $attachments
+                    'attachments' => $attachments,
+                    'moduleIndex' => $moduleIndex
         ]);
     }
 
-    public function actionExecutiveReceivingHistory() {
+    public function actionReceivingHistory($type) {
         $searchModel = new \frontend\models\inventory\inventoryPurchaseOrderReceiveBatchSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
 
         return $this->render('receivingBatchList', [
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
-                    'moduleIndex' => "exec"
+                    'moduleIndex' => $type
         ]);
     }
 
@@ -2415,6 +2804,19 @@ class InventoryController extends Controller {
         return Yii::$app->response->sendFile($filePath, $filename, [
                     'mimeType' => $mimeType,
                     'inline' => $inline
+        ]);
+    }
+
+    public function actionUserManualInventory() {
+        $this->layout = false;
+        $fileName = "T7B-Inventory Control Module-01.pdf";
+        $fileUrl = Yii::getAlias('@web/uploads/user-manual/' . $fileName);
+
+        // Add timestamp to prevent caching
+        $fileUrl .= '?v=' . time();
+
+        return $this->render('/user-manual', [
+                    'fileUrl' => $fileUrl,
         ]);
     }
 

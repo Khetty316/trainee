@@ -500,45 +500,45 @@ class TestingController extends Controller {
         $pdf->Output($pdfPath, 'F');
     }
 
-    //issue 1: tables are extending beyond the page width
-//    public function updateHtmlContents($html) {
-//        $fontsize = preg_replace('/font-size:\s*[^;]+;?/', '', $html);
-//        $lineheight = preg_replace('/line-height:\s*[^;]+;?/', '12px', $fontsize);
-//        $newhtmlcontent = preg_replace('/font-family:\s*[^;]+;?/', '', $lineheight);
-//        
-//        return $newhtmlcontent;
-//    }
-    //solution issue 1 - 2026/01/28
+    //issue 1: tables are extending beyond the page width, use this on 30/3/2026
     public function updateHtmlContents($html) {
-        $css = '<style>
-        table {
-            width: 100% !important;
-            table-layout: auto;
-            border-collapse: collapse;
-        }
-        td, th {
-            padding: 1px 2px !important;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            hyphens: auto;
-        }
-
-    </style>';
-
-        $html = $css . $html;
-
-        // Remove ALL width constraints
-        $html = preg_replace('/(<table[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
-        $html = preg_replace('/(<td[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
-        $html = preg_replace('/(<th[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
-        $html = preg_replace('/style\s*=\s*["\']([^"\']*?)width:\s*[^;]+;?([^"\']*?)["\']/i', 'style="$1$2"', $html);
-
-        // Remove font specifications
-        $html = preg_replace('/font-size:\s*[^;]+;?/i', '', $html);
-        $html = preg_replace('/font-family:\s*[^;]+;?/i', '', $html);
-
-        return $html;
+        $fontsize = preg_replace('/font-size:\s*[^;]+;?/', '', $html);
+        $lineheight = preg_replace('/line-height:\s*[^;]+;?/', '12px', $fontsize);
+        $newhtmlcontent = preg_replace('/font-family:\s*[^;]+;?/', '', $lineheight);
+        
+        return $newhtmlcontent;
     }
+    //solution issue 1 - 2026/01/28, updated on 30/3/2026
+//    public function updateHtmlContents($html) {
+////        $css = '<style>
+////        table {
+////            width: 100% !important;
+////            table-layout: auto;
+////            border-collapse: collapse;
+////        }
+////        td, th {
+////            padding: 1px 2px !important;
+////            word-wrap: break-word;
+////            overflow-wrap: break-word;
+////            hyphens: auto;
+////        }
+////
+////    </style>';
+////
+////        $html = $css . $html;
+//
+//        // Remove ALL width constraints
+////        $html = preg_replace('/(<table[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
+////        $html = preg_replace('/(<td[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
+////        $html = preg_replace('/(<th[^>]*)\s+width\s*=\s*["\'][^"\']*["\']/i', '$1', $html);
+////        $html = preg_replace('/style\s*=\s*["\']([^"\']*?)width:\s*[^;]+;?([^"\']*?)["\']/i', 'style="$1$2"', $html);
+//
+//        // Remove font specifications 
+//        $html = preg_replace('/font-size:\s*[^;]+;?/i', '', $html);        
+//        $html = preg_replace('/font-family:\s*[^;]+;?/i', '', $html);
+//
+//        return $html;
+//    }
 
     private function mergePDFs(...$pdfPaths) {
         $pdf = new \setasign\Fpdi\TcpdfFpdi();

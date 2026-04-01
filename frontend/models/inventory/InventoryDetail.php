@@ -22,8 +22,10 @@ use frontend\models\common\RefCurrencies;
  * @property float|null $unit_price
  * @property int|null $minimum_qty
  * @property int|null $stock_level_sts
+ * @property int|null $stock_in
  * @property int|null $stock_on_hand
  * @property int|null $stock_reserved
+ * @property int|null $stock_out
  * @property int|null $stock_available
  * @property int|null $qty_pending_receipt
  * @property int|null $is_new 1 = existing, 2 = new
@@ -45,6 +47,7 @@ use frontend\models\common\RefCurrencies;
  * @property InventoryOrderRequest[] $inventoryOrderRequests
  * @property InventoryPurchaseOrderItem[] $inventoryPurchaseOrderItems
  * @property InventoryReorderItem[] $inventoryReorderItems
+ * @property InventoryReserveItem[] $inventoryReserveItems
  * @property InventoryStockoutbound[] $inventoryStockoutbounds
  */
 class InventoryDetail extends \yii\db\ActiveRecord {
@@ -64,7 +67,7 @@ class InventoryDetail extends \yii\db\ActiveRecord {
      */
     public function rules() {
         return [
-            [['supplier_id', 'brand_id', 'model_id', 'currency_id', 'minimum_qty', 'stock_level_sts', 'stock_on_hand', 'stock_reserved', 'stock_available', 'qty_pending_receipt', 'is_new', 'active_sts', 'created_by', 'updated_by', 'reorder_qty', 'required_qty'], 'integer'],
+            [['supplier_id', 'brand_id', 'model_id', 'currency_id', 'minimum_qty', 'stock_level_sts', 'stock_in', 'stock_on_hand', 'stock_reserved', 'stock_out', 'stock_available', 'qty_pending_receipt', 'is_new', 'active_sts', 'created_by', 'updated_by', 'reorder_qty', 'required_qty'], 'integer'],
             [['unit_price'], 'number'],
             [['created_at', 'updated_at'], 'safe'],
             [['code'], 'string', 'max' => 255],
@@ -93,8 +96,10 @@ class InventoryDetail extends \yii\db\ActiveRecord {
             'unit_price' => 'Unit Price',
             'minimum_qty' => 'Minimum Qty',
             'stock_level_sts' => 'Stock Level Sts',
+            'stock_in' => 'Stock In',
             'stock_on_hand' => 'Stock On Hand',
             'stock_reserved' => 'Stock Reserved',
+            'stock_out' => 'Stock Out',
             'stock_available' => 'Stock Available',
             'qty_pending_receipt' => 'Qty Pending Receipt',
             'is_new' => 'Is New',
@@ -198,6 +203,16 @@ class InventoryDetail extends \yii\db\ActiveRecord {
         return $this->hasMany(InventoryReorderItem::className(), ['inventory_detail_id' => 'id']);
     }
 
+    /**
+     * Gets query for [[InventoryReserveItems]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getInventoryReserveItems()
+    {
+        return $this->hasMany(InventoryReserveItem::className(), ['inventory_detail_id' => 'id']);
+    }
+    
     /**
      * Gets query for [[InventoryStockoutbounds]].
      *

@@ -74,7 +74,7 @@ class InventorySupplier extends \yii\db\ActiveRecord {
             'contact_email' => 'Contact Email',
             'contact_fax' => 'Contact Fax',
             'agent_terms' => 'Agent Terms',
-            'active_sts' => 'Active Status',
+            'active_sts' => 'Active',
             'created_by' => 'Created By',
             'created_at' => 'Created At',
             'updated_by' => 'Updated By',

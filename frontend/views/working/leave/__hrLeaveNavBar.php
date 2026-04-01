@@ -32,6 +32,7 @@ use common\modules\auth\models\AuthItem;
 //        'link' => '/working/leavemgmt/hr-all-leave'),
 //);
 if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior])) {
+    $label = 'HR - Leave Management';
     $linkList = array(
         '1' => array(
             'name' => 'Approval',
@@ -62,14 +63,21 @@ if (MyCommonFunction::checkRoles([AuthItem::ROLE_HR_Senior])) {
             'link' => '/working/leavemgmt/hr-all-leave'),
     );
 } else {
+    $label = 'Finance - Leave Management';
     $linkList = array(
+        '4' => array(
+            'name' => 'Monthly Summary',
+            'link' => '/working/leavemgmt/hr-leave-summary'),
+        '5' => array(
+            'name' => 'Annual Summary',
+            'link' => '/working/leavemgmt/hr-final-leave-summary'),
         '6' => array(
             'name' => 'All',
             'link' => '/working/leavemgmt/hr-all-leave'),
     );
 }
 
-$this->params['breadcrumbs'][] = ['label' => 'HR - Leave Management'];
+$this->params['breadcrumbs'][] = ['label' => $label];
 
 if (isset($pageKey)) {
     $this->title = $linkList[$pageKey]['name'];

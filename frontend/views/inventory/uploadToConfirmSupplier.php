@@ -1,13 +1,34 @@
 <?php
 use yii\bootstrap4\ActiveForm;
 use yii\helpers\Html;
+
+if ($moduleIndex === 'execStock') {
+    $pageName = 'Stock - Executive';
+    $url = 'inventory/inventory/supplier-list?type=execStock';
+    $url2 = 'inventory/inventory/add-by-template-supplier?type=execStock';
+} else if ($moduleIndex === 'assistStock') {
+    $pageName = 'Stock - Assistant';
+    $url = 'inventory/inventory/supplier-list?type=assistStock';
+    $url2 = 'inventory/inventory/add-by-template-supplier?type=assistStock';
+} else if ($moduleIndex === 'projcoorStock') {
+    $pageName = 'Stock - Project Coordinator';
+    $url = 'inventory/inventory/supplier-list?type=projcoorStock';
+    $url2 = 'inventory/inventory/add-by-template-supplier?type=projcoorStock';
+} else if ($moduleIndex === 'maintenanceHeadStock') {
+    $pageName = 'Stock - Head of Maintenance';
+    $url = 'inventory/inventory/supplier-list?type=maintenanceHeadStock';
+    $url2 = 'inventory/inventory/add-by-template-supplier?type=maintenanceHeadStock';
+}
+
 $this->title = 'Confirm and Submit Supplier Details';
 $this->params['breadcrumbs'][] = ['label' => 'Inventory Control'];
-$this->params['breadcrumbs'][] = ['label' => 'Supplier', 'url' => ['supplier-list']];
+$this->params['breadcrumbs'][] = $pageName;
+$this->params['breadcrumbs'][] = ['label' => 'Supplier List', 'url' => [$url]];
+$this->params['breadcrumbs'][] = ['label' => 'Upload Template', 'url' => [$url2]];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <h4><?= Html::encode($this->title) ?></h4>
-<?php $form = ActiveForm::begin(['action' => ['save-supplier-details']]); ?>
+<?php $form = ActiveForm::begin(['action' => ['save-supplier-details', 'type' => $moduleIndex]]); ?>
 <table class="table table-bordered">
     <thead>
         <tr>

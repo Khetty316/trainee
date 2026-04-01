@@ -33,6 +33,7 @@ use frontend\models\common\RefCurrencies;
  * @property string|null $quotation_filename
  * @property int|null $uploaded_by
  * @property string|null $uploaded_at
+ * @property int|null $active_sts 1 = no, 2 = yes
  *
  * @property RefInventoryStatus $status0
  * @property User $createdBy
@@ -64,17 +65,15 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
     public function rules() {
         return [
             [['quotation_date', 'po_date', 'created_at', 'updated_at', 'amountWords'], 'safe'],
-            [['supplier_id', 'status', 'currency_id', 'total_qty', 'created_by', 'updated_by'], 'integer'],
+            [['supplier_id', 'status', 'currency_id', 'total_qty', 'created_by', 'updated_by', 'uploaded_by', 'active_sts'], 'integer'],
             [['total_amount', 'total_discount', 'net_amount', 'tax_amount', 'gross_amount'], 'number'],
-            [['quotation_no', 'quotation_filename'], 'string', 'max' => 255],
-            [['po_no', 'comment'], 'string', 'max' => 255],
+            [['po_no', 'comment', 'quotation_no', 'quotation_filename'], 'string', 'max' => 255],
             [['company_group'], 'string', 'max' => 10],
             [['status'], 'exist', 'skipOnError' => true, 'targetClass' => RefInventoryStatus::className(), 'targetAttribute' => ['status' => 'id']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
             [['currency_id'], 'exist', 'skipOnError' => true, 'targetClass' => RefCurrencies::className(), 'targetAttribute' => ['currency_id' => 'currency_id']],
             [['supplier_id'], 'exist', 'skipOnError' => true, 'targetClass' => InventorySupplier::className(), 'targetAttribute' => ['supplier_id' => 'id']],
-            [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
             [['uploaded_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['uploaded_by' => 'id']],
             [['quotation_file'], 'file',
                 'skipOnEmpty' => true,
@@ -113,6 +112,7 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
             'quotation_filename' => 'Quotation Filename',
             'uploaded_by' => 'Uploaded By',
             'uploaded_at' => 'Uploaded At',
+            'active_sts' => 'Active',
         ];
     }
 
@@ -237,129 +237,6 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
         return $date;
     }
 
-    /*     * ***************************** Issue PO ************************************ */
-
-//    public function issuePoProcess(InventoryPurchaseRequest $purchaseRequest, array $poData, array $poItems) {
-//        $transaction = Yii::$app->db->beginTransaction();
-//
-//        try {
-//            $this->updatePurchaseRequest($purchaseRequest);
-//            $inventoryPO = $this->createPurchaseOrder($purchaseRequest, $poData);
-//            $this->createPoItems($inventoryPO, $purchaseRequest, $poItems, $poData);
-//
-//            $transaction->commit();
-//            return $inventoryPO;
-//        } catch (\Exception $e) {
-//            $transaction->rollBack();
-//            throw $e;
-//        }
-//    }
-//    private function createPurchaseOrder($purchaseRequest, $poData) {
-//        $po = new InventoryPurchaseOrder();
-//        $po->inventory_pr_id = $purchaseRequest->id;
-//        $po->po_date = $this->convertDateFormat($poData['po_date']);
-//        $po->status = RefInventoryStatus::STATUS_AwaitingDelivery;
-//        $po->company_group = $poData['company_group'];
-//        $po->total_qty = $poData['total_quantity'];
-//        $po->currency_id = $poData['currency_id'];
-//        $po->comment = $poData['comment'];
-//        $po->total_discount = $poData['total_discount'];
-//        $po->tax_amount = $poData['tax_amount'];
-//        $po->total_amount = $poData['total_amount'];
-//        $po->net_amount = $poData['net_amount'];
-//        $po->gross_amount = $poData['gross_amount'];
-//
-//        if (!$po->save()) {
-//            throw new \Exception(json_encode($po->errors));
-//        }
-//
-//        return $po;
-//    }
-//
-//    private function createPoItems($po, $purchaseRequest, $poItems, $poData) {
-//        foreach ($poItems as $item) {
-//            $item = (object) $item;
-//
-//            $model = InventoryModel::findOne([
-//                        'type' => $item->model_type,
-//                        'active_sts' => 2,
-//                        'inventory_brand_id' => $item->brand_id,
-//                    ]) ?? $this->createInventoryModel($item);
-//
-//            $detail = InventoryDetail::findOne([
-//                        'supplier_id' => $purchaseRequest->inventory_supplier_id,
-//                        'brand_id' => $item->brand_id,
-//                        'model_id' => $model->id,
-//                        'active_sts' => 2
-//                    ]) ?? $this->createInventoryDetail($item, $purchaseRequest, $model);
-//
-//            $this->createPoItem($po, $purchaseRequest, $detail, $item, $poData);
-//        }
-//    }
-
-    private function createInventoryModel($item) {
-        $model = new InventoryModel([
-            'type' => $item->model_type,
-            'group' => $item->model_group,
-            'description' => $item->model_description,
-            'active_sts' => 2,
-            'unit_type' => $item->unit_type,
-            'inventory_brand_id' => $item->brand_id
-        ]);
-
-        if (!$model->save()) {
-            throw new \Exception(json_encode($model->errors));
-        }
-
-        return $model;
-    }
-
-    private function createInventoryDetail($item, $purchaseRequest, $model) {
-        $detail = new InventoryDetail([
-            'department_code' => $item->department_code,
-            'supplier_id' => $purchaseRequest->inventory_supplier_id,
-            'brand_id' => $item->brand_id,
-            'model_id' => $model->id,
-            'qty_pending_receipt' => $item->order_qty,
-            'currency_id' => Yii::$app->request->post('InventoryPurchaseOrder')['currency_id'],
-            'unit_price' => $item->unit_price,
-            'is_new' => 2,
-            'active_sts' => 2
-        ]);
-
-        if (!$detail->save()) {
-            throw new \Exception(json_encode($detail->errors));
-        }
-
-        return $detail;
-    }
-
-//    private function createPoItem($po, $purchaseRequest, $detail, $item, $poData) {
-//        $poItem = new InventoryPurchaseOrderItem([
-//            'inventory_po_id' => $po->id,
-//            'inventory_pr_item_id' => $item->inventory_pr_item_id ?? null,
-//            'inventory_detail_id' => $detail->id,
-//            'department_code' => $item->department_code,
-//            'supplier_id' => $purchaseRequest->inventory_supplier_id,
-//            'brand_id' => $item->brand_id,
-//            'model_type' => $item->model_type,
-//            'model_group' => $item->model_group,
-//            'model_description' => $item->model_description,
-//            'order_qty' => $item->order_qty,
-//            'remaining_qty' => $item->order_qty,
-//            'unit_type' => $item->unit_type,
-//            'currency_id' => $poData['currency_id'],
-//            'unit_price' => $item->unit_price,
-//            'discount_amt' => $item->discount_amt ?? 0,
-//            'total_price' => $item->total_price,
-//            'status' => RefInventoryStatus::STATUS_AwaitingDelivery
-//        ]);
-//
-//        if (!$poItem->save()) {
-//            throw new \Exception(json_encode($poItem->errors));
-//        }
-//    }
-
     /*     * ***************************** Update Issued PO ************************************ */
 
     public function updatePoProcess($poData, $poItems) {
@@ -441,6 +318,7 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
                 if (!$detail) {
                     throw new \Exception("Inventory detail ID {$poItem['inventory_detail_id']} not found.");
                 }
+
                 $item = new InventoryPurchaseOrderItem();
                 $item->inventory_po_id = $this->id;
                 $item->inventory_detail_id = $detail->id;
@@ -454,8 +332,21 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
             }
 
             if ($poItem['removed'] == 1) {
+                $orderRequestAllocations = InventoryOrderRequestAllocation::findAll(['inventory_po_item_id' => $item->id]);
+                if (!empty($orderRequestAllocations)) {
+                    $orderRequestAllocationDetail = [];
+                    foreach ($orderRequestAllocations as $detail) {
+                        // Create a new array with the data from the model plus 'removed' flag
+                        $allocationData = $detail->toArray();  // Convert model to array
+                        $allocationData['removed'] = 1;        // Add removed flag
+                        $orderRequestAllocationDetail[] = $allocationData;
+                    }
+
+                    $item->updateOrderRequestAllocation($orderRequestAllocationDetail);
+                }
+
                 $item->is_deleted = 1;
-                $item->deleted_by = Yii::$app->user->id;
+                $item->deleted_by = \Yii::$app->user->id;
                 $item->deleted_at = new \yii\db\Expression('NOW()');
             } else {
                 $item->order_qty = $poItem['order_qty'];
@@ -472,115 +363,62 @@ class InventoryPurchaseOrder extends \yii\db\ActiveRecord {
             }
 
             // Only recalculate pending receipt for non-removed items
-            if ($poItem['removed'] != 1) {
-                $item->updateInventoryQtyPendingReceipt();
-            }
+//            if ($poItem['removed'] != 1) {
+            $item->updateInventoryQtyPendingReceipt();
+//            }
         }
     }
 
-//    private function updateExistingPoItem($poItem, $item, $receivedItemIds, $poData) {
-//        // Check if item has been received
-//        if (in_array($poItem->inventory_pr_item_id, $receivedItemIds)) {
-//            // Item has been received, don't allow updates
-//            return;
-//        }
-//
-//        $oldQty = $poItem->order_qty;
-//        $newQty = $item->order_qty;
-//
-//        // Update inventory_detail qty_pending_receipt if quantity changed
-//        if ($oldQty != $newQty && $poItem->inventory_detail_id) {
-//            $detail = InventoryDetail::findOne($poItem->inventory_detail_id);
-//            if ($detail) {
-//                // Remove old quantity and add new quantity
-//                $detail->qty_pending_receipt = $detail->qty_pending_receipt - $oldQty + $newQty;
-//
-//                // Ensure it doesn't go negative
-//                if ($detail->qty_pending_receipt < 0) {
-//                    $detail->qty_pending_receipt = 0;
-//                }
-//
-//                if (!$detail->save()) {
-//                    throw new \Exception('Failed to update inventory detail qty_pending_receipt: ' . json_encode($detail->errors));
-//                }
-//            }
-//        }
-//
-//        // Update PO item
-//        $poItem->order_qty = $newQty;
-//        $poItem->remaining_qty = $poItem->order_qty;
-//        $poItem->unit_price = $item->unit_price;
-//        $poItem->discount_amt = $item->discount_amt ?? 0;
-//        $poItem->total_price = $item->total_price;
-//        $poItem->currency_id = $poData['currency_id'];
-//
-//        if (!$poItem->save()) {
-//            throw new \Exception('Failed to update PO item: ' . json_encode($poItem->errors));
-//        }
-//    }
-//
-//    private function addNewItemToExistingPo($purchaseRequest, $item, $poData) {
-//        // Find or create model
-//        $model = InventoryModel::findOne([
-//            'type' => $item->model_type,
-//            'active_sts' => 2,
-//            'inventory_brand_id' => $item->brand_id
-//        ]);
-//
-//        if (!$model) {
-//            $model = $this->createInventoryModel($item);
-//        }
-//
-//        // Find or create detail
-//        $detail = InventoryDetail::findOne([
-//            'supplier_id' => $purchaseRequest->inventory_supplier_id,
-//            'brand_id' => $item->brand_id,
-//            'model_id' => $model->id,
-//            'active_sts' => 2
-//        ]);
-//
-//        if (!$detail) {
-//            // Create new detail with qty_pending_receipt
-//            $detail = $this->createInventoryDetail($item, $purchaseRequest, $model);
-//        } else {
-//            // Update existing detail - add to qty_pending_receipt
-//            $detail->qty_pending_receipt += $item->order_qty;
-//            if (!$detail->save()) {
-//                throw new \Exception('Failed to update inventory detail qty_pending_receipt: ' . json_encode($detail->errors));
-//            }
-//        }
-//
-//        // Create new PO item
-//        $this->createPoItem($this, $purchaseRequest, $detail, $item, $poData);
-//    }
-//
-//    private function removePoItem($poItem, $receivedItemIds) {
-//        // Check if item has been received
-//        if (in_array($poItem->inventory_pr_item_id, $receivedItemIds)) {
-//            throw new \Exception("Cannot remove item that has already been received.");
-//        }
-//
-//        // Revert qty_pending_receipt in inventory_detail before deleting
-//        if ($poItem->inventory_detail_id) {
-//            $detail = InventoryDetail::findOne($poItem->inventory_detail_id);
-//            if ($detail) {
-//                // Subtract the order_qty from qty_pending_receipt
-//                $detail->qty_pending_receipt -= $poItem->order_qty;
-//
-//                // Ensure it doesn't go negative
-//                if ($detail->qty_pending_receipt < 0) {
-//                    $detail->qty_pending_receipt = 0;
-//                }
-//
-//                if (!$detail->save()) {
-//                    throw new \Exception('Failed to update inventory detail qty_pending_receipt: ' . json_encode($detail->errors));
-//                }
-//            }
-//        }
-//
-//        // Delete the PO item
-//        if (!$poItem->delete()) {
-//            throw new \Exception('Failed to delete PO item: ' . json_encode($poItem->errors));
-//        }
-//    }
+    public function deactivatePoProcess() {
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            $items = InventoryPurchaseOrderItem::find()
+                    ->where(['inventory_po_id' => $this->id, 'is_deleted' => 0])
+                    ->all();
+
+            foreach ($items as $item) {
+
+                // Reverse allocation (same as removed = 1 logic)
+                $allocations = InventoryOrderRequestAllocation::findAll([
+                    'inventory_po_item_id' => $item->id
+                ]);
+
+                if (!empty($allocations)) {
+                    $allocationData = [];
+
+                    foreach ($allocations as $detail) {
+                        $data = $detail->toArray();
+                        $data['removed'] = 1;
+                        $allocationData[] = $data;
+                    }
+
+                    $item->updateOrderRequestAllocation($allocationData);
+                }
+
+                // Soft delete item
+                $item->is_deleted = 1;
+                $item->deleted_by = \Yii::$app->user->id;
+                $item->deleted_at = new \yii\db\Expression('NOW()');
+
+                if (!$item->save()) {
+                    throw new \Exception('Failed to deactivate PO item: ' . json_encode($item->errors));
+                }
+
+                $item->updateInventoryQtyPendingReceipt();
+            }
+
+            // Deactivate PO
+            $this->active_sts = 1; // inactive
+            if (!$this->save(false)) {
+                throw new \Exception('Failed to deactivate PO');
+            }
+
+            $transaction->commit();
+            return true;
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
 }

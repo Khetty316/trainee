@@ -78,9 +78,9 @@ $form = ActiveForm::begin([
                 'hasSuperiorUpdate' => $hasSuperiorUpdate,
                 'currencyList' => \frontend\models\common\RefCurrencies::getCurrencyActiveDropdownlist(),
                 'departmentList' => $departmentList,
-                'supplierList' => $supplierList,
-                'brandList' => $brandList,
-                'modelList' => $modelList
+//                'supplierList' => $supplierList,
+//                'brandList' => $brandList,
+//                'modelList' => $modelList
             ])
             ?>
         <?php endforeach; ?>
@@ -379,9 +379,9 @@ $firstVModel && isset($firstVModel->master_id) ?
 
 </script>
 <script>
-    var supplierListData = <?= json_encode($supplierList) ?>;
-    var brandListData = <?= json_encode($brandList) ?>;
-    var modelListData = <?= json_encode($modelList) ?>;
+//    var supplierListData = <?php //= json_encode($supplierList) ?>;
+//    var brandListData = <?php //= json_encode($brandList) ?>;
+//    var modelListData = <?php //= json_encode($modelList) ?>;
 
     function initializeDepartmentChange() {
         console.log('Initializing department change');
@@ -397,88 +397,88 @@ $firstVModel && isset($firstVModel->master_id) ?
         });
     }
 
-    function handleDepartmentChange($departmentSelect) {
-        var $row = $departmentSelect.closest('tr');
-        var rowIndex = $row.data('index');
-        var selectedDept = $departmentSelect.val();
-        var deptText = $departmentSelect.find('option:selected').text().trim().toLowerCase();
-
-        var $supplierCell = $row.find('.supplier-cell');
-        var $brandCell = $row.find('.brand-cell');
-        var $modelCell = $row.find('.model-cell');
-
-        console.log('Department selected:', selectedDept, deptText);
-
-        if (!selectedDept) {
-            console.log('No department selected, converting to text inputs');
-            convertToTextInput($supplierCell, 'supplier', rowIndex);
-            convertToTextInput($brandCell, 'brand', rowIndex);
-            convertToTextInput($modelCell, 'model', rowIndex);
-            clearInventoryId($row);
-            return;
-        }
-
-        if (deptText === 'maintenance department' || deptText === 'maintenance') {
-            console.log('Maintenance department - fetching filtered inventory');
-
-            // Fetch inventory items filtered by department
-            $.ajax({
-                url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-suppliers"]) ?>',
-                type: 'GET',
-                data: {department_code: selectedDept},
-                dataType: 'json',
-                success: function (suppliers) {
-                    console.log('Suppliers for department received:', suppliers);
-
-                    // Convert to dropdowns with department-filtered data
-                    convertToDropdown($supplierCell, 'supplier', rowIndex, suppliers);
-
-                    // Fetch brands for this department
-                    $.ajax({
-                        url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-brands"]) ?>',
-                        type: 'GET',
-                        data: {department_code: selectedDept},
-                        dataType: 'json',
-                        success: function (brands) {
-                            console.log('Brands for department received:', brands);
-                            convertToDropdown($brandCell, 'brand', rowIndex, brands);
-
-                            // Fetch models for this department
-                            $.ajax({
-                                url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-models"]) ?>',
-                                type: 'GET',
-                                data: {department_code: selectedDept},
-                                dataType: 'json',
-                                success: function (models) {
-                                    console.log('Models for department received:', models);
-                                    convertToDropdown($modelCell, 'model', rowIndex, models);
-                                },
-                                error: function (xhr, status, error) {
-                                    console.error('Error fetching models:', error);
-                                    convertToDropdown($modelCell, 'model', rowIndex, modelListData);
-                                }
-                            });
-                        },
-                        error: function (xhr, status, error) {
-                            console.error('Error fetching brands:', error);
-                            convertToDropdown($brandCell, 'brand', rowIndex, brandListData);
-                        }
-                    });
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error fetching suppliers:', error);
-                    convertToDropdown($supplierCell, 'supplier', rowIndex, supplierListData);
-                }
-            });
-
-        } else {
-            console.log('Non-maintenance department, converting to text inputs');
-            convertToTextInput($supplierCell, 'supplier', rowIndex);
-            convertToTextInput($brandCell, 'brand', rowIndex);
-            convertToTextInput($modelCell, 'model', rowIndex);
-            clearInventoryId($row);
-        }
-    }
+//    function handleDepartmentChange($departmentSelect) {
+//        var $row = $departmentSelect.closest('tr');
+//        var rowIndex = $row.data('index');
+//        var selectedDept = $departmentSelect.val();
+//        var deptText = $departmentSelect.find('option:selected').text().trim().toLowerCase();
+//
+//        var $supplierCell = $row.find('.supplier-cell');
+//        var $brandCell = $row.find('.brand-cell');
+//        var $modelCell = $row.find('.model-cell');
+//
+//        console.log('Department selected:', selectedDept, deptText);
+//
+//        if (!selectedDept) {
+//            console.log('No department selected, converting to text inputs');
+//            convertToTextInput($supplierCell, 'supplier', rowIndex);
+//            convertToTextInput($brandCell, 'brand', rowIndex);
+//            convertToTextInput($modelCell, 'model', rowIndex);
+//            clearInventoryId($row);
+//            return;
+//        }
+//
+//        if (deptText === 'maintenance department' || deptText === 'maintenance') {
+//            console.log('Maintenance department - fetching filtered inventory');
+//
+//            // Fetch inventory items filtered by department
+//            $.ajax({
+//                url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-suppliers"]) ?>',
+//                type: 'GET',
+//                data: {department_code: selectedDept},
+//                dataType: 'json',
+//                success: function (suppliers) {
+//                    console.log('Suppliers for department received:', suppliers);
+//
+//                    // Convert to dropdowns with department-filtered data
+//                    convertToDropdown($supplierCell, 'supplier', rowIndex, suppliers);
+//
+//                    // Fetch brands for this department
+//                    $.ajax({
+//                        url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-brands"]) ?>',
+//                        type: 'GET',
+//                        data: {department_code: selectedDept},
+//                        dataType: 'json',
+//                        success: function (brands) {
+//                            console.log('Brands for department received:', brands);
+//                            convertToDropdown($brandCell, 'brand', rowIndex, brands);
+//
+//                            // Fetch models for this department
+//                            $.ajax({
+//                                url: '<?= \yii\helpers\Url::to(["/office/prereq-form-master/get-models"]) ?>',
+//                                type: 'GET',
+//                                data: {department_code: selectedDept},
+//                                dataType: 'json',
+//                                success: function (models) {
+//                                    console.log('Models for department received:', models);
+//                                    convertToDropdown($modelCell, 'model', rowIndex, models);
+//                                },
+//                                error: function (xhr, status, error) {
+//                                    console.error('Error fetching models:', error);
+//                                    convertToDropdown($modelCell, 'model', rowIndex, modelListData);
+//                                }
+//                            });
+//                        },
+//                        error: function (xhr, status, error) {
+//                            console.error('Error fetching brands:', error);
+//                            convertToDropdown($brandCell, 'brand', rowIndex, brandListData);
+//                        }
+//                    });
+//                },
+//                error: function (xhr, status, error) {
+//                    console.error('Error fetching suppliers:', error);
+//                    convertToDropdown($supplierCell, 'supplier', rowIndex, supplierListData);
+//                }
+//            });
+//
+//        } else {
+//            console.log('Non-maintenance department, converting to text inputs');
+//            convertToTextInput($supplierCell, 'supplier', rowIndex);
+//            convertToTextInput($brandCell, 'brand', rowIndex);
+//            convertToTextInput($modelCell, 'model', rowIndex);
+//            clearInventoryId($row);
+//        }
+//    }
 
     function convertToDropdown($cell, type, rowIndex, dataList) {
         var $field = $cell.find('input, select').first();

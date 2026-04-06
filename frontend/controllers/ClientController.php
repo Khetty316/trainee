@@ -347,13 +347,12 @@ class ClientController extends Controller {
 
         if ($model->load(Yii::$app->request->post())) {
 
-
-            if ($model->save()) {
-                return $this->redirect(['view-client', 'id' => $model->id]);
-            } else {
-                var_dump($model->errors);
-                exit;
-            }
+//            if ($model->save()) {
+//                return $this->redirect(['view-client', 'id' => $model->id]);
+//            } else {
+////                var_dump($model->errors);
+////                exit;
+//            }
 
             $oldIDs = array_keys($existingContacts);
             $contacts = \frontend\models\ModelHelper::createMultiple(

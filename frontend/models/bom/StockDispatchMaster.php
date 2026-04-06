@@ -96,10 +96,10 @@ class StockDispatchMaster extends \yii\db\ActiveRecord {
     }
 
     public function beforeSave($insert) {
-        if (!$this->isNewRecord) {
+        if ($this->isNewRecord) {
 //            $this->updated_at = new \yii\db\Expression('NOW()');
 //            $this->updated_by = Yii::$app->user->identity->id;
-        } else {
+//        } else {
             $this->created_by = Yii::$app->user->identity->id;
             $this->created_at = new \yii\db\Expression('NOW()');
         }

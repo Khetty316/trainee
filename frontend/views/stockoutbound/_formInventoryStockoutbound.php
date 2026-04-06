@@ -30,7 +30,8 @@ $disableReturn = ($total_reserved_qty <= $stockDetail->qty);
         | <strong>Unacknowledged Qty: </strong><?= $stockDetail->unacknowledged_qty ?? '-' ?>
         | <strong>Available Qty: </strong><?= $stockDetail->qty_stock_available ?? '-' ?>
     </div>
-    <table class="table table-bordered table-hover table-sm table-striped" data-max-return="<?= $max_total_return ?>">        <thead class="thead-light">
+    <table class="table table-bordered table-hover table-sm table-striped" data-max-return="<?= $max_total_return ?>">        
+        <thead class="thead-light">
             <tr>
                 <th>#</th>
                 <th>Supplier</th>

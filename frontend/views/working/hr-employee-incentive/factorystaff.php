@@ -133,7 +133,9 @@ $this->params['breadcrumbs'][] = $this->title;
                             // Create range display
                             if ($index === 0) {
                                 $range = number_format($tier['threshold']) . ' - ' . number_format($tiers[$index + 1]['threshold'] - 1);
-                            } else {
+                            } else if ($index === 1) {
+                                $range = number_format($tier['threshold']) . ' - ' . number_format($tiers[$index + 1]['threshold'] - 1);
+                            }else {
                                 $range = number_format($tier['threshold']) . '+';
                             }
                             ?>

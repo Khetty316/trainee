@@ -161,6 +161,8 @@ class User extends ActiveRecord implements IdentityInterface {
     const STATUS_INACTIVE = 9;
     const STATUS_ACTIVE = 10;
 
+    const HEAD_OF_MAINTENANCE_NAME = 'Tang Hung Lung';
+    
 //    const authFabAssignee = 'prodFabAssignee', authElecAssignee = 'prodElecAssignee';
 
     public $scannedFile;
@@ -232,7 +234,7 @@ class User extends ActiveRecord implements IdentityInterface {
             'emergency_contact_person' => 'Emergency Contact Person',
             'ethnic_id' => 'Ethnic ID',
             'religion_id' => 'Religion ID',
-            'sex' => 'Sex',
+            'sex' => 'Gender',
             'dob' => 'Dob',
             'is_leave_superior' => 'Is Leave Superior (System)?',
             'profile_pic' => 'Profile Pic',

@@ -131,7 +131,7 @@ class HrEmployeeIncentiveController extends \yii\web\Controller {
         }
 
         return $this->render('factorystaff', [
-                    'model' => $model,   
+                    'model' => $model,
                     'reportDetail' => json_encode($reportDetail)
         ]);
     }

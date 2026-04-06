@@ -684,8 +684,17 @@ class SiteController extends Controller {
 
     private function getTotalNewPublicDoc() {
         $total = \frontend\models\working\hrdoc\HrPublicDocumentsRead::find()
-                ->where(['employee_id' => \Yii::$app->user->identity->id, 'is_read' => 0])
+                ->alias('r')
+                ->innerJoin('hr_public_documents d', 'd.id = r.hr_public_doc_id')
+                ->where([
+                    'r.employee_id' => \Yii::$app->user->identity->id,
+                    'r.is_read' => 0
+                ])
                 ->count();
+
+//        $total = \frontend\models\working\hrdoc\HrPublicDocumentsRead::find()
+//                ->where(['employee_id' => \Yii::$app->user->identity->id, 'is_read' => 0])
+//                ->count();
 
         return $total;
     }

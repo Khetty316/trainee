@@ -125,7 +125,8 @@ $this->params['breadcrumbs'][] = $this->title;
                                 <td><?= ($detail->qty_stock_available === null) ? 0 : $detail->qty_stock_available ?></td>
                                 <?php
                                 $isFullyDispatched = ($detail->fully_dispatch_status === 1);
-                                $disabled = ($isFullyDispatched || $detail->active_sts == 0) ? 'disabled' : '';
+                                $hasPendingDispatch = !empty($detail->unacknowledged_qty) && $detail->unacknowledged_qty != 0;
+                                $disabled = ($isFullyDispatched || $hasPendingDispatch || $detail->active_sts == 0) ? 'disabled' : '';
                                 ?>
                                 <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal])) { ?>
                                     <td>
@@ -136,7 +137,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                     </td>
                                     <td class="text-center">
                                         <?php if (!$isFullyDispatched && $detail->active_sts == 1) { ?>
-                                                        <!--<input type="checkbox" class="select-row" data-master="<?php //= $keyMaster       ?>" data-max-qty="<?php //= ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty)       ?>" onclick="fillQuantity(this)">-->
+                                                            <!--<input type="checkbox" class="select-row" data-master="<?php //= $keyMaster        ?>" data-max-qty="<?php //= ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty)        ?>" onclick="fillQuantity(this)">-->
                                             <?php
                                             if ($detail->qty_stock_available === null && $detail->inventory_model_id === null) {
                                                 $stockAvailable = ($detail->qty) - ($detail->unacknowledged_qty + $detail->dispatched_qty);

@@ -255,7 +255,6 @@ class StockDispatchMasterController extends Controller {
                                 ->sum('dispatch_qty') ?? 0;
 
                 $newAcknowledged = $currentAcknowledged + $trial->dispatch_qty;
-
                 if ($newAcknowledged > $detail->qty) {
                     throw new \Exception("Total acknowledged quantity exceeds allocated quantity for detail ID: " . $detail->id);
                 }
@@ -266,7 +265,7 @@ class StockDispatchMasterController extends Controller {
 
                 // Update inventory if tracking exists
                 if ($detail->qty_stock_available !== null) {
-                    // ✅ Handle both positive and negative dispatch_qty
+                    // Handle both positive and negative dispatch_qty
                     if ($trial->dispatch_qty > 0) {
                         // Normal dispatch or adjustment increase
                         $detail->updateInventoryStockQty($trial->dispatch_qty, $detail);
@@ -280,7 +279,7 @@ class StockDispatchMasterController extends Controller {
                 // Update trial status to acknowledged
                 $trial->current_sts = StockDispatchMaster::HAS_BEEN_ACKNOWLEDGED;
             } else {
-                // Un-acknowledging (toggle back)
+                // Unacknowledging (toggle back)
                 $trial->current_sts = StockDispatchMaster::TO_BE_ACKNOWLEDGED;
             }
 
@@ -303,7 +302,7 @@ class StockDispatchMasterController extends Controller {
             }
 
             if ($trial->current_sts == StockDispatchMaster::TO_BE_ACKNOWLEDGED) {
-                // ❌ REMOVE manual unacknowledged_qty update
+                // REMOVE manual unacknowledged_qty update
                 // $detail->unacknowledged_qty = ($detail->unacknowledged_qty + $trial->dispatch_qty);
                 // Note: dispatch_qty is negative for returns
                 // Validate: ensure we're not returning more than dispatched

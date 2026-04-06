@@ -387,9 +387,12 @@ class PrereqFormMasterController extends Controller {
 //            $master->total_amount = $postMaster['total_amount'];
 
             $postItems = Yii::$app->request->post('VPrereqFormMasterDetail', []);
-            if ($master->save()) {// && !empty($postItems)) {
-//                $this->rememberDBIds('prereq_form_master');
-//                \common\models\myTools\Mydebug::dumpFileW($postItems);
+            $postItemsNew = Yii::$app->request->post('PrereqFormItem', []);
+            if(empty($postItems) && empty($postItemsNew)){
+                $master->is_deleted = 1;
+            }
+            
+            if ($master->save()) {
 //                if (!empty($postItems)) {
                 foreach ($postItems as $itemData) {
                     if (isset($itemData['id'])) {
@@ -397,7 +400,6 @@ class PrereqFormMasterController extends Controller {
                     } else {
                         // New item
                         $item = new PrereqFormItem();
-//                            $item->prereq_form_master_id = $master->id;
                     }
 
                     $item->prereq_form_master_id = $master->id;
@@ -416,7 +418,32 @@ class PrereqFormMasterController extends Controller {
                     if (!$item->save()) {
                         \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
                     }
-//                    $this->rememberDBIds('prereq_form_item');
+                }
+
+                foreach ($postItemsNew as $itemData) {
+                    if (isset($itemData['id'])) {
+                        $item = PrereqFormItem::findOne($itemData['id']);
+                    } else {
+                        // New item
+                        $item = new PrereqFormItem();
+                    }
+
+                    $item->prereq_form_master_id = $master->id;
+                    $item->item_description = $itemData['item_description'];
+                    $item->quantity = $itemData['quantity'] ?? null;
+                    $item->currency = $itemData['currency'];
+                    $item->unit_price = $itemData['unit_price'] ?? null;
+                    $item->total_price = $itemData['total_price'] ?? null;
+                    $item->purpose_or_function = $itemData['purpose_or_function'] ?? null;
+                    $item->remark = $itemData['remark'] ?? null;
+                    $item->department_code = $itemData['department_code'] ?? null;
+                    $item->supplier_name = $itemData['supplier_name'] ?? null;
+                    $item->brand_name = $itemData['brand_name'] ?? null;
+                    $item->model_name = $itemData['model_name'] ?? null;
+
+                    if (!$item->save()) {
+                        \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
+                    }
                 }
 
                 // delete all records that are 'unintentionally' marked as deleted
@@ -1588,26 +1615,26 @@ class PrereqFormMasterController extends Controller {
         $item->is_deleted = 1;
         $item->updated_by = Yii::$app->user->identity->id;
         if ($item->save(false)) {
-            \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
-
-            $remainingCount = PrereqFormItem::find()
-                    ->where([
-                        'prereq_form_master_id' => $masterId,
-                        'is_deleted' => 0
-                    ])
-                    ->count();
-
-            if ($remainingCount == 0) {
-                $master = PrereqFormMaster::findOne($masterId);
-                if ($master) {
-                    $master->is_deleted = 1;
-                    $master->save(false);
-                }
-                return [
-                    'success' => true,
-                    'redirect' => 'personal-pending-approval',
-                ];
-            }
+//            \common\models\myTools\Mydebug::dumpFileW($item->getErrors());
+//
+//            $remainingCount = PrereqFormItem::find()
+//                    ->where([
+//                        'prereq_form_master_id' => $masterId,
+//                        'is_deleted' => 0
+//                    ])
+//                    ->count();
+//
+//            if ($remainingCount == 0) {
+//                $master = PrereqFormMaster::findOne($masterId);
+//                if ($master) {
+//                    $master->is_deleted = 1;
+//                    $master->save(false);
+//                }
+//                return [
+//                    'success' => true,
+//                    'redirect' => 'personal-pending-approval',
+//                ];
+//            }
 
             return ['success' => true];
         }

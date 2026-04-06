@@ -317,7 +317,7 @@ use common\modules\auth\models\AuthItem;
 
                                                 $inputDisabled = ($isFullyDispatched || $hasPendingDispatch || $detail->active_sts == 0) ? 'disabled' : '';
                                                 ?>
-                                                <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal]) && $moduleIndex === 'inventory'): ?>
+                                                <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_CMMS_Superior]) && $moduleIndex === 'inventory'): ?>
                                                     <td>
                                                         <input type="number"
                                                                name="dispatch[<?= $faultCounter ?>][<?= $detail->id ?>][dispatch_qty]"
@@ -327,7 +327,6 @@ use common\modules\auth\models\AuthItem;
                                                                min="0"
                                                                <?= $inputDisabled ?> />
                                                     </td>
-
                                                     <td>
                                                         <input type="text"
                                                                name="dispatch[<?= $faultCounter ?>][<?= $detail->id ?>][remark]"

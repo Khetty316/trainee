@@ -134,7 +134,7 @@ class StockOutboundMaster extends \yii\db\ActiveRecord {
                 if ($existingDetail) {
                     // Update existing detail instead of creating duplicate
                     $stockOutboundDetails = $existingDetail;
-                    Yii::info("Updating existing outbound detail ID {$existingDetail->id} for BOM detail {$bomDetail->id}");
+//                    Yii::info("Updating existing outbound detail ID {$existingDetail->id} for BOM detail {$bomDetail->id}");
                 } else {
                     // Create new detail
                     $stockOutboundDetails = new StockOutboundDetails();
@@ -157,12 +157,6 @@ class StockOutboundMaster extends \yii\db\ActiveRecord {
                     $stockOutboundDetails->qty_stock_available = 0;
                 }
 
-                // Validate before saving
-                if (!$stockOutboundDetails->validate()) {
-                    $errors = json_encode($stockOutboundDetails->getFirstErrors());
-                    throw new \Exception("Validation failed for BOM detail {$bomDetail->id}: {$errors}");
-                }
-
                 // Save the detail
                 if (!$stockOutboundDetails->save(false)) {
                     throw new \Exception("Failed to save stock outbound detail for BOM detail {$bomDetail->id}");
@@ -175,7 +169,7 @@ class StockOutboundMaster extends \yii\db\ActiveRecord {
             // Commit transaction
             $transaction->commit();
 
-            Yii::info("Successfully copied {$copiedCount} items to stock outbound master {$this->id}");
+//            Yii::info("Successfully copied {$copiedCount} items to stock outbound master {$this->id}");
             return true;
         } catch (\Throwable $e) {
             // Rollback on any error

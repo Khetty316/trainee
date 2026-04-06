@@ -50,7 +50,8 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
                 break;
 
             case "personalAll":
-                $query->where(['prereq_form_master.created_by' => Yii::$app->user->identity->id]);
+                $query->where(['prereq_form_master.created_by' => Yii::$app->user->identity->id])
+                    ->andWhere(['prereq_form_master.is_deleted' => 0]);
                 break;
 
             case "superiorPending":
@@ -60,7 +61,8 @@ class PrereqFormMasterSearch extends PrereqFormMaster {
                 break;
 
             case "superiorAll":
-                $query->where(['prereq_form_master.superior_id' => Yii::$app->user->identity->id]);
+                $query->where(['prereq_form_master.superior_id' => Yii::$app->user->identity->id])
+                    ->andWhere(['prereq_form_master.is_deleted' => 0]);
                 break;
 
             case "superuserPending":

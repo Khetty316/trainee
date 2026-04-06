@@ -323,15 +323,10 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
                                     ->sum('dispatch_qty') ?? 0;
 
                     if ($dispatchQty > 0) {
-
                         $effectiveCommitted = $totalAcknowledged + $totalPendingPositive;
-
                         $newTotal = $effectiveCommitted + $dispatchQty;
-
                         if ($newTotal > $stockDetail->qty) {
-                            throw new \Exception(
-                                            "Dispatch exceeds assigned quantity for detail ID {$detailId}"
-                                    );
+                            throw new \Exception("Dispatch exceeds assigned quantity for detail ID {$detailId}");
                         }
                     }
 
@@ -432,7 +427,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 1️⃣ Acknowledged (PHYSICAL movement only)
+          | acknowledged (physical movement only)
           |--------------------------------------------------------------------------
          */
         $totalAcknowledged = StockDispatchTrial::find()
@@ -444,7 +439,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 2️⃣ Unacknowledged (display purpose only)
+          | unacknowledged
           |--------------------------------------------------------------------------
          */
         $totalUnacknowledged = StockDispatchTrial::find()
@@ -461,7 +456,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 3️⃣ Get allocated qty from inventory
+          | get allocated qty from inventory
           |--------------------------------------------------------------------------
          */
         $allocateQty = InventoryStockoutbound::find()
@@ -473,7 +468,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 4️⃣ Available = Allocated - Acknowledged ONLY
+          | available = allocated - acknowledged only
           |--------------------------------------------------------------------------
          */
         $availableQty = $allocateQty - $totalAcknowledged;
@@ -484,7 +479,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 5️⃣ Update stock detail
+          | update stock detail
           |--------------------------------------------------------------------------
          */
         $stockDetail->dispatched_qty = $totalAcknowledged;
@@ -494,7 +489,7 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
 
         $stockDetail->fully_dispatch_status = ($stockDetail->qty == $currentDispatched) ? 1 : 0;
 
-        if (!$stockDetail->save()) {
+        if (!$stockDetail->save(false)) {
             throw new \Exception("Failed to update stock detail qty: " . json_encode($stockDetail->errors));
         }
     }
@@ -519,7 +514,6 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
                     ->all();
 
             foreach ($stockMasters as $stockMaster) {
-
                 $hasPendingDispatch = StockOutboundDetails::find()
                         ->where([
                             'stock_outbound_master_id' => $stockMaster->id,
@@ -528,17 +522,14 @@ class StockOutboundDetails extends \yii\db\ActiveRecord {
                         ->exists();
 
                 $stockMaster->fully_dispatched_status = $hasPendingDispatch ? 0 : 1;
-
+                
                 if (!$stockMaster->save(false)) {
-                    throw new \Exception(
-                                    "Failed to update stock master status: " . json_encode($stockMaster->errors)
-                            );
+                    throw new \Exception("Failed to update stock master status: " . json_encode($stockMaster->errors));
                 }
             }
 
             $transaction->commit();
         } catch (\Throwable $e) {
-
             $transaction->rollBack();
             throw $e;
         }

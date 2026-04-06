@@ -281,8 +281,6 @@ class CmmsWoMaterialRequestController extends Controller {
                 return $this->redirect(['view-selected-material-cm', 'id' => $id, 'moduleIndex' => $moduleIndex]);
             } catch (\Exception $e) {
                 $transaction->rollBack();
-                \common\models\myTools\Mydebug::dumpFileW($e);
-
                 FlashHandler::err('Failed to dispatch. Please try again.');
             }
         }
@@ -309,7 +307,6 @@ class CmmsWoMaterialRequestController extends Controller {
                     $master->wo_id = $woId;
                     $master->finalized_status = 0;
                     if (!$master->save()) {
-                        \common\models\myTools\Mydebug::dumpFileW($master->getErrors());
                         throw new \Exception('Failed to save material request master: ' . json_encode($master->getErrors()));
                     }
                 }
@@ -318,15 +315,14 @@ class CmmsWoMaterialRequestController extends Controller {
                 $model->request_master_id = $master->id;
                 $model->fault_id = $faultId;
                 if (!$model->validate() || !$model->save()) {
-                    \common\models\myTools\Mydebug::dumpFileW($model->getErrors());
                     throw new \Exception('Failed to save material request detail: ' . json_encode($model->getErrors()));
                 }
 
+                $model->updateMaterialRequestMasterStatus($master);
                 $transaction->commit();
                 FlashHandler::success('Material saved successfully.');
             } catch (\Exception $e) {
                 $transaction->rollBack();
-                \common\models\myTools\Mydebug::dumpFileW($e->getMessage());
                 FlashHandler::err('Failed to save material. Please try again.');
             }
 
@@ -398,7 +394,7 @@ class CmmsWoMaterialRequestController extends Controller {
             return $this->asJson(['success' => false, 'message' => 'Material request master record not found.']);
         }
 
-        $masterId = $master->id;
+//        $masterId = $master->id;
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
@@ -408,39 +404,18 @@ class CmmsWoMaterialRequestController extends Controller {
                     [
                         'and',
                         ['id' => $selectedIds],
-                        ['request_master_id' => $masterId],
+                        ['request_master_id' => $master->id],
                         ['<>', 'is_finalized', 2],
                     ]
             );
 
             if ($updateCount === 0) {
                 $transaction->rollBack();
-                Yii::$app->session->setFlash('warning', 'No items were finalized — they may already be finalized.');
+                Yii::$app->session->setFlash('warning', 'No items were finalized they may already be finalized.');
                 return $this->asJson(['success' => false, 'message' => 'No items were finalized (may already be finalized).']);
             }
 
-            // Recalculate master finalized_status based on current state of all active details
-            $totalItems = CmmsWoMaterialRequestDetails::find()
-                    ->where(['request_master_id' => $masterId, 'active_sts' => 1])
-                    ->andWhere(['<>', 'inventory_sts', 3])
-                    ->count();
-
-            $finalizedItems = CmmsWoMaterialRequestDetails::find()
-                    ->where(['request_master_id' => $masterId, 'is_finalized' => 2, 'active_sts' => 1])
-                    ->andWhere(['<>', 'inventory_sts', 3])
-                    ->count();
-
-            if ($totalItems > 0 && $finalizedItems == $totalItems) {
-                $master->finalized_status = 1; // Fully finalized
-            } elseif ($finalizedItems > 0) {
-                $master->finalized_status = 2; // Partially finalized
-            } else {
-                $master->finalized_status = 0; // Not finalized
-            }
-
-            if (!$master->save()) {
-                throw new \Exception('Failed to update master finalized status: ' . json_encode($master->getErrors()));
-            }
+            $sampleDetail->updateMaterialRequestMasterStatus($master);
 
             // Process inventory for each detail
             foreach ($selectedIds as $id) {

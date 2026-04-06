@@ -118,7 +118,6 @@ class CmmsStockDispatchController extends Controller {
             $transaction = Yii::$app->db->beginTransaction();
             try {
                 $this->acknowledgement($postData);
-
                 $dispatchMaster = CmmsStockDispatchMaster::findOne($dispatchId);
                 $dispatchMaster->updateDispatchMasterStatus(StockDispatchTrial::DISPATCH_STATUS);
                 $stockMasters = CmmsWoMaterialRequestMaster::find()->where(['wo_id' => $productionPanelId])->all();
@@ -141,7 +140,6 @@ class CmmsStockDispatchController extends Controller {
 
     private function acknowledgement($postData) {
         foreach ($postData as $trialId => $detail) {
-
             $detail = CmmsWoMaterialRequestDetails::findOne($detail['detailId']);
             $trial = CmmsStockDispatchTrial::findOne($trialId);
 
@@ -169,7 +167,7 @@ class CmmsStockDispatchController extends Controller {
 
                 // Update inventory if tracking exists
                 if ($detail->qty_stock_available !== null) {
-                    // ✅ Handle both positive and negative dispatch_qty
+                    // Handle both positive and negative dispatch_qty
                     if ($trial->dispatch_qty > 0) {
                         // Normal dispatch or adjustment increase
                         $detail->updateInventoryStockQty($trial->dispatch_qty, $detail, $detail->requestMaster->wo_type);
@@ -183,7 +181,7 @@ class CmmsStockDispatchController extends Controller {
                 // Update trial status to acknowledged
                 $trial->current_sts = StockDispatchMaster::HAS_BEEN_ACKNOWLEDGED;
             } else {
-                // Un-acknowledging (toggle back)
+                // Unacknowledging (toggle back)
                 $trial->current_sts = StockDispatchMaster::TO_BE_ACKNOWLEDGED;
             }
 
@@ -198,7 +196,7 @@ class CmmsStockDispatchController extends Controller {
 
     public function actionChangeReceiver($dispatchId) {
         $model = CmmsStockDispatchMaster::findOne($dispatchId);
-        $stockMaster = new CmmsWoMaterialRequestMaster();
+//        $stockMaster = new CmmsWoMaterialRequestMaster();
 
         $receivers = \frontend\models\cmms\RefAssignedPic::find()->where(['corrective_work_order_master_id' => $model->wo_id])->all();
         if ($model->wo_type === CmmsWoMaterialRequestMaster::WO_TYPE_PM) {

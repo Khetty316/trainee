@@ -87,13 +87,28 @@ class AuthItem extends \yii\db\ActiveRecord {
      */
     CONST ROLE_PROD_OT_MEAL_EXEC = "prod_ot_meal_record_exec";
     CONST ROLE_PROD_OT_MEAL_FINANCE = "prod_ot_meal_record_finance";
-    
+
     /**
      * petty cash Form Module
      */
     CONST ROLE_PC_Normal = "petty_cash_normal";
     CONST ROLE_PC_Finance = "petty_cash_finance";
-    
+
+    /**
+     * CMMS Module
+     */
+    CONST ROLE_CMMS_Normal = "cmms_normal";
+    CONST ROLE_CMMS_Superior = "cmms_superior";
+//    CONST ROLE_CMMS_SuperUser = "cmms_superuser";
+
+    /**
+     * Inventory Module
+     */
+    CONST ROLE_INVENTORY_Executive = "inventory_executive";
+    CONST ROLE_INVENTORY_Assistant = "inventory_assistant";
+    CONST ROLE_INVENTORY_ProjCoor = "inventory_projcoor";
+    CONST ROLE_INVENTORY_MaintenanceHead = "inventory_maintenanceHead";
+
     /**
      * {@inheritdoc}
      */

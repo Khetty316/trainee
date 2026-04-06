@@ -328,7 +328,7 @@ if ($model->country) {
                 resetButtonState();
             }
         });
-    }
+    }  
 
     // Also attach to form inputs outside the table
     $(document).on('input', '.email-input', function () {

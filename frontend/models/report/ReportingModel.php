@@ -29,8 +29,10 @@ class ReportingModel extends Model {
 
     CONST FACTORY_STAFF_PERFORMANCE_INCENTIVE = [
         ['threshold' => 20000, 'incentive' => 100],
-        ['threshold' => 40000, 'incentive' => 150]
+        ['threshold' => 40000, 'incentive' => 150],
+        ['threshold' => 60000, 'incentive' => 200]
     ];
+    
     CONST PROJECT_TYPE_OPTIONS = [
         '' => 'All Projects',
         '1' => 'Internal Projects',

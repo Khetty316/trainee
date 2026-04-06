@@ -2173,73 +2173,6 @@ class InventoryController extends Controller {
         ]);
     }
 
-    public function actionProceedToProcurement($id) {
-        $prereqMaster = PrereqFormMaster::findOne($id);
-        if (!$prereqMaster) {
-            FlashHandler::err('Purchase requisition form not found');
-            return $this->redirect(['executive-pre-requisition-all-application']);
-        }
-
-        $items = PrereqFormItem::find()->where(['prereq_form_master_id' => $prereqMaster->id, 'is_deleted' => 0, 'status' => 0])->all();
-
-        // ===== GROUP BY SUPPLIER =====
-        $itemsBySupplier = [];
-        foreach ($items as $item) {
-            if (empty($item->supplier_id)) {
-                \Yii::warning("Item {$item->id} has no supplier id, skipping");
-                continue;
-            }
-            $itemsBySupplier[$item->supplier_id][] = $item;
-        }
-
-        if (empty($itemsBySupplier)) {
-            FlashHandler::err('No valid items with department codes found');
-            return $this->redirect(['executive-pre-requisition-all-application']);
-        }
-
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            $hasCreated = false;
-            foreach ($itemsBySupplier as $supplierId => $supplierItems) {
-
-                $purchaseRequest = new InventoryPurchaseRequest();
-                $purchaseRequest->inventory_supplier_id = $supplierId;
-                $purchaseRequest->source_type = 1; // new
-                $purchaseRequest->source_id = $prereqMaster->id;
-                $purchaseRequest->po_status = 1; // not yet PO
-
-                if (!$purchaseRequest->save()) {
-                    throw new \Exception(json_encode($purchaseRequest->errors));
-                }
-
-                $sourceType = 1;
-                foreach ($supplierItems as $item) {
-                    if (!$purchaseRequest->createPurchaseRequestItem($item, $sourceType)) {
-                        throw new \Exception('Failed to create PR item');
-                    }
-                }
-
-                $hasCreated = true;
-            }
-
-            if ($hasCreated) {
-                $prereqMaster->inventory_flag = 1;
-
-                if (!$prereqMaster->save(false)) {
-                    throw new \Exception('Failed to update inventory flag: ' . json_encode($prereqMaster->getErrors()));
-                }
-
-                $transaction->commit();
-                FlashHandler::success("Successfully created records");
-            }
-        } catch (\Exception $e) {
-            $transaction->rollBack();
-            FlashHandler::err('Failed to create reorder records: ' . $e->getMessage());
-        }
-
-        return $this->redirect(['executive-new-item-ready-for-po-list']);
-    }
-
     /*     * ************* Purchase Order ************************ */
 
     public function actionPo($type) {
@@ -2681,14 +2614,6 @@ class InventoryController extends Controller {
                 }
             } catch (\Exception $e) {
                 $cache->delete($lockKey);
-
-                // Log the full stack trace for debugging
-                Yii::error([
-                    'message' => $e->getMessage(),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => $e->getTraceAsString()
-                        ], 'po_receive_error');
 
                 \common\models\myTools\FlashHandler::err("Error: " . $e->getMessage() . " (Line: " . $e->getLine() . " in " . basename($e->getFile()) . ")");
                 return $this->redirect(Yii::$app->request->referrer ?: ['po', 'type' => $moduleIndex]);

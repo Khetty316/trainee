@@ -135,5 +135,5 @@ class CmmsWoMaterialRequestMaster extends \yii\db\ActiveRecord {
             case 2: return '<span class="text-info">Partially Dispatched</span>';
             default: return '<span class="btext-secondary">-</span>';
         }
-    }
+    }    
 }

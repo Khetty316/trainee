@@ -386,7 +386,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 1️⃣ Acknowledged (PHYSICAL movement only)
+          | acknowledged (physical movement only)
           |--------------------------------------------------------------------------
          */
         $totalAcknowledged = CmmsStockDispatchTrial::find()
@@ -398,7 +398,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 2️⃣ Unacknowledged (display purpose only)
+          | unacknowledged
           |--------------------------------------------------------------------------
          */
         $totalUnacknowledged = CmmsStockDispatchTrial::find()
@@ -415,7 +415,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 3️⃣ Get allocated qty from inventory
+          | get allocated qty from inventory
           |--------------------------------------------------------------------------
          */
         $allocateQty = \frontend\models\inventory\InventoryStockoutbound::find()
@@ -427,7 +427,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 4️⃣ Available = Allocated - Acknowledged ONLY
+          | available = allocated - acknowledged only
           |--------------------------------------------------------------------------
          */
         $availableQty = $allocateQty - $totalAcknowledged;
@@ -438,7 +438,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
 
         /*
           |--------------------------------------------------------------------------
-          | 5️⃣ Update stock detail
+          | update stock detail
           |--------------------------------------------------------------------------
          */
         $stockDetail->dispatched_qty = $totalAcknowledged;
@@ -457,6 +457,25 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
+            // Recalculate master finalized_status based on current state of all active details
+            $totalItems = CmmsWoMaterialRequestDetails::find()
+                    ->where(['request_master_id' => $requestMaster->id, 'active_sts' => 1])
+                    ->andWhere(['<>', 'inventory_sts', 3])
+                    ->count();
+
+            $finalizedItems = CmmsWoMaterialRequestDetails::find()
+                    ->where(['request_master_id' => $requestMaster->id, 'is_finalized' => 2, 'active_sts' => 1])
+                    ->andWhere(['<>', 'inventory_sts', 3])
+                    ->count();
+
+            if ($totalItems > 0 && $finalizedItems == $totalItems) {
+                $requestMaster->finalized_status = 1; // Fully finalized
+            } elseif ($finalizedItems > 0) {
+                $requestMaster->finalized_status = 2; // Partially finalized
+            } else {
+                $requestMaster->finalized_status = 0; // Not finalized
+            }
+
             $hasPendingDispatch = CmmsWoMaterialRequestDetails::find()
                     ->where([
                         'request_master_id' => $requestMaster->id,
@@ -627,7 +646,7 @@ class CmmsWoMaterialRequestDetails extends \yii\db\ActiveRecord {
             throw new \Exception('Not enough reserved stock to dispatch.');
         }
     }
-    
+
     public function processStockReturn($postData, $dispatchMaster, $actionType) {
         $transaction = Yii::$app->db->beginTransaction();
         try {

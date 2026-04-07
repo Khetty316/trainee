@@ -821,7 +821,6 @@ class ClientController extends Controller {
     public function actionSaveExistClient() {
         $existData = Yii::$app->session->get('exist_data') ?? [];
         $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
-
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
@@ -933,12 +932,15 @@ class ClientController extends Controller {
             }
 
             $transaction->commit();
-            Yii::$app->session->setFlash('success', 'All clients saved successfully.');
 
             // Trigger download if have not found data
             if (!empty($notExistData)) {
-                Yii::$app->session->setFlash('downloadNotFoundClient', true);
+//                Yii::$app->session->setFlash('downloadNotFoundClient', true);
+//                $this->redirect(['export-not-found-clients']);
+                $this->exportNotFoundClients();
             }
+
+            Yii::$app->session->setFlash('success', 'All clients saved successfully.');
 
             return $this->redirect(['index']);
         } catch (\Exception $e) {
@@ -948,8 +950,7 @@ class ClientController extends Controller {
         }
     }
 
-    public function actionExportNotFoundClients() {
-
+    public function exportNotFoundClients() {
         $notExistData = Yii::$app->session->get('not_exist_data');
 
         $companyGroup = Yii::$app->session->get('companyGroup');

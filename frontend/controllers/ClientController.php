@@ -114,31 +114,26 @@ class ClientController extends Controller {
                     } else {
                         $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
                     }
-
                     $reader->setReadDataOnly(true);
 
                     \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(
                             new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder()
                     );
-
                     $spreadsheet = $reader->load($excelFile->tempName);
-
                     $worksheet = $spreadsheet->getActiveSheet();
-
                     $buffer = [];
 
                     foreach ($worksheet->getRowIterator(4) as $row) {
 
                         $cells = $row->getCellIterator();
                         $cells->setIterateOnlyExistingCells(false);
-
                         $data = [];
                         $companyGroup = $clientDebt->tk_group_code;
+                        
                         foreach ($cells as $cell) {
 
                             $data[] = $cell ? $cell->getCalculatedValue() : null;
                         }
-
                         $custNo = isset($data[0]) ? trim((string) $data[0]) : null;
                         $name = isset($data[1]) ? trim((string) $data[1]) : null;
                         $balance = isset($data[15]) ? (float) $data[15] : 0;
@@ -146,13 +141,7 @@ class ClientController extends Controller {
                         if ($custNo === 'Cust.No.' || empty($custNo)) {
                             continue;
                         }
-
-                        $buffer[] = [
-                            'cust_no' => $custNo,
-                            'name' => $name,
-                            'balance' => $balance,
-                            'company_group' => $companyGroup,
-                        ];
+                        $buffer[] = ['cust_no' => $custNo,'name' => $name,'balance' => $balance,'company_group' => $companyGroup,];
                     }
 
                     Yii::$app->session->set('client_upload_data', $buffer);
@@ -288,24 +277,17 @@ class ClientController extends Controller {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('createClient', [
-                            'model' => $model,
-                            'contactModels' => $contacts,
-                            'isUpdate' => false
-                ]);
+                return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
             }
-
             $transaction = Yii::$app->db->beginTransaction();
             try {
                 if ($model->processAndSave()) {
-                    // Save contacts
                     foreach ($contacts as $contact) {
                         $contact->client_id = $model->id;
                         if (!$contact->save(false)) {
                             throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
                         }
                     }
-
                     $transaction->commit();
                     FlashHandler::success("Client and contacts created successfully.");
                     return $this->redirect(['view-client', 'id' => $model->id]);
@@ -315,19 +297,10 @@ class ClientController extends Controller {
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 FlashHandler::err($e->getMessage());
-                return $this->render('createClient', [
-                            'model' => $model,
-                            'contactModels' => $contacts,
-                            'isUpdate' => false
-                ]);
+                return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
             }
         }
-
-        return $this->render('createClient', [
-                    'model' => $model,
-                    'contactModels' => $contacts,
-                    'isUpdate' => false
-        ]);
+        return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
     }
 
     /**
@@ -347,38 +320,22 @@ class ClientController extends Controller {
 
         if ($model->load(Yii::$app->request->post())) {
 
-//            if ($model->save()) {
-//                return $this->redirect(['view-client', 'id' => $model->id]);
-//            } else {
-////                var_dump($model->errors);
-////                exit;
-//            }
-
             $oldIDs = array_keys($existingContacts);
             $contacts = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContact::class, $existingContacts
             );
-
             $email_model = new \frontend\models\projectquotation\QuotationEmails();
-
             $validationErrors = [];
             foreach ($contacts as $index => $contact) {
                 if (!empty($contact->email_address) && !$email_model->validateEmailAddress($contact->email_address)) {
                     $validationErrors[] = "Invalid email address for contact " . ($contact->name ?: ($index + 1)) . ": " . $contact->email_address;
                 }
             }
-
-            // If there are email validation errors, show them and return
             if (!empty($validationErrors)) {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-
-                return $this->render('updateClient', [
-                            'model' => $model,
-                            'contactModels' => $contacts,
-                            'isUpdate' => true
-                ]);
+                return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
             }
 
             foreach ($contacts as $contact) {
@@ -387,7 +344,6 @@ class ClientController extends Controller {
                     throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
                 }
             }
-
             $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id'));
             $deletedIDs = array_diff($oldIDs, $postedIDs);
             $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
@@ -412,24 +368,14 @@ class ClientController extends Controller {
                 } catch (\Exception $e) {
                     $transaction->rollBack();
                     FlashHandler::err($e->getMessage());
-                    return $this->render('updateClient', [
-                                'model' => $model,
-                                'contactModels' => $contacts,
-                                'isUpdate' => true
-                    ]);
+                    return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
                 }
             } else {
                 FlashHandler::err("Validation failed.");
             }
         }
-
-        // Initial render
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-        return $this->render('updateClient', [
-                    'model' => $model,
-                    'contactModels' => $contacts,
-                    'isUpdate' => true
-        ]);
+        return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
     }
 
 //    public function actionUpdateClient($id) {
@@ -600,7 +546,6 @@ class ClientController extends Controller {
         if (($model = Clients::findOne($id)) !== null) {
             return $model;
         }
-
         throw new NotFoundHttpException('The requested page does not exist.');
     }
 
@@ -611,14 +556,11 @@ class ClientController extends Controller {
         if (!$clientId) {
             return [];
         }
-
         $client = Clients::findOne($clientId);
         if (!$client) {
             return [];
         }
-
         $emails = $client->getEmailsList();
-
         $results = [];
         foreach ($emails as $email) {
             $results[] = ['id' => $email, 'text' => $email];
@@ -630,11 +572,8 @@ class ClientController extends Controller {
     public function actionAjaxAddContact($key, $isUpdate) {
         Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;
         $contact = new \frontend\models\client\ClientContact();
-        return $this->renderPartial('_formClient_row', [
-                    'contact' => $contact,
-                    'index' => $key,
-                    'isUpdate' => $isUpdate
-        ]);
+        
+        return $this->renderPartial('_formClient_row', ['contact' => $contact,'index' => $key,'isUpdate' => $isUpdate]);
     }
 
     public function actionProcessClientData() {
@@ -646,11 +585,9 @@ class ClientController extends Controller {
         if (!$postClients) {
             return $this->redirect(['add-by-template-clients']);
         }
-
         $custNos = $postClients['cust_no'];
         $names = $postClients['name'];
         $balances = $postClients['balance'];
-
         $buffer = [];
 
         foreach ($custNos as $index => $custNo) {
@@ -658,20 +595,13 @@ class ClientController extends Controller {
             if (empty($custNo))
                 continue;
 
-            $buffer[] = [
-                'cust_no' => trim($custNo),
-                'name' => $names[$index] ?? '',
-                'balance' => $balances[$index] ?? 0,
-                'company_group' => $companyGroup,
-            ];
+            $buffer[] = ['cust_no' => trim($custNo), 'name' => $names[$index] ?? '', 'balance' => $balances[$index] ?? 0, 'company_group' => $companyGroup,];
         }
-
         Yii::$app->session->set('client_upload_data', $buffer);
 
         return $this->redirect(['check-client-data']);
     }
 
-    //progress
     public function actionProcessChunk() {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
@@ -679,24 +609,15 @@ class ClientController extends Controller {
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
-
         $start = Yii::$app->request->post('index', 0);
-        $limit = 10; // process 10 rows per request
-
+        $limit = 10;
         $slice = array_slice($clientData, $start, $limit);
-
-        $columnMap = [
-            'TK' => 'ac_no_tk',
-            'TKE' => 'ac_no_tke',
-            'TKM' => 'ac_no_tkm',
-        ];
-
+        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
         $column = $columnMap[$companyGroup] ?? null;
 
         foreach ($slice as $row) {
 
-            $client = Clients::find()
-                    ->where([$column => $row['cust_no']])
+            $client = Clients::find()->where([$column => $row['cust_no']])
                     ->one();
 
             if (!$client)
@@ -710,7 +631,6 @@ class ClientController extends Controller {
             $debt->balance = $row['balance'];
             $debt->save();
         }
-
         $nextIndex = $start + $limit;
 
         return [
@@ -732,31 +652,19 @@ class ClientController extends Controller {
         ]);
     }
 
-    //check data
     public function actionCheckClientData() {
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
-
         $clientData = Yii::$app->session->get('client_upload_data');
-
         $existData = [];
         $notExistData = [];
-
-        $columnMap = [
-            'TK' => 'ac_no_tk',
-            'TKE' => 'ac_no_tke',
-            'TKM' => 'ac_no_tkm',
-        ];
-
+        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
         $column = $columnMap[$companyGroup] ?? null;
         $custNos = array_column($clientData, 'cust_no');
-
-        $allClients = Clients::find()
-                ->where([$column => $custNos])
+        $allClients = Clients::find()->where([$column => $custNos])
                 ->all();
 
-        // Build a map that handles multiple clients with same ac_no
         $clientMap = [];
         foreach ($allClients as $client) {
             $acNo = $client->$column;
@@ -775,7 +683,6 @@ class ClientController extends Controller {
                 $notExistData[] = $row;
             }
         }
-
         Yii::$app->session->set('exist_data', $existData);
         Yii::$app->session->set('not_exist_data', $notExistData);
 
@@ -787,40 +694,21 @@ class ClientController extends Controller {
 
         $existData = Yii::$app->session->get('exist_data') ?? [];
         $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
-
         $start = Yii::$app->request->post('start', 0);
         $limit = 20;
-
         $existDataChunk = array_slice($existData, $start, $limit);
-
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
 
         if (empty($existDataChunk)) {
-            return [
-                'success' => true,
-                'done' => true,
-                'next' => $start
-            ];
+            return ['success' => true, 'done' => true, 'next' => $start];
         }
-
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
-
-            $columnMap = [
-                'TK' => 'ac_no_tk',
-                'TKE' => 'ac_no_tke',
-                'TKM' => 'ac_no_tkm',
-            ];
-
-            $fieldMap = [
-                'TK' => 'tk_balance',
-                'TKE' => 'tke_balance',
-                'TKM' => 'tkm_balance',
-            ];
-
+            $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
+            $fieldMap = ['TK' => 'tk_balance', 'TKE' => 'tke_balance', 'TKM' => 'tkm_balance',];
             $column = $columnMap[$companyGroup] ?? null;
             $field = $fieldMap[$companyGroup] ?? null;
 
@@ -828,30 +716,17 @@ class ClientController extends Controller {
                 throw new \Exception("Invalid company group");
             }
 
-            // ===== GET CLIENTS =====
             $custNos = array_column($existDataChunk, 'cust_no');
-
-            $allClients = Clients::find()
-                    ->where([$column => $custNos])
+            $allClients = Clients::find()->where([$column => $custNos])
                     ->all();
-
             $clientMap = [];
             foreach ($allClients as $client) {
                 $clientMap[$client->$column][] = $client;
             }
 
-            // ===== GET EXISTING DEBTS =====
             $clientIds = array_map(fn($c) => $c->id, $allClients);
-
-            $allDebts = ClientDebt::find()
-                    ->where([
-                        'client_id' => $clientIds,
-                        'tk_group_code' => $companyGroup,
-                        'year' => $year,
-                        'month' => $month
-                    ])
+            $allDebts = ClientDebt::find()->where(['client_id' => $clientIds, 'tk_group_code' => $companyGroup, 'year' => $year, 'month' => $month])
                     ->all();
-
             $debtMap = [];
             foreach ($allDebts as $debt) {
                 $debtMap[$debt->client_id] = $debt;
@@ -862,7 +737,6 @@ class ClientController extends Controller {
             $updatedClients = [];
 
             foreach ($existDataChunk as $row) {
-
                 $clients = $clientMap[$row['cust_no']] ?? [];
 
                 if (empty($clients)) {
@@ -874,22 +748,11 @@ class ClientController extends Controller {
                     $oldDebt = $debtMap[$client->id] ?? null;
 
                     if ($oldDebt === null) {
-                        $insertRows[] = [
-                            $client->id,
-                            $companyGroup,
-                            $year,
-                            $month,
-                            (float) $row['balance']
-                        ];
+                        $insertRows[] = [$client->id, $companyGroup, $year, $month, (float) $row['balance']];
                     } else {
-                        $updateRows[] = [
-                            'id' => $oldDebt->id,
-                            'balance' => (float) $row['balance']
-                        ];
+                        $updateRows[] = ['id' => $oldDebt->id, 'balance' => (float) $row['balance']];
                     }
-
                     $client->$field = (float) $row['balance'];
-
                     $client->current_outstanding_balance = (float) ($client->tk_balance ?? 0) +
                             (float) ($client->tke_balance ?? 0) +
                             (float) ($client->tkm_balance ?? 0);
@@ -897,25 +760,14 @@ class ClientController extends Controller {
                     $updatedClients[$client->id] = $client;
                 }
             }
-
             if (!empty($insertRows)) {
                 Yii::$app->db->createCommand()
-                        ->batchInsert(
-                                'client_debt',
-                                ['client_id', 'tk_group_code', 'year', 'month', 'balance'],
-                                $insertRows
-                        )->execute();
+                        ->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
             }
-
             foreach ($updateRows as $row) {
                 Yii::$app->db->createCommand()
-                        ->update(
-                                'client_debt',
-                                ['balance' => $row['balance']],
-                                ['id' => $row['id']]
-                        )->execute();
+                        ->update('client_debt', ['balance' => $row['balance']], ['id' => $row['id']])->execute();
             }
-
             foreach ($updatedClients as $client) {
                 $client->save(false);
             }
@@ -929,91 +781,17 @@ class ClientController extends Controller {
         }
     }
 
-    //in debug 
-//    public function actionExportNotFoundClients() {
-//
-//        $this->layout = false;
-//
-//        $data = Yii::$app->session->get('not_exist_data');
-//
-//        if (empty($data)) {
-//            Yii::$app->session->setFlash('error', 'No data to export.');
-//            return $this->redirect(['index']);
-//        }
-//
-//        return $this->renderPartial('notFoundClientsCSV', [
-//                    'data' => $data
-//        ]);
-//        
-//        Yii::$app->end();
-//        
-//        // ===== HEADER =====
-//        $sheet->setCellValue('A1', 'No.');
-//        $sheet->setCellValue('B1', 'Cust No');
-//        $sheet->setCellValue('C1', 'Fullname');
-//        $sheet->setCellValue('D1', 'Balance (RM)');
-//        $sheet->setCellValue('E1', 'Company Group');
-//
-//        // ===== DATA =====
-//        $rowNum = 2;
-//        $index = 1;
-//
-//        foreach ($data as $row) {
-//            if (!is_array($row) || empty($row['cust_no']))
-//                continue;
-//
-//            $sheet->setCellValue("A$rowNum", $index++);
-//            $sheet->setCellValue("B$rowNum", $row['cust_no']);
-//            $sheet->setCellValue("C$rowNum", $row['name']);
-//            $sheet->setCellValue("D$rowNum", (float) $row['balance']);
-//            $sheet->setCellValue("E$rowNum", $row['company_group']);
-//
-//            $rowNum++;
-//        }
-//
-//        // ===== AUTO WIDTH 🔥 =====
-//        foreach (range('A', 'E') as $col) {
-//            $sheet->getColumnDimension($col)->setAutoSize(true);
-//        }
-//
-//        // ===== BOLD HEADER 🔥 =====
-//        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
-//
-//        // ===== NUMBER FORMAT 🔥 =====
-//        $sheet->getStyle("D2:D$rowNum")
-//                ->getNumberFormat()
-//                ->setFormatCode('#,##0.00');
-//
-//        // ===== OUTPUT =====
-//        $fileName = 'NotFoundClients.xlsx';
-//
-//        while (ob_get_level()) {
-//            ob_end_clean();
-//        }
-//
-//        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//        header("Content-Disposition: attachment; filename=\"$fileName\"");
-//        header('Cache-Control: max-age=0');
-//
-//        $writer = new Xlsx($spreadsheet);
-//        $writer->save('php://output');
-//      
-//}
-
     public function actionExportNotFoundClients() {
-        $this->layout = false;
-
-        $data = Yii::$app->session->get('not_exist_data');
-
+        $rawData = Yii::$app->request->post('data');
+        $data = json_decode($rawData);
+        $response = Yii::$app->response;
+        $response->format = \yii\web\Response::FORMAT_RAW;
         if (empty($data)) {
-            Yii::$app->session->setFlash('error', 'No data to export.');
-            return $this->redirect(['index']);
+            $data = [];
         }
 
-        echo $this->renderPartial('notFoundClientsCSV', [
-            'data' => $data
+        return $this->renderPartial('notFoundClientsCSV', [
+                    'data' => $data
         ]);
-
-        Yii::$app->end(); // 🔥 IMPORTANT
     }
 }

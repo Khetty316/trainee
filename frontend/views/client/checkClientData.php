@@ -61,24 +61,54 @@ $this->params['breadcrumbs'][] = $this->title;
 </div>
 
 <p class="mb-5">
-
     <?=
-    Html::submitButton('Confirm Save', [
-        'class' => 'btn btn-success float-right ',
+    Html::submitButton('Confirm & Save <i class="fas fa-check"></i>', [
+        'class' => 'btn btn-success float-right',
     ])
     ?>
-    
+
     <?=
     Html::a(
-            'Export to CSV <i class="fas fa-file-csv fa-lg"></i>',
-            ['client/export-not-found-clients'],
+            'Export to CSV <i class="fas fa-file-csv"></i>',
+            '#',
             [
                 'class' => 'btn btn-primary float-right mr-1',
                 'id' => 'exportCsvButton',
-                'encode' => false
             ]
     )
     ?>
 </p>
 
+<script>
+    $('#exportCsvButton').on('click', function (e) {
+        e.preventDefault();
+        var data = <?= json_encode($notExistData) ?>;
+
+        $.ajax({
+            url: '/client/export-not-found-clients',
+            type: 'POST',
+            data: {
+                data: JSON.stringify(data),
+                _csrf: yii.getCsrfToken()
+            },
+            success: function (response) {
+                var blob = new Blob([response], {type: 'application/vnd.ms-excel'});
+                var url = window.URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.href = url;
+                var today = new Date();
+                var day = String(today.getDate()).padStart(2, '0');
+                var month = String(today.getMonth() + 1).padStart(2, '0');
+                var year = today.getFullYear();
+                var formattedDate = day + '-' + month + '-' + year;
+
+                link.download = 'NotFoundClientsInDMS - ' + formattedDate + '.xls';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }
+        });
+    });
+</script>
 <?= Html::endForm() ?>

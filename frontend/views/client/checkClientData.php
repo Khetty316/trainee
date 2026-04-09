@@ -1,16 +1,14 @@
 <?php
 
 use yii\helpers\Html;
+use yii\helpers\Url;
 
 $this->title = 'Check Client Detail';
 $this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-
-<div id="successContainer"></div> 
-
-<?= Html::beginForm(['client/save-exist-client'], 'post', ['id' => 'saveForm']) ?>
+<?= Html::beginForm(['client/save-exist-client'], 'post') ?>
 
 <div class="row">
     <div class="col-md-6">
@@ -62,36 +60,25 @@ $this->params['breadcrumbs'][] = $this->title;
     </div>
 </div>
 
-<div class="d-flex justify-content-end mt-3 mb-4">
-    <button type="submit" id="saveBtn" class="btn btn-primary">
-        Proceed & Save
-    </button>
-</div>
+<p class="mb-5">
+
+    <?=
+    Html::submitButton('Confirm Save', [
+        'class' => 'btn btn-success float-right ',
+    ])
+    ?>
+    
+    <?=
+    Html::a(
+            'Export to CSV <i class="fas fa-file-csv fa-lg"></i>',
+            ['client/export-not-found-clients'],
+            [
+                'class' => 'btn btn-primary float-right mr-1',
+                'id' => 'exportCsvButton',
+                'encode' => false
+            ]
+    )
+    ?>
+</p>
 
 <?= Html::endForm() ?>
-
-<script>
-    document.getElementById('saveForm').addEventListener('submit', function () {
-
-        const btn = document.getElementById('saveBtn');
-        btn.innerText = 'Processing...';
-        btn.disabled = true;
-
-        setTimeout(function () {
-
-            setTimeout(function () {
-                window.location.href = "<?= \yii\helpers\Url::to(['client/index']) ?>";
-            }, 2000); // wait 2 seconds for download
-        });
-
-    });
-</script>
-
-<?php if (Yii::$app->session->get('download_invalid')): ?>
-    <script>
-        window.onload = function () {
-            window.location.href = '<?= \yii\helpers\Url::to(['client/export-invalid-clients']) ?>';
-        };
-    </script>
-    <?php Yii::$app->session->remove('download_invalid'); ?>
-<?php endif; ?>

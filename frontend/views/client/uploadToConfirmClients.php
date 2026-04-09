@@ -101,14 +101,11 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 
 </table>
 
-<?= Html::submitButton('Proceed', [
-    'class' => 'btn btn-primary mb-2',
-    
-]) ?>
-
-<!--<div class="form-group">
-<?= Html::submitButton('Save to Database', ['class' => 'btn btn-primary']) ?>
-</div>-->
+<div style="text-align:right; margin-top:10px; padding: 10px 22px; border-radius: 8px;">
+    <?= Html::submitButton('Proceed', [
+        'class' => 'btn btn-primary mb-2'
+    ]) ?>
+</div>
 
 <script>
     $(document).ready(function () {

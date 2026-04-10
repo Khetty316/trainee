@@ -20,6 +20,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <tbody>
                 <?php if (!empty($existData)): ?>
                     <?php foreach ($existData as $i => $row): ?>
+                    
                         <tr>
                             <td><?= $i + 1 ?></td>
                             <td><?= Html::encode($row['cust_no']) ?></td>

@@ -600,42 +600,42 @@ class ClientController extends Controller {
         return $this->redirect(['check-client-data']);
     }
 
-    public function actionProcessChunk() {
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
-        $clientData = Yii::$app->session->get('client_upload_data');
-        $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
-        $start = Yii::$app->request->post('index', 0);
-        $limit = 10;
-        $slice = array_slice($clientData, $start, $limit);
-        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
-        $column = $columnMap[$companyGroup] ?? null;
-
-        foreach ($slice as $row) {
-
-            $client = Clients::find()->where([$column => $row['cust_no']])
-                    ->one();
-
-            if (!$client)
-                continue;
-
-            $debt = new ClientDebt();
-            $debt->client_id = $client->id;
-            $debt->tk_group_code = $companyGroup;
-            $debt->month = $month;
-            $debt->year = $year;
-            $debt->balance = $row['balance'];
-            $debt->save();
-        }
-        $nextIndex = $start + $limit;
-
-        return [
-            'nextIndex' => $nextIndex,
-            'done' => $nextIndex >= count($clientData)
-        ];
-    }
+//    public function actionProcessChunk() {
+//        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+//
+//        $clientData = Yii::$app->session->get('client_upload_data');
+//        $companyGroup = Yii::$app->session->get('companyGroup');
+//        $month = Yii::$app->session->get('month');
+//        $year = Yii::$app->session->get('year');
+//        $start = Yii::$app->request->post('index', 0);
+//        $limit = 10;
+//        $slice = array_slice($clientData, $start, $limit);
+//        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
+//        $column = $columnMap[$companyGroup] ?? null;
+//
+//        foreach ($slice as $row) {
+//
+//            $client = Clients::find()->where([$column => $row['cust_no']])
+//                    ->one();
+//
+//            if (!$client)
+//                continue;
+//
+//            $debt = new ClientDebt();
+//            $debt->client_id = $client->id;
+//            $debt->tk_group_code = $companyGroup;
+//            $debt->month = $month;
+//            $debt->year = $year;
+//            $debt->balance = $row['balance'];
+//            $debt->save();
+//        }
+//        $nextIndex = $start + $limit;
+//
+//        return [
+//            'nextIndex' => $nextIndex,
+//            'done' => $nextIndex >= count($clientData)
+//        ];
+//    }
 
     public function actionConfirmSubmit() {
         $existData = Yii::$app->session->get('exist_data');
@@ -687,9 +687,7 @@ class ClientController extends Controller {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
         $existData = Yii::$app->session->get('exist_data') ?? [];
-        $start = Yii::$app->request->post('start', 0);
-        $limit = 20;
-        $existDataChunk = array_slice($existData, $start, $limit);
+        $existDataChunk = $existData;
         $companyGroup = Yii::$app->session->get('companyGroup');
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
@@ -755,14 +753,17 @@ class ClientController extends Controller {
 
             if (!empty($insertRows)) {
 //                Yii::$app->db->createCommand()->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
-                $newDebt = new clientDebt();
-                $newDebt->client_id = $client->id;
-                $newDebt->tk_group_code = $companyGroup;
-                $newDebt->year = $year;
-                $newDebt->month = $month;
-                $newDebt->balance = $row['balance'];
-                if (!$newDebt->save()) {
-                    throw new \Exception("Failed saving new client debt: " . json_encode($newDebt->errors));
+                foreach ($insertRows as $insert) {
+                    $newDebt = new ClientDebt();
+                    $newDebt->client_id = $insert[0];
+                    $newDebt->tk_group_code = $insert[1];
+                    $newDebt->year = $insert[2];
+                    $newDebt->month = $insert[3];
+                    $newDebt->balance = $insert[4];
+
+                    if (!$newDebt->save()) {
+                        throw new \Exception("Failed saving new client debt: " . json_encode($newDebt->errors));
+                    }
                 }
             }
 

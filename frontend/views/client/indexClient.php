@@ -15,26 +15,6 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <h3><?= Html::encode($this->title) ?></h3>
 
-    <?php // if (Yii::$app->session->hasFlash('downloadNotFoundClient')): ?>
-<!--        <script>
-            setTimeout(function () {
-
-                // remove loading spinner (optional)
-                document.body.classList.remove('loading');
-                document.querySelectorAll('.loading, .overlay, .spinner').forEach(el => {
-                    el.style.display = 'none';
-                });
-
-                // trigger download
-                var iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = '<?php //= \yii\helpers\Url::to(['client/export-not-found-clients'])  ?>';
-                document.body.appendChild(iframe);
-
-            }, 1000);
-        </script>-->
-    <?php //endif; ?>
-
     <p>
         <?= Html::a('Create Clients', ['create-client'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Import Outstanding Balance', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>

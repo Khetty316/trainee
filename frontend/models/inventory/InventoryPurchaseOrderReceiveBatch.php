@@ -403,7 +403,7 @@ class InventoryPurchaseOrderReceiveBatch extends \yii\db\ActiveRecord {
                 throw new \Exception('Validation failed in validateReceiveItems: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
             }
 
-            // ✅ Resolve uploaded files ONCE and pass down — prevents Yii2 double-registration
+            // Resolve uploaded files ONCE and pass down — prevents Yii2 double-registration
             try {
                 $docModel = new InventoryPurchaseOrderItemDoc();
                 $resolvedFiles = \yii\web\UploadedFile::getInstances($docModel, 'filename');
@@ -1030,8 +1030,9 @@ class InventoryPurchaseOrderReceiveBatch extends \yii\db\ActiveRecord {
 
     private function handleBomDetail($orderRequest, $allocatedQty) {
         $bomDetail = BomDetails::findOne($orderRequest->reference_id);
-        if (!$bomDetail)
+        if (!$bomDetail) {
             return $allocatedQty;
+        }
 
         $bomMaster = BomMaster::findOne($bomDetail->bom_master);
         if (!$bomMaster)
@@ -1067,6 +1068,11 @@ class InventoryPurchaseOrderReceiveBatch extends \yii\db\ActiveRecord {
             'reservedQty' => $reserveItem->reserved_qty,
             'balanceQty' => $balancePositive
         ];
+        
+        $bomDetail->inventory_sts = 2;
+        if (!$bomDetail->save(false)) {
+            throw new \Exception('Failed to update bom detail inventory status.');
+        }
 
         return $qty;
     }

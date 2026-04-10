@@ -4,16 +4,16 @@ use yii\helpers\Html;
 use yii\widgets\ActiveForm;
 
 if ($moduleIndex === 'execStock') {
-    $pageName = 'Stock - Executive';
+    $pageName = 'Inventory Master - Executive';
     $url = 'inventory/inventory/item-list?type=execStock';
 } else if ($moduleIndex === 'assistStock') {
-    $pageName = 'Stock - Assistant';
+    $pageName = 'Inventory Master - Assistant';
     $url = 'inventory/inventory/item-list?type=assistStock';
 } else if ($moduleIndex === 'projcoorStock') {
-    $pageName = 'Stock - Project Coordinator';
+    $pageName = 'Inventory Master - Project Coordinator';
     $url = 'inventory/inventory/item-list?type=projcoorStock';
 } else if ($moduleIndex === 'maintenanceHeadStock') {
-    $pageName = 'Stock - Head of Maintenance';
+    $pageName = 'Inventory Master - Head of Maintenance';
     $url = 'inventory/inventory/item-list?type=maintenanceHeadStock';
 }
 

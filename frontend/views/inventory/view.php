@@ -4,14 +4,14 @@ use yii\helpers\Html;
 use yii\widgets\DetailView;
 
 /* @var $this yii\web\View */
-/* @var $model frontend\models\inventory\cmms\InventorySupplierCmms */
+/* @var $model frontend\models\inventory\InventoryMaterialRequest */
 
-$this->title = $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Inventory Supplier Cmms', 'url' => ['index']];
+$this->title = $model->id;
+$this->params['breadcrumbs'][] = ['label' => 'Inventory Material Requests', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
-<div class="inventory-supplier-cmms-view">
+<div class="inventory-material-request-view">
 
     <h1><?= Html::encode($this->title) ?></h1>
 
@@ -30,22 +30,20 @@ $this->params['breadcrumbs'][] = $this->title;
         'model' => $model,
         'attributes' => [
             'id',
-            'code',
-            'name',
-            'address1',
-            'address2',
-            'address3',
-            'address4',
-            'contact_name',
-            'contact_number',
-            'contact_email:email',
-            'contact_fax',
-            'agent_terms',
-            'active_sts',
+            'user_id',
+            'reference_type',
+            'reference_id',
+            'desc',
+            'inventory_detail_id',
+            'request_qty',
+            'approved_qty',
             'created_by',
             'created_at',
             'updated_by',
             'updated_at',
+            'approved_by',
+            'approved_at',
+            'status',
         ],
     ]) ?>
 

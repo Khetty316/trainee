@@ -10,13 +10,13 @@ use yii\bootstrap4\ActiveForm;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 if ($moduleIndex === 'execStock') {
-    $pageName = 'Stock - Executive';
+    $pageName = 'Inventory Master - Executive';
 } else if ($moduleIndex === 'assistStock') {
-    $pageName = 'Stock - Assistant';
+    $pageName = 'Inventory Master - Assistant';
 } else if ($moduleIndex === 'projcoorStock') {
-    $pageName = 'Stock - Project Coordinator';
+    $pageName = 'Inventory Master - Project Coordinator';
 } else if ($moduleIndex === 'maintenanceHeadStock') {
-    $pageName = 'Stock - Head of Maintenance';
+    $pageName = 'Inventory Master - Head of Maintenance';
 }
 
 $this->title = 'Inventory Control';
@@ -29,8 +29,8 @@ $this->params['breadcrumbs'][] = $pageName;
 
     <p>
         <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
-            <?= Html::a('Add New Supplier', ['add-new-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
-            <?= Html::a('Upload Template', ['add-by-template-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+            <?= Html::a("Add New Supplier <i class='fas fa-plus'></i>", ['add-new-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Upload Template <i class="fas fa-upload"></i>', ['add-by-template-supplier', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?php } ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
         <?=

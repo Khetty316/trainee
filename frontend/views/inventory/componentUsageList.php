@@ -5,7 +5,7 @@ use yii\grid\GridView;
 use common\models\myTools\MyFormatter;
 
 /* @var $this yii\web\View */
-/* @var $searchModel frontend\models\inventory\InventoryReserveItemSearch */
+/* @var $searchModel frontend\models\inventory\InventoryStockoutboundSearch */
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 if ($moduleIndex === 'execStock') {
@@ -16,17 +16,18 @@ if ($moduleIndex === 'execStock') {
     $pageName = 'Inventory Master - Project Coordinator';
 } else if ($moduleIndex === 'maintenanceHeadStock') {
     $pageName = 'Inventory Master - Head of Maintenance';
+} else if ($moduleIndex === 'personalStock') {
+    $pageName = 'Inventory Master - Personal';
 }
 
 $this->title = 'Inventory Control';
 $this->params['breadcrumbs'][] = $this->title;
 $this->params['breadcrumbs'][] = $pageName;
 ?>
-<div class="inventory-reserve-item-index">
-    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '5']) ?>
+<div class="inventory-stockoutbound-index">
+    <?= $this->render('__inventoryNavBar', ['module' => $moduleIndex, 'pageKey' => '7']) ?>
 
     <p>
-        <?= Html::a('Create Reservation <i class="fas fa-plus"></i>', ['add-new-reserve-item', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
         <?=
         Html::a(
@@ -50,47 +51,41 @@ $this->params['breadcrumbs'][] = $pageName;
             ['class' => 'yii\grid\SerialColumn'],
 //            'id',
             [
-                'attribute' => 'user_id',
-                'contentOptions' => ['class' => 'col-sm-1'],
-                'value' => function ($model) {
-                    return ($model->user->fullname);
-                }
-            ],
-            [
-                'attribute' => 'inventory_detail_id',
-                'label' => 'Supplier',
-                'format' => 'raw',
-                'value' => function ($model) {
-                    return ($model->inventoryDetail->supplier->name ?? '-');
-                }
-            ],
-            [
-                'attribute' => 'inventory_model_id',
-                'label' => 'Model Type',
-                'format' => 'raw',
-                'value' => function ($model) {
-                    return $model->inventoryDetail->model->type ?? '-';
-                }
-            ],
-            [
-                'attribute' => 'inventory_brand_id',
-                'label' => 'Brand',
-                'format' => 'raw',
-                'value' => function ($model) {
-                    return $model->inventoryDetail->brand->name ?? '-';
-                }
-            ],
+                    'attribute' => 'inventory_detail_id',
+                    'label' => 'Supplier',
+                    'format' => 'raw',
+                    'value' => function ($model) {
+                        return ($model->inventoryDetail->supplier->name ?? '-');
+                    }
+                ],
+                [
+                    'attribute' => 'inventory_model_id',
+                    'label' => 'Model Type',
+                    'format' => 'raw',
+                    'value' => function ($model) {
+                        return $model->inventoryDetail->model->type ?? '-';
+                    }
+                ],
+                [
+                    'attribute' => 'inventory_brand_id',
+                    'label' => 'Brand',
+                    'format' => 'raw',
+                    'value' => function ($model) {
+                        return $model->inventoryDetail->brand->name ?? '-';
+                    }
+                ],
             [
                 'attribute' => 'reference_type',
                 'format' => 'raw',
                 'filter' => [
-                    'bom_detail' => 'Project - Bill of Material',
+                    'cm' => 'Corrective Maintenance',
+                    'pm' => 'Preventive Maintenance',
+                    'materialrequest' => 'Material Requisition',
                     'reserve' => 'Material Reservation',
+                    'bomstockoutbound' => 'Project - Bill of Material',                    
                 ],
                 'value' => function ($model) {
-                    if ($model->reference_type === 'bom_detail') {
-                        $referenceType = 'Project - Bill of Material';
-                    } else if ($model->reference_type === 'bomstockoutbound') {
+                    if ($model->reference_type === 'bomstockoutbound') {
                         $referenceType = 'Project - Bill of Material';
                     } else if ($model->reference_type === 'reserve') {
                         $referenceType = 'Material Reservation';
@@ -98,6 +93,8 @@ $this->params['breadcrumbs'][] = $pageName;
                         $referenceType = 'Corrective Maintenance';
                     } else if ($model->reference_type === 'pm') {
                         $referenceType = 'Preventive Maintenance';
+                    } else if ($model->reference_type === 'materialrequest') {
+                        $referenceType = 'Material Requisition';
                     }
                     return $referenceType ?? '-';
                 },
@@ -106,44 +103,48 @@ $this->params['breadcrumbs'][] = $pageName;
                 'attribute' => 'reference_id',
                 'format' => 'raw',
                 'value' => function ($model) {
-                    if ($model->reference_type === 'bom_detail') {
-                        $id = frontend\models\bom\BomDetails::findOne($model->reference_id);
-                        $referenceId = $id->bomMaster->productionPanel->project_production_panel_code;
-                    } else if ($model->reference_type === 'bomstockoutbound') {
+                    if ($model->reference_type === 'bomstockoutbound') {
                         $id = frontend\models\bom\StockOutboundDetails::findOne($model->reference_id);
                         $referenceId = $id->bomDetail->bomMaster->productionPanel->project_production_panel_code;
                     } else if ($model->reference_type === 'reserve') {
                         $id = common\models\User::findOne($model->reference_id);
                         $referenceId = $id->fullname;
+                    } else if ($model->reference_type === 'cm') {
+                        $referenceId = 'Work Order - ' . $model->reference_id;
+                    } else if ($model->reference_type === 'pm') {
+                        $referenceId = 'Work Order - ' . $model->reference_id;
+                    }else if ($model->reference_type === 'materialrequest') {
+                        $materialRequest = frontend\models\inventory\InventoryMaterialRequest::findOne($model->reference_id);
+                        if ($materialRequest->reference_type === 1) {
+                            $id = \frontend\models\ProjectProduction\ProjectProductionPanels::findOne($materialRequest->reference_id);
+                            $referenceId = $id->project_production_panel_code;
+                        } else if ($materialRequest->reference_type === 2) {
+                            $referenceId = 'Work Order - ' . $materialRequest->reference_id;
+                        } else if ($materialRequest->reference_type === 3) {
+                            $referenceId = 'Work Order - ' . $materialRequest->reference_id;
+                        }else{
+                            $referenceId = $materialRequest->reference_id;
+                        }
                     }
-                    return $referenceId ?? '-';
+                    return $referenceId ?? $model->reference_id;
                 },
             ],
             [
-                'attribute' => 'reserved_qty',
-                'headerOptions' => ['style' => 'width: 100px; text-align: center;'],
+                'attribute' => 'qty',
+                'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                 'contentOptions' => ['style' => 'text-align: center;'],
                 'format' => 'raw',
                 'value' => function ($model) {
-                    return $model->reserved_qty ?? 0;
+                    return $model->qty;
                 }
             ],
             [
                 'attribute' => 'dispatched_qty',
-                'headerOptions' => ['style' => 'width: 100px; text-align: center;'],
+                'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
                 'contentOptions' => ['style' => 'text-align: center;'],
                 'format' => 'raw',
                 'value' => function ($model) {
-                    return $model->dispatched_qty ?? 0;
-                }
-            ],
-            [
-                'attribute' => 'available_qty',
-                'headerOptions' => ['style' => 'width: 100px; text-align: center;'],
-                'contentOptions' => ['style' => 'text-align: center;'],
-                'format' => 'raw',
-                'value' => function ($model) {
-                    return $model->available_qty ?? 0;
+                    return $model->dispatched_qty;
                 }
             ],
             [
@@ -190,53 +191,12 @@ $this->params['breadcrumbs'][] = $pageName;
                     ],
                 ]),
             ],
-            [
-                'attribute' => 'status',
-                'contentOptions' => ['class' => 'col-sm-1'],
-                'filter' => [
-                    '1' => "No",
-                    '2' => "Yes"
-                ],
-                'value' => function ($model) {
-                    return $model->status == 2 ? "Yes" : "No";
-                }
-            ],
-            [
-                'format' => 'raw',
-                'value' => function ($model) use ($moduleIndex) {
-                    $buttons = '';
-
-                    if ($model->status == 2) {
-                        $buttons .= Html::a(
-                                        '<i class="fas fa-edit"></i>',
-                                        "javascript:void(0)",
-                                        [
-                                            'title' => 'Edit Reservation',
-                                            'value' => yii\helpers\Url::to(['edit-reservation', 'id' => $model->id, 'type' => $moduleIndex]),
-                                            'class' => 'modalButton mr-1',
-                                            'data-modaltitle' => 'Edit Reservation',
-                                            'data-pjax' => '0',
-                                        ]
-                                ) . ' ';
-
-                        if ($model->dispatched_qty == 0 || $model->dispatched_qty === null) {
-                            $buttons .= Html::a(
-                                    '<i class="fas fa-trash"></i>',
-                                    ['cancel-reservation', 'id' => $model->id, 'type' => $moduleIndex], // Direct URL, not through data-value
-                                    [
-                                        'title' => 'Cancel Reservation',
-                                        'class' => 'text-danger',
-                                        'data-confirm' => 'Are you sure you want to cancel this reservation?',
-                                        'data-method' => 'post',
-                                        'data-pjax' => '0',
-                                    ]
-                            );
-                        }
-                    }
-
-                    return $buttons;
-                }
-            ],
+        //'dispatched_qty',
+        //'created_by',
+        //'created_at',
+        //'updated_by',
+        //'updated_at',
+        //'reserve_item_id',
 //            ['class' => 'yii\grid\ActionColumn'],
         ],
     ]);

@@ -85,7 +85,6 @@ echo $form->field($master, 'reference_type')->hiddenInput()->label(false);
             </div>
         </div>
         <div class="col-12 col-md-4 col-lg-3">
-
             <?php
             if ($master->reference_type === 'bom') {
                 $bomMaster = frontend\models\bom\BomMaster::findOne($master->reference_id);
@@ -103,12 +102,14 @@ echo $form->field($master, 'reference_type')->hiddenInput()->label(false);
                         $form->field($master, 'reference_id')
                         ->textInput([
                             'class' => 'form-control',
-                            'required' => true,
-                            'readonly' => true,
-                            'value' => $displayValue  // Display the project code
+                            'disabled' => true,
+                            'value' => $displayValue
                         ])
+                ?><?=
+                $form->field($master, 'reference_id')->hiddenInput([
+                    'value' => $master->reference_id
+                ])->label(false)
                 ?>
-
             <?php elseif ($master->reference_type === 'reserve'): ?>
                 <?=
                 $form->field($master, 'reference_id')->dropDownList(
@@ -228,7 +229,7 @@ echo $form->field($master, 'reference_type')->hiddenInput()->label(false);
                             <?php if (($moduleIndex === 'personal' || $moduleIndex === 'inventory') && !$isView): ?>
                                 <div class="col-2 col-sm-1 col-md-1 col-lg-1">
                                     <button type="button" class="btn btn-primary btn-block" onclick="PrereqForm.addRow()">
-                                        <i class="fas fa-plus-circle"></i> Add Row
+                                        Add Row <i class="fas fa-plus-circle"></i>
                                     </button>
                                 </div>
                             <?php endif; ?>

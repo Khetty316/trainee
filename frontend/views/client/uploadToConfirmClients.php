@@ -3,7 +3,7 @@
 use yii\bootstrap4\ActiveForm;
 use yii\helpers\Html;
 
-$this->title = 'Confirm and Submit';
+$this->title = 'Confirm and Proceed';
 $this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = $this->title;

@@ -210,7 +210,8 @@ class StockoutboundController extends Controller {
             $transaction->commit();
             Yii::$app->session->setFlash('success', $message);
 
-            return $this->redirect(['view-panels', 'id' => $bomMaster->productionPanel->projProdMaster->id]);
+//            return $this->redirect(['view-panels', 'id' => $bomMaster->productionPanel->projProdMaster->id]);
+            return $this->redirect([Yii::$app->request->referrer]);
         } catch (\Throwable $e) {
             // Rollback on any error
             $transaction->rollBack();

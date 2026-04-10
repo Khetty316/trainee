@@ -32,6 +32,8 @@ use frontend\models\inventory\InventoryReserveItem;
 use frontend\models\inventory\InventoryReserveItemSearch;
 use common\modules\auth\models\AuthItem;
 use yii\filters\AccessControl;
+use frontend\models\inventory\InventoryMaterialRequest;
+use frontend\models\inventory\InventoryMaterialRequestSearch;
 
 /**
  * InventoryController implements the CRUD actions for InventorySupplier model.
@@ -58,11 +60,21 @@ class InventoryController extends Controller {
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['user-manual-inventory', 'item-list', 'supplier-list', 'brand-list', 'add-new-brand', 'view-brand', 'add-by-template-brand', 'save-brand-details', 'model-list', 'add-new-model', 'view-model', 'get-model-image', 'add-by-template-model', 'save-model-details', 'reserved-item-list', 'add-new-reserve-item', 'get-model-suppliers', 'edit-reservation', 'cancel-reservation', 'pre-requisition-list', 'order-request-list', 'add-new-order-request', 'view-order-request-allocation', 'edit-supplier-order-request', 'create-prerequisition', 'update-pre-requisition', 'send-to-procurement', 'ajax-add-form-item', 'inventory-check-duplicate', 'view-pre-requisition', 'proceed-to-procurement'],
+                        'actions' => ['user-manual-inventory'],
+                        'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_MaintenanceHead, AuthItem::ROLE_INVENTORY_Personal],
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['material-request-list', 'add-material-request', 'get-reference-ids', 'cancel-material-request', 'edit-material-request'],
+                        'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_Personal, AuthItem::ROLE_INVENTORY_MaintenanceHead],
+                    ],
+                    [
+                        'allow' => true,
+                        'actions' => ['item-list', 'supplier-list', 'brand-list', 'add-new-brand', 'view-brand', 'add-by-template-brand', 'save-brand-details', 'model-list', 'add-new-model', 'view-model', 'get-model-image', 'add-by-template-model', 'save-model-details', 'reserved-item-list', 'add-new-reserve-item', 'get-model-suppliers', 'edit-reservation', 'cancel-reservation', 'pre-requisition-list', 'order-request-list', 'add-new-order-request', 'view-order-request-allocation', 'edit-supplier-order-request', 'create-prerequisition', 'update-pre-requisition', 'send-to-procurement', 'ajax-add-form-item', 'inventory-check-duplicate', 'view-pre-requisition', 'proceed-to-procurement'],
                         'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_MaintenanceHead],
                     ],
                     [
-                        'actions' => ['deactivate-po', 'view-item-detail', 'add-new-item', 'check-duplicate', 'add-new-supplier', 'view-supplier', 'add-by-template-supplier', 'save-supplier-details', 'confirm-order-request', 'create-purchase-orders', 'po', 'manage-po', 'view-po-item-detail', 'view-po-item-receive-allocation', 'search-inventory-items', 'get-quotation', 'get-po', 'update-receive-items', 'confirm-and-upload-attachment', 'receiving-history', 'view-batch-details', 'download-attachment', 'get-po-attachment'],
+                        'actions' => ['component-usage-list', 'verify-material-request', 'reject-material-request', 'deactivate-po', 'view-item-detail', 'add-new-item', 'check-duplicate', 'add-new-supplier', 'view-supplier', 'add-by-template-supplier', 'save-supplier-details', 'confirm-order-request', 'create-purchase-orders', 'po', 'manage-po', 'view-po-item-detail', 'view-po-item-receive-allocation', 'search-inventory-items', 'get-quotation', 'get-po', 'update-receive-items', 'confirm-and-upload-attachment', 'receiving-history', 'view-batch-details', 'download-attachment', 'get-po-attachment'],
                         'allow' => true,
                         'roles' => [AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead],
                     ],
@@ -1876,6 +1888,15 @@ class InventoryController extends Controller {
                     throw new \Exception('Master update failed: ' . json_encode($master->getErrors()));
                 }
 
+                if ($master->reference_type === 'bom') {
+                    $items = PrereqFormItem::findAll(['prereq_form_master_id' => $id]);
+                    foreach ($items as $item) {
+                        $bomdetail = \frontend\models\bom\BomDetails::findOne($item['reference_id']);
+                        $bomdetail->inventory_sts = 0;
+                        $bomdetail->save(false);
+                    }
+                }
+
                 // ===== MARK OLD ITEMS AS DELETED =====
                 PrereqFormItem::updateAll(
                         ['is_deleted' => 1],
@@ -1892,7 +1913,6 @@ class InventoryController extends Controller {
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 FlashHandler::err('Failed to update form: ' . $e->getMessage());
-                Yii::error('Update PRF Error: ' . $e->getMessage(), __METHOD__);
             }
         }
 
@@ -2758,5 +2778,459 @@ class InventoryController extends Controller {
         }
 
         throw new NotFoundHttpException('The requested page does not exist.');
+    }
+
+    /*     * ************* Material Request ************************ */
+
+    public function actionMaterialRequestList($type) {
+        $searchModel = new InventoryMaterialRequestSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
+
+        return $this->render('materialRequestList', [
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type
+        ]);
+    }
+
+    public function actionAddMaterialRequest($type) {
+        $model = new InventoryMaterialRequest();
+        $modelBrandList = InventoryModel::getModelBrandCombinations();
+        $items = [new InventoryMaterialRequest()];
+        $staffList = \common\models\User::getActiveDropDownList();
+
+        if (Yii::$app->request->post()) {
+            $requestList = Yii::$app->request->post('RequestItem');
+            $materialRequestData = Yii::$app->request->post('InventoryMaterialRequest');
+            $userId = $materialRequestData['user_id'] ?? null;
+
+            if (empty($userId)) {
+                FlashHandler::err('Please select a staff member');
+                return $this->refresh();
+            }
+
+            if (empty($requestList)) {
+                FlashHandler::err('Please add at least one item to request');
+                return $this->refresh();
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach ($requestList as $item) {
+                    // Skip empty rows
+                    if (empty($item['inventory_detail_id']) || empty($item['request_qty'])) {
+                        continue;
+                    }
+
+                    // Validate required fields
+                    if (empty($item['reference_type']) || empty($item['reference_id'])) {
+                        throw new \Exception('Reference type and reference ID are required for all items');
+                    }
+
+                    // Find inventory detail
+                    $inventoryDetail = InventoryDetail::findOne([
+                        'id' => $item['inventory_detail_id'],
+                        'active_sts' => 2
+                    ]);
+
+                    if ($inventoryDetail === null) {
+                        throw new \Exception('Item not found in inventory (ID: ' . $item['inventory_detail_id'] . ')');
+                    }
+
+                    // Check if enough stock is available
+                    if ($inventoryDetail->stock_available < $item['request_qty']) {
+                        throw new \Exception('Insufficient stock available for item ID: ' . $item['inventory_detail_id']);
+                    }
+
+                    // Update inventory stock
+                    $inventoryDetail->stock_reserved += $item['request_qty'];
+                    $inventoryDetail->stock_available -= $item['request_qty'];
+
+                    if (!$inventoryDetail->save(false)) {
+                        throw new \Exception('Failed to update inventory: ' . json_encode($inventoryDetail->errors));
+                    }
+
+                    // Create material request item
+                    $newRequestItem = new InventoryMaterialRequest();
+                    $newRequestItem->user_id = $userId;
+                    $newRequestItem->inventory_detail_id = $item['inventory_detail_id'];
+                    $newRequestItem->reference_type = $item['reference_type'];
+                    $newRequestItem->reference_id = $item['reference_id'];
+                    $newRequestItem->desc = $item['desc'] ?? '';
+                    $newRequestItem->request_qty = $item['request_qty'];
+
+                    if (!$newRequestItem->save()) {
+                        throw new \Exception('Failed to save request item: ' . json_encode($newRequestItem->errors));
+                    }
+                }
+
+                $transaction->commit();
+                FlashHandler::success('Material requisition submitted successfully! Awaiting verification.');
+                return $this->redirect(['material-request-list', 'type' => $type]);
+            } catch (\Exception $ex) {
+                $transaction->rollBack();
+                FlashHandler::err('System error: Unable to process requisition. Please try again: ' . $ex->getMessage());
+            }
+        }
+
+        return $this->render('_formMaterialRequest', [
+                    'model' => $model,
+                    'items' => $items,
+                    'modelBrandList' => $modelBrandList,
+                    'moduleIndex' => $type,
+                    'staffList' => $staffList,
+        ]);
+    }
+
+    public function actionGetReferenceIds($referenceType) {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $data = [];
+
+        try {
+            switch ($referenceType) {
+                case '1': // Project
+                    $data = Yii::$app->db->createCommand("
+        SELECT 
+            id,
+            project_production_panel_code as code,
+            panel_description as description
+        FROM project_production_panels
+        WHERE finalized_by IS NOT NULL 
+          AND finalized_at IS NOT NULL
+        ORDER BY project_production_panel_code
+    ")->queryAll();
+                    break;
+
+                case '2': // Corrective Maintenance
+                    $data = Yii::$app->db->createCommand("
+                    SELECT 
+                        id,
+                        CONCAT('Work Order -', id) as code,
+                        '' as description
+                    FROM cmms_corrective_work_order_master
+                    WHERE active_sts = 1
+                    ORDER BY id DESC
+                ")->queryAll();
+                    break;
+
+                case '3': // Preventive Maintenance
+                    $data = Yii::$app->db->createCommand("
+                    SELECT 
+                        id,
+                        CONCAT('Work Order -', id) as code,
+                        '' as description
+                    FROM cmms_preventive_work_order_master
+                    WHERE active_sts = 1
+                    ORDER BY id DESC
+                ")->queryAll();
+                    break;
+
+                case '4': // Others - return empty array as it's free text
+                    $data = [];
+                    break;
+
+                default:
+                    $data = [];
+                    break;
+            }
+        } catch (\Exception $e) {
+            Yii::error('Error fetching reference IDs: ' . $e->getMessage());
+            return ['error' => 'Failed to fetch reference IDs'];
+        }
+
+        return $data;
+    }
+
+    public function actionVerifyMaterialRequest() {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        try {
+            $selectAll = \Yii::$app->request->post('selectAll', false);
+            $excludedIds = \Yii::$app->request->post('excludedIds', []);
+            $ids = \Yii::$app->request->post('ids', []);
+
+            if ($selectAll) {
+                // Approve all pending requests except excluded ones
+                $query = InventoryMaterialRequest::find()
+                        ->where(['status' => 0]); // Only pending requests
+
+                if (!empty($excludedIds)) {
+                    $query->andWhere(['NOT IN', 'id', $excludedIds]);
+                }
+
+                $requests = $query->all();
+            } else {
+                // Approve specific requests
+                $requests = InventoryMaterialRequest::find()
+                        ->where(['id' => $ids, 'status' => 0])
+                        ->all();
+            }
+
+            $transaction = \Yii::$app->db->beginTransaction();
+
+            try {
+                foreach ($requests as $request) {
+                    $request->status = 1; // Approved status (correct)
+                    $request->approved_qty = $request->request_qty; // Set approved quantity
+                    $request->approved_by = \Yii::$app->user->id;
+                    $request->approved_at = new \yii\db\Expression('NOW()');
+                    ;
+
+                    if (!$request->save()) {
+                        throw new \Exception('Failed to approve request ID: ' . $request->id);
+                    }
+
+                    $stockoutbound = new \frontend\models\inventory\InventoryStockoutbound();
+                    $stockoutbound->inventory_detail_id = $request->inventory_detail_id;
+                    $stockoutbound->reference_type = 'materialrequest';
+                    $stockoutbound->reference_id = $request->id;
+                    $stockoutbound->qty = $request->approved_qty;
+                    $stockoutbound->dispatched_qty = $request->approved_qty;
+                    if (!$stockoutbound->save()) {
+                        throw new \Exception('Failed to save stockoutbound for request: ' . $request->id);
+                    }
+
+                    $inventory = InventoryDetail::findOne($stockoutbound->inventory_detail_id);
+                    if (!$inventory) {
+                        throw new \Exception("Inventory detail not found.");
+                    }
+
+                    $inventory->stock_on_hand -= $stockoutbound->dispatched_qty;
+                    $inventory->stock_reserved -= $stockoutbound->dispatched_qty;
+                    $inventory->stock_out += $stockoutbound->dispatched_qty;
+                    if (!$inventory->save(false)) {
+                        throw new \Exception('Failed to update inventory stock.');
+                    }
+                }
+
+                $transaction->commit();
+                \Yii::$app->session->setFlash('success', count($requests) . ' request(s) verified successfully.');
+                return ['success' => true, 'count' => count($requests)];
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            \Yii::error($e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function actionRejectMaterialRequest() {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        try {
+            $selectAll = \Yii::$app->request->post('selectAll', false);
+            $excludedIds = \Yii::$app->request->post('excludedIds', []);
+            $ids = \Yii::$app->request->post('ids', []);
+
+            if ($selectAll) {
+                // Reject all pending requests except excluded ones
+                $query = InventoryMaterialRequest::find()
+                        ->where(['status' => 0]); // Only pending requests
+
+                if (!empty($excludedIds)) {
+                    $query->andWhere(['NOT IN', 'id', $excludedIds]);
+                }
+
+                $requests = $query->all();
+            } else {
+                // Reject specific requests
+                $requests = InventoryMaterialRequest::find()
+                        ->where(['id' => $ids, 'status' => 0])
+                        ->all();
+            }
+
+            $transaction = \Yii::$app->db->beginTransaction();
+
+            try {
+                foreach ($requests as $request) {
+                    $request->status = 2; // Rejected status
+                    $request->approved_qty = $request->request_qty;
+                    $request->approved_by = \Yii::$app->user->id;
+                    $request->approved_at = new \yii\db\Expression('NOW()');
+
+                    if (!$request->save()) {
+                        throw new \Exception('Failed to reject request ID: ' . $request->id);
+                    }
+
+                    $inventory = InventoryDetail::findOne($request->inventory_detail_id);
+                    if (!$inventory) {
+                        throw new \Exception("Inventory detail not found.");
+                    }
+
+                    $inventory->stock_reserved -= $request->request_qty;
+                    $inventory->stock_available += $request->approved_qty;
+                    if (!$inventory->save(false)) {
+                        throw new \Exception('Failed to update inventory stock.');
+                    }
+                }
+
+                $transaction->commit();
+                \Yii::$app->session->setFlash('success', count($requests) . ' request(s) rejected successfully.');
+                return ['success' => true, 'count' => count($requests)];
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            \Yii::error($e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function actionCancelMaterialRequest($id, $type) {
+        $model = InventoryMaterialRequest::findOne($id);
+
+        if ($model === null) {
+            FlashHandler::err('Record not found');
+            return $this->redirect(['material-request-list', 'type' => $type]);
+        }
+
+        // Check if any items have been dispatched
+        if ($model->status == 1) {
+            FlashHandler::err('Cannot cancel request because item(s) have already been approved');
+            return $this->redirect(['material-request-list', 'type' => $type]);
+        }
+
+        $originalRequestedQty = $model->request_qty;
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            // Find the inventory detail
+            $inventoryDetail = InventoryDetail::find()
+                    ->where(['id' => $model->inventory_detail_id])
+                    ->one();
+
+            if ($inventoryDetail === null) {
+                throw new \Exception('Associated inventory item not found');
+            }
+
+            // Update inventory stock - release the reserved quantity
+            $inventoryDetail->stock_reserved -= $model->request_qty;
+            $inventoryDetail->stock_available = $inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved;
+
+            // Validate stock doesn't go negative
+            if ($inventoryDetail->stock_reserved < 0) {
+                throw new \Exception('Stock reserved cannot be negative');
+            }
+
+            if ($inventoryDetail->stock_available < 0) {
+                throw new \Exception('Stock available cannot be negative');
+            }
+
+            if (!$inventoryDetail->save(false)) {
+                throw new \Exception('Failed to update inventory stock: ' . json_encode($inventoryDetail->errors));
+            }
+
+            if (!$model->delete()) {
+                throw new \Exception('Failed to cancel request: ' . json_encode($model->errors));
+            }
+
+            $transaction->commit();
+            FlashHandler::success('Requisition cancelled. ' . $originalRequestedQty . ' item(s) released back to inventory.');
+        } catch (\Exception $ex) {
+            $transaction->rollBack();
+            FlashHandler::err('Error: Requisition could not be cancelled at this stage: ' . Html::encode($ex->getMessage()));
+        }
+
+        return $this->redirect(['material-request-list', 'type' => $type]);
+    }
+
+    public function actionEditMaterialRequest($id, $type) {
+        $model = InventoryMaterialRequest::findOne($id);
+
+        if ($model === null) {
+            FlashHandler::err('Record not found');
+            return $this->redirect(['material-request-list', 'type' => $type]);
+        }
+
+        if (Yii::$app->request->isPost) {
+            $postData = Yii::$app->request->post('InventoryMaterialRequest');
+            $newRequestedQty = isset($postData['request_qty']) ? (int) $postData['request_qty'] : 0;
+
+            // Validate quantity
+            if ($newRequestedQty < 0) {
+                FlashHandler::err('Quantity cannot be negative');
+                return $this->redirect(['material-request-list', 'type' => $type]);
+            }
+
+            // Calculate the difference
+            $qtyDifference = $newRequestedQty - $model->request_qty;
+
+            // If no change, just redirect
+            if ($qtyDifference == 0) {
+                FlashHandler::info('No changes were made');
+                return $this->redirect(['material-request-list', 'type' => $type]);
+            }
+
+            $transaction = Yii::$app->db->beginTransaction();
+
+            try {
+                // Find inventory detail with lock to prevent race conditions
+                $inventoryDetail = InventoryDetail::find()
+                        ->where(['id' => $model->inventory_detail_id, 'active_sts' => 2])
+                        ->one();
+
+                if ($inventoryDetail === null) {
+                    throw new \Exception('Item not found in inventory or is inactive');
+                }
+
+                // Check if increasing reservation and if enough stock is available
+                if ($qtyDifference > 0) {
+                    $availableToRequest = ($inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved);
+                    if ($qtyDifference > $availableToRequest) {
+                        throw new \Exception('Not enough stock available. Only ' . $availableToRequest . ' units can be requested.');
+                    }
+                }
+
+                // Update inventory stock
+                $inventoryDetail->stock_reserved += $qtyDifference;
+                $inventoryDetail->stock_available = $inventoryDetail->stock_on_hand - $inventoryDetail->stock_reserved;
+
+                // Validate before saving
+                if ($inventoryDetail->stock_available < 0) {
+                    throw new \Exception('Stock calculation resulted in negative available stock');
+                }
+
+                if (!$inventoryDetail->save(false)) {
+                    throw new \Exception('Failed to update inventory stock: ' . json_encode($inventoryDetail->errors));
+                }
+
+                // Update reservation
+                $model->request_qty = $newRequestedQty;
+                if (!$model->save(false)) {
+                    throw new \Exception('Data integrity error: Unable to modify requisition quantity: ' . json_encode($model->errors));
+                }
+
+                $transaction->commit();
+
+                // Success message with proper context
+                $action = $qtyDifference > 0 ? 'increased by ' . $qtyDifference : 'decreased by ' . abs($qtyDifference);
+                FlashHandler::success('Material requisition ' . $action . ' and inventory records updated.');
+
+                return $this->redirect(['material-request-list', 'type' => $type]);
+            } catch (\Exception $ex) {
+                $transaction->rollBack();
+                FlashHandler::err('Update failed: The requisition record could not be modified: ' . Html::encode($ex->getMessage()));
+            }
+        }
+
+        return $this->renderAjax('_formMaterialRequestDetail', [
+                    'model' => $model,
+                    'moduleIndex' => $type,
+        ]);
+    }
+
+    public function actionComponentUsageList($type) {
+        $searchModel = new \frontend\models\inventory\InventoryStockoutboundSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, $type);
+
+        return $this->render('componentUsageList', [
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+                    'moduleIndex' => $type
+        ]);
     }
 }

@@ -9,13 +9,15 @@ use common\models\myTools\MyFormatter;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 if ($moduleIndex === 'execStock') {
-    $pageName = 'Stock - Executive';
+    $pageName = 'Inventory Master - Executive';
 } else if ($moduleIndex === 'assistStock') {
-    $pageName = 'Stock - Assistant';
+    $pageName = 'Inventory Master - Assistant';
 } else if ($moduleIndex === 'projcoorStock') {
-    $pageName = 'Stock - Project Coordinator';
+    $pageName = 'Inventory Master - Project Coordinator';
 } else if ($moduleIndex === 'maintenanceHeadStock') {
-    $pageName = 'Stock - Head of Maintenance';
+    $pageName = 'Inventory Master - Head of Maintenance';
+} else if ($moduleIndex === 'personalStock') {
+    $pageName = 'Inventory Master - Personal';
 }
 
 $this->title = 'Inventory Control';
@@ -48,7 +50,7 @@ $this->params['breadcrumbs'][] = $pageName;
 
     <p>
         <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
-            <?= Html::a('Add Item', ['add-new-item', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Add Item <i class="fas fa-plus"></i>', ['add-new-item', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?php } ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
         <?=
@@ -59,235 +61,171 @@ $this->params['breadcrumbs'][] = $pageName;
         )
         ?>
     </p>
+    <?php
+    $isPersonal = ($moduleIndex === 'personalStock');
+
+    $columns = [
+        [
+            'class' => 'yii\grid\SerialColumn',
+            'headerOptions' => ['style' => 'width: 50px;'],
+        ],
+        [
+            'attribute' => 'inventory_code',
+            'headerOptions' => ['style' => 'width: 150px; white-space: nowrap;'],
+            'contentOptions' => ['style' => 'white-space: nowrap;'],
+            'format' => 'raw',
+            'value' => function ($model) use ($moduleIndex) {
+                if (in_array($moduleIndex, ['execStock', 'assistStock', 'maintenanceHeadStock'])) {
+                    return Html::a($model->inventory_code, [
+                                'view-item-detail',
+                                'id' => $model->inventory_id,
+                                'type' => $moduleIndex
+                    ]);
+                }
+                return $model->inventory_code;
+            }
+        ],
+        [
+            'attribute' => 'department_name',
+            'label' => 'Department',
+            'contentOptions' => ['class' => 'grid-wrap'],
+            'value' => fn($model) => $model->department_name,
+        ],
+        [
+            'attribute' => 'supplier_display',
+            'contentOptions' => ['class' => 'grid-wrap'],
+            'format' => 'raw',
+            'value' => fn($model) => $model->supplier_display,
+        ],
+        [
+            'attribute' => 'brand_display',
+            'contentOptions' => ['class' => 'grid-wrap'],
+            'format' => 'raw',
+            'value' => fn($model) => $model->brand_display,
+        ],
+        [
+            'attribute' => 'model_type',
+            'label' => 'Model Type',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $image = '';
+
+                if ($model->image !== null) {
+                    $image = Html::a(
+                            "<i class='far fa-file-alt fa-lg m-1'></i>",
+                            "#",
+                            [
+                                'title' => "View Image",
+                                'value' => "/inventory/inventory/get-model-image?filename=" . urlencode($model->image),
+                                'class' => "docModal"
+                            ]
+                    );
+                }
+
+                return $model->model_type . $image;
+            }
+        ],
+        [
+            'attribute' => 'model_description',
+            'label' => 'Description',
+            'contentOptions' => ['class' => 'grid-wrap'],
+        ],
+        [
+            'attribute' => 'group',
+            'headerOptions' => ['style' => 'white-space: nowrap;'],
+        ],
+    ];
+
+    if (!$isPersonal) {
+
+        $columns[] = [
+            'attribute' => 'stock_in',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+
+        $columns[] = [
+            'attribute' => 'stock_on_hand',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+
+        $columns[] = [
+            'attribute' => 'stock_reserved',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+
+        $columns[] = [
+            'attribute' => 'stock_out',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+
+        $columns[] = [
+            'attribute' => 'stock_available',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+
+        $columns[] = [
+            'attribute' => 'qty_pending_receipt',
+            'contentOptions' => ['style' => 'text-align:center'],
+        ];
+    }
+
+
+    $columns[] = [
+        'attribute' => 'active_sts',
+        'contentOptions' => ['style' => 'text-align:center'],
+        'value' => fn($model) => $model->active_sts == 2 ? 'Yes' : 'No',
+        'filter' => Html::activeDropDownList(
+                $searchModel,
+                'active_sts',
+                [
+                    '' => 'All',
+                    '1' => 'No',
+                    '2' => 'Yes'
+                ],
+                ['class' => 'form-control text-center']
+        )
+    ];
+
+    if (!$isPersonal) {
+
+        $columns[] = [
+            'attribute' => 'created_by_fullname',
+            'label' => 'Created By',
+            'contentOptions' => ['class' => 'grid-wrap'],
+            'value' => function ($model) {
+                return $model->created_by_fullname . " @ " .
+                MyFormatter::asDateTime_ReaddmYHi($model->created_at);
+            }
+        ];
+
+        $columns[] = [
+            'attribute' => 'updated_by_fullname',
+            'label' => 'Updated By',
+            'contentOptions' => ['class' => 'grid-wrap'],
+            'value' => function ($model) {
+                return $model->updated_by_fullname ? $model->updated_by_fullname . " @ " .
+                MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
+            }
+        ];
+    }
+    ?>
 
     <div class="table-responsive">
-        <?=
-        GridView::widget([
-            'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
-            'pager' => ['class' => yii\bootstrap4\LinkPager::class],
-            'headerRowOptions' => ['class' => 'my-thead'],
-            'layout' => "{summary}\n{pager}\n{items}\n{pager}",
-            'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
-            'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
-            'columns' => [
-                [
-                    'class' => 'yii\grid\SerialColumn',
-                    'headerOptions' => ['style' => 'width: 50px;'],
-                ],
-                [
-                    'attribute' => 'inventory_code',
-                    'headerOptions' => ['style' => 'width: 150px; white-space: nowrap;'],
-                    'contentOptions' => ['style' => 'white-space: nowrap;'],
-                    'format' => 'raw',
-                    'value' => function ($model) use ($moduleIndex) {
-                        if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'maintenanceHeadStock') {
-                            return Html::a($model->inventory_code, ['view-item-detail', 'id' => $model->inventory_id, 'type' => $moduleIndex]);
-                        } else {
-                            return $model->inventory_code;
-                        }
-                    }
-                ],
-                [
-                    'attribute' => 'department_name',
-                    'label' => 'Department',
-                    'headerOptions' => ['style' => 'width: 120px;'],
-                    'contentOptions' => ['class' => 'grid-wrap'],
-                    'value' => fn($model) => $model->department_name,
-                    'filter' => Html::activeDropDownList(
-                            $searchModel,
-                            'department_code', // Use department_code for filtering
-                            \yii\helpers\ArrayHelper::map(
-                                    frontend\models\common\RefUserDepartments::find()
-                                            ->select(['code', 'department_name'])
-                                            ->orderBy(['department_name' => SORT_ASC])
-                                            ->all(),
-                                    'code',
-                                    'department_name'
-                            ),
-                            [
-                                'class' => 'form-control',
-                                'prompt' => 'All'
-                            ]
-                    )
-                ],
-                [
-                    'attribute' => 'supplier_display',
-                    'headerOptions' => ['style' => 'width: 300px;'],
-                    'contentOptions' => ['class' => 'grid-wrap'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->supplier_display;
-                    },
-                    'filter' => Html::activeTextInput($searchModel, 'supplier_display', [
-                        'class' => 'form-control',
-                    ])
-                ],
-                [
-                    'attribute' => 'brand_display',
-                    'headerOptions' => ['style' => 'width: 180px;'],
-                    'contentOptions' => ['class' => 'grid-wrap'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->brand_display;
-                    },
-                    'filter' => Html::activeTextInput($searchModel, 'brand_display', [
-                        'class' => 'form-control',
-                    ])
-                ],
-                [
-                    'attribute' => 'model_type',
-                    'label' => 'Model Type',
-                    'headerOptions' => ['style' => 'width: 120px;'],
-                    'contentOptions' => ['class' => 'col-sm-1'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        $image = '';
-
-                        if ($model->image !== null) {
-                            $image = Html::a(
-                                    "<i class='far fa-file-alt fa-lg m-1'></i>",
-                                    "#",
-                                    [
-                                        'title' => "View Image",
-                                        'value' => "/inventory/inventory/get-model-image?filename=" . urlencode($model->image),
-                                        'class' => "docModal"
-                                    ]
-                            );
-                        }
-
-                        return $model->model_type . $image;
-                    }
-                ],
-                [
-                    'attribute' => 'model_description',
-                    'label' => 'Description',
-                    'headerOptions' => ['style' => 'width: 150px;'],
-                    'contentOptions' => ['class' => 'col-sm-1'],
-                    'value' => fn($model) => $model->model_description,
-                ],
-                [
-                    'attribute' => 'group',
-                    'headerOptions' => ['style' => 'width: 100px; white-space: nowrap;'],
-                    'contentOptions' => ['style' => 'white-space: nowrap;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->group;
-                    }
-                ],
-//                [
-//                    'attribute' => 'minimum_qty',
-//                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-//                    'contentOptions' => ['style' => 'text-align: center;'],
-//                    'format' => 'raw',
-//                    'value' => function ($model) {
-//                        return $model->minimum_qty;
-//                    }
-//                ],
-                [
-                    'attribute' => 'stock_in',
-                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->stock_in;
-                    }
-                ],
-                [
-                    'attribute' => 'stock_on_hand',
-                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->stock_on_hand;
-                    }
-                ],
-                [
-                    'attribute' => 'stock_reserved',
-                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->stock_reserved;
-                    }
-                ],
-                [
-                    'attribute' => 'stock_out',
-                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->stock_out;
-                    }
-                ],
-                [
-                    'attribute' => 'stock_available',
-                    'headerOptions' => ['style' => 'width: 70px; text-align: center;'],
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->stock_available;
-                    }
-                ],
-//                [
-//                    'attribute' => 'required_qty',
-//                    'label' => 'Required Qty',
-//                    'headerOptions' => ['style' => 'width: 80px; text-align: center;'],
-//                    'contentOptions' => ['style' => 'text-align: center;'],
-//                    'format' => 'raw',
-//                    'value' => function ($model) {
-//                        return $model->required_qty;
-//                    }
-//                ],
-                [
-                    'attribute' => 'qty_pending_receipt',
-                    'contentOptions' => ['style' => 'text-align: center;'],
-                    'format' => 'raw',
-                    'value' => function ($model) {
-                        return $model->qty_pending_receipt;
-                    }
-                ],
-                [
-                    'attribute' => 'active_sts',
-                    'headerOptions' => ['style' => 'width: 90px;'],
-                    'contentOptions' => ['class' => 'grid-wrap', 'style' => 'text-align: center;'],
-                    'value' => function ($model) {
-                        return $model->active_sts == 2 ? 'Yes' : 'No';
-                    },
-                    'filter' => Html::activeDropDownList(
-                            $searchModel,
-                            'active_sts',
-                            [
-                                '' => 'All',
-                                '1' => 'No',
-                                '2' => 'Yes'
-                            ],
-                            ['class' => 'form-control text-center']
-                    )
-                ],
-                [
-                    'attribute' => 'created_by_fullname',
-                    'label' => 'Created By',
-                    'headerOptions' => ['style' => 'width: 180px;'],
-                    'contentOptions' => ['class' => 'grid-wrap'],
-                    'value' => function ($model) {
-                        return ($model->created_by_fullname) . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->created_at);
-                    }
-                ],
-                [
-                    'attribute' => 'updated_by_fullname',
-                    'label' => 'Updated By',
-                    'headerOptions' => ['style' => 'width: 180px;'],
-                    'contentOptions' => ['class' => 'grid-wrap'],
-                    'value' => function ($model) {
-                        return $model->updated_by_fullname ? $model->updated_by_fullname . " @ " . MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : null;
-                    }
-                ],
-            ],
-        ]);
-        ?>
-    </div>
     <?=
-    $this->render('/_docModal')
-    ?> 
+    GridView::widget([
+        'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel,
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'headerRowOptions' => ['class' => 'my-thead'],
+        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
+        'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
+        'columns' => $columns,
+    ]);
+    ?>
+    </div>
+
+        <?=
+        $this->render('/_docModal')
+        ?> 
 </div>

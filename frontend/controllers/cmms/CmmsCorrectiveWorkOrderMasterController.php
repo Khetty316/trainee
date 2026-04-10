@@ -241,7 +241,7 @@ class CmmsCorrectiveWorkOrderMasterController extends Controller {
 
                 $transaction->commit();
 
-                // ✅ Re-query assignedPICs AFTER save
+                // Re-query assignedPICs AFTER save
                 $assignedPICs = $model->assignedPic;
 
                 if ($moduleStatus === 'superior') {

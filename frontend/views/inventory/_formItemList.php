@@ -231,8 +231,8 @@ use yii\helpers\Url;
                                     $form->field($item, "[$index]unit_price", ['options' => ['class' => 'mb-0']])
                                     ->input('number', [
                                         'class' => 'form-control text-right',
-                                        'step' => '0.01', // ✅ allow decimal (2 decimal places)
-                                        'min' => '0', // ✅ prevent negative
+                                        'step' => '0.01', // allow decimal (2 decimal places)
+                                        'min' => '0', // prevent negative
                                         'required' => true,
                                     ])
                                     ->label(false)
@@ -269,20 +269,26 @@ use yii\helpers\Url;
                             </a>
                         </td>
                     </tr>
-<?php endforeach; ?>
+                <?php endforeach; ?>
             </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="10">
+                        <button type="button" class="btn btn-primary float-left" id="add-row-btn">
+                            Add Item <i class="fas fa-plus-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tfoot>
         </table>
 
-        <button type="button" class="btn btn-primary mt-1" id="add-row-btn">
-            Add Item <i class="fas fa-plus-circle"></i>
-        </button>
     </div>
 
     <div class="form-group">
-<?= Html::submitButton('Save', ['class' => 'btn btn-success float-right', 'id' => 'submit-btn']) ?>
+        <?= Html::submitButton('Save', ['class' => 'btn btn-success', 'id' => 'submit-btn']) ?>
     </div>
 
-<?php ActiveForm::end(); ?>
+    <?php ActiveForm::end(); ?>
 
 </div>
 

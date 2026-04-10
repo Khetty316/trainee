@@ -35,10 +35,8 @@ use frontend\models\bom\BomDetails;
  * @property int|null $source_module 1 = general, 2 = inventory
  * @property int|null $reserved_by
  * @property string|null $reference_type reserve, bom, bomstockout,
- * @property int|null $reference_id
+ * @property string|null $reference_id
  *
- * @property InventoryPurchaseRequest[] $inventoryPurchaseRequests
- * @property InventoryReorderMaster[] $inventoryReorderMasters
  * @property PrereqFormItem[] $prereqFormItems
  * @property PrereqFormItemWorklist[] $prereqFormItemWorklists
  * @property User $superior
@@ -68,9 +66,9 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
     public function rules() {
         return [
             [['prf_no'], 'required'],
-            [['date_of_material_required', 'created_at', 'updated_at'], 'safe'],
+            [['date_of_material_required', 'created_at', 'updated_at', 'reference_id'], 'safe'],
 //            [['total_amount'], 'number'],
-            [['superior_id', 'status', 'is_deleted', 'created_by', 'updated_by', 'claim_flag', 'inventory_flag', 'source_module', 'reserved_by', 'reference_id'], 'integer'],
+            [['superior_id', 'status', 'is_deleted', 'created_by', 'updated_by', 'claim_flag', 'inventory_flag', 'source_module', 'reserved_by'], 'integer'],
             [['prf_no', 'filename'], 'string', 'max' => 255],
             [['reference_type'], 'string', 'max' => 100],
             [['superior_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['superior_id' => 'id']],
@@ -104,7 +102,6 @@ class PrereqFormMaster extends \yii\db\ActiveRecord {
             'reserved_by' => 'Reserved By',
             'reference_type' => 'Reference Type',
             'reference_id' => 'Reference ID',
-            'claim_flag' => 'Claim Submitted',
         ];
     }
 

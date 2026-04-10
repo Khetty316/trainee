@@ -222,7 +222,7 @@ $isDeleted = ($model->is_deleted == 1);
         Html::textInput(
                 "VPrereqFormMasterDetail[$index][unit_type]",
                 $model->unit_type ?? '',
-                ['class' => 'form-control']
+                ['class' => 'form-control', 'placeholder' => "UNIT"]
         )
         ?>
     </td>

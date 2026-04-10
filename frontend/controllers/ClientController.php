@@ -83,103 +83,6 @@ class ClientController extends Controller {
         ]);
     }
 
-    //Mydebug::dumpFileW();
-    public function actionAddByTemplateClients() {
-        $model = new Clients();
-        $clientDebt = new \frontend\models\client\ClientDebt();
-
-        if (Yii::$app->request->isPost) {
-
-            $clientDebt->load(Yii::$app->request->post());
-
-            Yii::$app->session->set('companyGroup', $clientDebt->tk_group_code);
-            Yii::$app->session->set('month', $clientDebt->month);
-            Yii::$app->session->set('year', $clientDebt->year);
-
-            $excelFile = \yii\web\UploadedFile::getInstanceByName('excelTemplate');
-
-            if ($excelFile && $excelFile->tempName) {
-
-                $extension = strtolower(pathinfo($excelFile->name, PATHINFO_EXTENSION));
-
-                if (!in_array($extension, ['xls', 'xlsx'])) {
-                    Yii::$app->session->setFlash('error', 'Please upload only Excel files (.xls or .xlsx).');
-                    return $this->redirect(['add-by-template-clients']);
-                }
-
-                try {
-
-                    if ($extension === 'xlsx') {
-                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-                    } else {
-                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
-                    }
-                    $reader->setReadDataOnly(true);
-
-                    \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(
-                            new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder()
-                    );
-                    $spreadsheet = $reader->load($excelFile->tempName);
-                    $worksheet = $spreadsheet->getActiveSheet();
-                    $buffer = [];
-
-                    foreach ($worksheet->getRowIterator(4) as $row) {
-
-                        $cells = $row->getCellIterator();
-                        $cells->setIterateOnlyExistingCells(false);
-                        $data = [];
-                        $companyGroup = $clientDebt->tk_group_code;
-
-                        foreach ($cells as $cell) {
-
-                            $data[] = $cell ? $cell->getCalculatedValue() : null;
-                        }
-                        $custNo = isset($data[0]) ? trim((string) $data[0]) : null;
-                        $name = isset($data[1]) ? trim((string) $data[1]) : null;
-                        $balance = isset($data[15]) ? (float) $data[15] : 0;
-
-                        if ($custNo === 'Cust.No.' || empty($custNo)) {
-                            continue;
-                        }
-                        $buffer[] = ['cust_no' => $custNo, 'name' => $name, 'balance' => $balance, 'company_group' => $companyGroup,];
-                    }
-
-                    Yii::$app->session->set('client_upload_data', $buffer);
-
-                    if (!empty($buffer)) {
-                        return $this->render('uploadToConfirmClients', [
-                                    'buffer' => $buffer,
-                                    'companyGroup' => $clientDebt->tk_group_code,
-                                    'month' => $clientDebt->month,
-                                    'year' => $clientDebt->year,
-                        ]);
-                    } else {
-                        \common\models\myTools\FlashHandler::err(
-                                "Upload failed: Please ensure that the Excel file contains valid data."
-                        );
-                        return $this->redirect(['add-by-template-clients']);
-                    }
-                } catch (\Throwable $e) {
-                    Yii::$app->session->setFlash(
-                            'error',
-                            'Error reading the Excel file: ' . $e->getMessage()
-                    );
-                    return $this->redirect(['add-by-template-clients']);
-                }
-            }
-        }
-
-        $searchModel = new ClientDebtSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        return $this->render('addByTemplateClients', [
-                    'model' => $model,
-                    'clientDebt' => $clientDebt,
-                    'searchModel' => $searchModel,
-                    'dataProvider' => $dataProvider,
-        ]);
-    }
-
     /**
      * Creates a new Clients model.
      * If creation is successful, the browser will be redirected to the 'view' page.
@@ -576,6 +479,103 @@ class ClientController extends Controller {
         return $this->renderPartial('_formClient_row', ['contact' => $contact, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
 
+    //Mydebug::dumpFileW();
+    public function actionAddByTemplateClients() {
+        $model = new Clients();
+        $clientDebt = new \frontend\models\client\ClientDebt();
+
+        if (Yii::$app->request->isPost) {
+
+            $clientDebt->load(Yii::$app->request->post());
+
+            Yii::$app->session->set('companyGroup', $clientDebt->tk_group_code);
+            Yii::$app->session->set('month', $clientDebt->month);
+            Yii::$app->session->set('year', $clientDebt->year);
+
+            $excelFile = \yii\web\UploadedFile::getInstanceByName('excelTemplate');
+
+            if ($excelFile && $excelFile->tempName) {
+
+                $extension = strtolower(pathinfo($excelFile->name, PATHINFO_EXTENSION));
+
+                if (!in_array($extension, ['xls', 'xlsx'])) {
+                    Yii::$app->session->setFlash('error', 'Please upload only Excel files (.xls or .xlsx).');
+                    return $this->redirect(['add-by-template-clients']);
+                }
+
+                try {
+
+                    if ($extension === 'xlsx') {
+                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+                    } else {
+                        $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+                    }
+                    $reader->setReadDataOnly(true);
+
+                    \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(
+                            new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder()
+                    );
+                    $spreadsheet = $reader->load($excelFile->tempName);
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $buffer = [];
+
+                    foreach ($worksheet->getRowIterator(4) as $row) {
+
+                        $cells = $row->getCellIterator();
+                        $cells->setIterateOnlyExistingCells(false);
+                        $data = [];
+                        $companyGroup = $clientDebt->tk_group_code;
+
+                        foreach ($cells as $cell) {
+
+                            $data[] = $cell ? $cell->getCalculatedValue() : null;
+                        }
+                        $custNo = isset($data[0]) ? trim((string) $data[0]) : null;
+                        $name = isset($data[1]) ? trim((string) $data[1]) : null;
+                        $balance = isset($data[15]) ? (float) $data[15] : 0;
+
+                        if ($custNo === 'Cust.No.' || empty($custNo)) {
+                            continue;
+                        }
+                        $buffer[] = ['cust_no' => $custNo, 'name' => $name, 'balance' => $balance, 'company_group' => $companyGroup,];
+                    }
+
+                    Yii::$app->session->set('client_upload_data', $buffer);
+
+                    if (!empty($buffer)) {
+                        return $this->render('uploadToConfirmClients', [
+                                    'buffer' => $buffer,
+                                    'companyGroup' => $clientDebt->tk_group_code,
+                                    'month' => $clientDebt->month,
+                                    'year' => $clientDebt->year,
+                        ]);
+                    } else {
+                        \common\models\myTools\FlashHandler::err(
+                                "Upload failed: Please ensure that the Excel file contains valid data."
+                        );
+                        return $this->redirect(['add-by-template-clients']);
+                    }
+                } catch (\Throwable $e) {
+                    Yii::$app->session->setFlash(
+                            'error',
+                            'Error reading the Excel file: ' . $e->getMessage()
+                    );
+                    return $this->redirect(['add-by-template-clients']);
+                }
+            }
+        }
+
+        $searchModel = new ClientDebtSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+
+        return $this->render('addByTemplateClients', [
+                    'model' => $model,
+                    'clientDebt' => $clientDebt,
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+        ]);
+    }
+
     public function actionProcessClientData() {
         $companyGroup = Yii::$app->session->get('companyGroup');
         $postClients = Yii::$app->request->post('Clients');
@@ -600,43 +600,6 @@ class ClientController extends Controller {
         return $this->redirect(['check-client-data']);
     }
 
-//    public function actionProcessChunk() {
-//        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-//
-//        $clientData = Yii::$app->session->get('client_upload_data');
-//        $companyGroup = Yii::$app->session->get('companyGroup');
-//        $month = Yii::$app->session->get('month');
-//        $year = Yii::$app->session->get('year');
-//        $start = Yii::$app->request->post('index', 0);
-//        $limit = 10;
-//        $slice = array_slice($clientData, $start, $limit);
-//        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
-//        $column = $columnMap[$companyGroup] ?? null;
-//
-//        foreach ($slice as $row) {
-//
-//            $client = Clients::find()->where([$column => $row['cust_no']])
-//                    ->one();
-//
-//            if (!$client)
-//                continue;
-//
-//            $debt = new ClientDebt();
-//            $debt->client_id = $client->id;
-//            $debt->tk_group_code = $companyGroup;
-//            $debt->month = $month;
-//            $debt->year = $year;
-//            $debt->balance = $row['balance'];
-//            $debt->save();
-//        }
-//        $nextIndex = $start + $limit;
-//
-//        return [
-//            'nextIndex' => $nextIndex,
-//            'done' => $nextIndex >= count($clientData)
-//        ];
-//    }
-
     public function actionConfirmSubmit() {
         $existData = Yii::$app->session->get('exist_data');
         $notExistData = Yii::$app->session->get('not_exist_data');
@@ -645,6 +608,8 @@ class ClientController extends Controller {
                     'existData' => $existData,
                     'notExistData' => $notExistData,
                     'companyGroup' => Yii::$app->session->get('companyGroup'),
+                    'month' => Yii::$app->session->get('month'),
+                    'year' => Yii::$app->session->get('year'),
         ]);
     }
 
@@ -653,7 +618,7 @@ class ClientController extends Controller {
         $clientData = Yii::$app->session->get('client_upload_data');
         $existData = [];
         $notExistData = [];
-        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
+        $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm'];
         $column = $columnMap[$companyGroup] ?? null;
         $custNos = array_column($clientData, 'cust_no');
         $allClients = Clients::find()->where([$column => $custNos])->all();
@@ -676,6 +641,7 @@ class ClientController extends Controller {
                 $notExistData[] = $row;
             }
         }
+
         Yii::$app->session->set('exist_data', $existData);
         Yii::$app->session->set('not_exist_data', $notExistData);
         Yii::$app->session->set('companyGroup', $companyGroup);
@@ -779,34 +745,27 @@ class ClientController extends Controller {
             }
 
             // 4. Get latest record for this client
-            $latestRecord = ClientDebt::find()
-                    ->where([
-                        'client_id' => $client->id,
-                        'tk_group_code' => $companyGroup
-                    ])
-                    ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
-                    ->one();
+            foreach ($updatedClients as $client) {
 
-            // 5. Update balance fields
-            $fieldMap = [
-                'TK' => 'tk_balance',
-                'TKE' => 'tke_balance',
-                'TKM' => 'tkm_balance',
-            ];
+                $latestRecord = ClientDebt::find()
+                        ->where([
+                            'client_id' => $client->id,
+                            'tk_group_code' => $companyGroup
+                        ])
+                        ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
+                        ->one();
 
-            $field = $fieldMap[$companyGroup] ?? null;
+                if ($latestRecord && $field) {
+                    $client->$field = $latestRecord->balance;
+                }
 
-            if ($latestRecord && $field) {
-                $client->$field = $latestRecord->balance;
-            }
+                $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
+                        ($client->tke_balance ?? 0) +
+                        ($client->tkm_balance ?? 0);
 
-            // Calculate total
-            $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
-                    ($client->tke_balance ?? 0) +
-                    ($client->tkm_balance ?? 0);
-
-            if (!$client->save(false)) {
-                throw new \Exception("Failed updating outstanding debt balance: " . json_encode($client->errors));
+                if (!$client->save(false)) {
+                    throw new \Exception("Failed updating client: " . json_encode($client->errors));
+                }
             }
 
             $transaction->commit();

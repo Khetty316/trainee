@@ -492,32 +492,14 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
 //                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_StockOutbound])) {
                             if (true) {
                                 $mainMenuItems = [];
-                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View, AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
-                                    $menuInventory = MenuModel::newMenuItems('<i class="fas fa-clipboard-list"></i>', 'Stock Outbound', '#');
-//                                   $menuInventory->children[] = MenuModel::newMenuItems('', 'Stock Outbound Main', '/stockoutbound');
-//                                    $menuInventory->children[] = MenuModel::newMenuItems('', 'Stock Dispatch Master', '/stock-dispatch-master/index');
-                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View, AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant])) {
-                                        $menuInventoryProject = MenuModel::newMenuItems('', 'Project', '/stockoutbound');
-                                        $menuInventory->children[] = $menuInventoryProject;
-                                    }
-                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
-                                        $menuInventoryCmms = MenuModel::newMenuItems('', 'Maintenance', '/cmms/cmms-wo-material-request/pending-material-request-master-list');
-                                        $menuInventory->children[] = $menuInventoryCmms;
-                                    }
-                                    $mainMenuItems[] = $menuInventory;
-                                }
-
-                                $menuInventory2 = MenuModel::newMenuItems('<i class="fas fa-list"></i>', 'My Acknowledgement List', '/stock-dispatch-master/my-pending-acknowledgements');
-                                $menuInventory2Project = MenuModel::newMenuItems('', 'Project', '/stock-dispatch-master/my-pending-acknowledgements');
-                                $menuInventory2->children[] = $menuInventory2Project;
-                                $menuInventory2Cmms = MenuModel::newMenuItems('', 'Maintenance', '/cmms/cmms-stock-dispatch/my-pending-acknowledgements');
-                                $menuInventory2->children[] = $menuInventory2Cmms;
-
-                                $mainMenuItems[] = $menuInventory2;
-
                                 //stock
-                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
-                                    $menuInventory3 = MenuModel::newMenuItems('<i class="fa fa-cubes"></i>', 'Stock', '#');
+                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_MaintenanceHead, AuthItem::ROLE_INVENTORY_Personal])) {
+                                    $menuInventory3 = MenuModel::newMenuItems('<i class="fa fa-cubes"></i>', 'Inventory Master', '#');
+
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Personal])) {
+                                        $menuInventory3Personal = MenuModel::newMenuItems('', 'Personal', '/inventory/inventory/item-list?type=personalStock');
+                                        $menuInventory3->children[] = $menuInventory3Personal;
+                                    }
                                     if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive])) {
                                         $menuInventory3Exec = MenuModel::newMenuItems('', 'Executive', '/inventory/inventory/item-list?type=execStock');
                                         $menuInventory3->children[] = $menuInventory3Exec;
@@ -582,6 +564,29 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                     }
                                     $mainMenuItems[] = $menuInventory5;
                                 }
+
+                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View, AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
+                                    $menuInventory = MenuModel::newMenuItems('<i class="fas fa-clipboard-list"></i>', 'Stock Outbound', '#');
+//                                   $menuInventory->children[] = MenuModel::newMenuItems('', 'Stock Outbound Main', '/stockoutbound');
+//                                    $menuInventory->children[] = MenuModel::newMenuItems('', 'Stock Dispatch Master', '/stock-dispatch-master/index');
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View, AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant])) {
+                                        $menuInventoryProject = MenuModel::newMenuItems('', 'Project', '/stockoutbound');
+                                        $menuInventory->children[] = $menuInventoryProject;
+                                    }
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
+                                        $menuInventoryCmms = MenuModel::newMenuItems('', 'Maintenance', '/cmms/cmms-wo-material-request/pending-material-request-master-list');
+                                        $menuInventory->children[] = $menuInventoryCmms;
+                                    }
+                                    $mainMenuItems[] = $menuInventory;
+                                }
+
+                                $menuInventory2 = MenuModel::newMenuItems('<i class="fas fa-list"></i>', 'My Acknowledgement List', '/stock-dispatch-master/my-pending-acknowledgements');
+                                $menuInventory2Project = MenuModel::newMenuItems('', 'Project', '/stock-dispatch-master/my-pending-acknowledgements');
+                                $menuInventory2->children[] = $menuInventory2Project;
+                                $menuInventory2Cmms = MenuModel::newMenuItems('', 'Maintenance', '/cmms/cmms-stock-dispatch/my-pending-acknowledgements');
+                                $menuInventory2->children[] = $menuInventory2Cmms;
+
+                                $mainMenuItems[] = $menuInventory2;
                                 ?>
 
                                 <li class="dropdown">

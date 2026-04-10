@@ -87,6 +87,7 @@ $isLegacy = $isLegacy ?? false;
                     <!-- Legacy record section -->
                     <div class="alert alert-info alert-dismissible" id="legacy-alert">
                         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+
                         <h5><i class="icon fas fa-info"></i> Legacy Record</h5>
                         This record uses free-text values from the old system. You can continue using these values,
                         or migrate to the new dropdown system for better inventory tracking.
@@ -132,19 +133,19 @@ $isLegacy = $isLegacy ?? false;
                             <label class="control-label" for="model-type-search">Model Type</label>
                             <div class="searchable-dropdown-wrapper">
                                 <div class="searchable-dropdown">
-                                    <input type="text" 
-                                           id="model-type-search" 
-                                           class="form-control search-input <?= (!$isLegacy && !$model->isNewRecord) ? 'has-selection' : '' ?>"
+                                    <input type="text"
+                                           id="model-type-search"
+                                           class="form-control search-input"
                                            placeholder="Type to search..."
-                                           value="<?= !empty($model->inventoryModel) ? Html::encode($model->inventoryModel->type . ' - ' . $model->inventoryBrand->name) : '' ?>"
-                                           autocomplete="off"
-                                           <?= (!$isLegacy && !$model->isNewRecord) ? 'readonly' : '' ?>>
-                                    <button type="button" class="clear-btn" id="clear-selection" 
-                                            style="display: <?= (!$isLegacy && !$model->isNewRecord) ? 'none' : 'none' ?>;" 
-                                            title="Clear and select different option"
-                                            <?= (!$isLegacy && !$model->isNewRecord) ? 'disabled' : '' ?>>
-                                        <i class="fas fa-times"></i>
-                                    </button>
+                                           value="<?= !empty($model->inventoryModel) ? Html::encode($model->inventoryModel->type . ' - ' . $model->inventoryBrand->name) : '' ?>" autocomplete="off">
+
+                                    <?php if (!$model->isNewRecord && $model->active_sts == 1 && ($model->dispatched_qty === null || $model->dispatched_qty == 0) && ($model->unacknowledged_qty === null || $model->unacknowledged_qty == 0)) { ?>
+                                        <button type="button" class="clear-btn" id="clear-selection"
+                                                style="display: none;" title="Clear and select a different option">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    <?php } ?>
+
                                     <input type="hidden" 
                                            name="StockOutboundDetails[model_type_input]" 
                                            id="model-type-hidden"
@@ -215,10 +216,10 @@ $isLegacy = $isLegacy ?? false;
                 ])
                 ?>
 
-                <?php if (!$model->isNewRecord && $model->active_sts == 1): ?>
+                <?php if (!$model->isNewRecord && $model->active_sts == 1 && ($model->dispatched_qty === null || $model->dispatched_qty == 0) && ($model->unacknowledged_qty === null || $model->unacknowledged_qty == 0)): ?>
                     <?=
                     Html::a('Deactivate',
-                            ['deactivate-bom-details', 'id' => $model->id],
+                            ['deactivate-item', 'id' => $model->id],
                             [
                                 'class' => 'btn btn-danger float-right mt-3',
                                 'data' => [
@@ -246,39 +247,42 @@ $isLegacy = $isLegacy ?? false;
 </script>
 <script>
     $(document).ready(function () {
+
         var isLegacy = <?= $isLegacy ? 'true' : 'false' ?>;
-        var selectedModelText = ''; // Track the exact selected value to prevent tampering
+        var selectedModelText = '';
 
-        // Migration button click handler
+        /* ================= MIGRATION ================= */
         $('#migrate-to-dropdown').on('click', function () {
-            if (confirm('Are you sure you want to migrate this record to use the dropdown system?\n\nThe old text values will be replaced with selections from the inventory system.')) {
-                $('#legacy-alert').fadeOut();
-                $('#legacy-fields').fadeOut(function () {
-                    $('#dropdown-fields').fadeIn();
-                    isLegacy = false;
-
-                    // Clear legacy hidden inputs
-                    $('#model-type-legacy').val('');
-                    $('#brand-legacy').val('');
-
-                    // Clear all fields
-                    $('#model-type-search').val('').removeClass('has-selection').attr('readonly', false); // unlock!
-                    $('#model-type-hidden').val('');
-                    $('#brand-hidden').val('');
-                    $('#brand-display').val('');
-                    $('#description-input').val('');
-                    selectedModelText = '';
-
-                    // Re-enable clear button
-                    $('#clear-selection').prop('disabled', false);
-
-                    initSearchableDropdown();
-                });
+            if (!confirm('Are you sure you want to migrate this record?\n\nOld values will be replaced.')) {
+                return;
             }
+
+            $('#legacy-alert').fadeOut();
+            $('#legacy-fields').fadeOut(function () {
+                $('#dropdown-fields').fadeIn();
+                isLegacy = false;
+
+                // Clear legacy values
+                $('#model-type-legacy').val('');
+                $('#brand-legacy').val('');
+
+                // Reset fields
+                $('#model-type-search').val('').removeClass('has-selection').attr('readonly', false);
+                $('#model-type-hidden').val('');
+                $('#brand-hidden').val('');
+                $('#brand-display').val('');
+                $('#description-input').val('');
+                selectedModelText = '';
+
+                $('#clear-selection').hide();
+
+                initSearchableDropdown();
+            });
         });
 
-        // Initialize searchable dropdown
+        /* ================= DROPDOWN ================= */
         function initSearchableDropdown() {
+
             var $input = $('#model-type-search');
             var $list = $('#model-type-list');
             var $modelHidden = $('#model-type-hidden');
@@ -287,7 +291,7 @@ $isLegacy = $isLegacy ?? false;
             var $description = $('#description-input');
             var $clearBtn = $('#clear-selection');
 
-            // Show dropdown on focus (only if no selection)
+            /* ---------- SHOW DROPDOWN ---------- */
             $input.on('focus', function () {
                 if (!selectedModelText) {
                     $list.show();
@@ -295,134 +299,121 @@ $isLegacy = $isLegacy ?? false;
                 }
             });
 
-            // Hide dropdown when clicking outside
             $(document).on('click', function (e) {
                 if (!$(e.target).closest('.searchable-dropdown').length) {
                     $list.hide();
                 }
             });
 
-            // Filter items on input (only if no selection)
+            /* ---------- INPUT ---------- */
             $input.on('input', function () {
                 if (!selectedModelText) {
                     filterItems($(this).val());
                 } else {
-                    // User is trying to type when there's a selection
-                    // Restore the selected value and show alert
-                    var current = $(this).val();
-                    if (current !== selectedModelText) {
+                    if ($(this).val() !== selectedModelText) {
                         $(this).val(selectedModelText);
-                        alert('To change the selection, please click the × button first.');
+                        alert('Click × button to change selection.');
                     }
                 }
             });
 
-            // Keyboard navigation
+            /* ---------- KEYBOARD ---------- */
             $input.on('keydown', function (e) {
                 if (!$list.is(':visible'))
                     return;
 
-                var $visibleItems = $list.find('.dropdown-item:visible');
-                var $selected = $visibleItems.filter('.selected');
-                var currentIndex = $visibleItems.index($selected);
+                var $items = $list.find('.dropdown-item:visible');
+                var $selected = $items.filter('.selected');
+                var index = $items.index($selected);
 
-                switch (e.keyCode) {
-                    case 40: // Down arrow
-                        e.preventDefault();
-                        if (currentIndex < $visibleItems.length - 1) {
-                            $selected.removeClass('selected');
-                            $visibleItems.eq(currentIndex + 1).addClass('selected');
-                        }
-                        break;
-                    case 38: // Up arrow
-                        e.preventDefault();
-                        if (currentIndex > 0) {
-                            $selected.removeClass('selected');
-                            $visibleItems.eq(currentIndex - 1).addClass('selected');
-                        }
-                        break;
-                    case 13: // Enter
-                        e.preventDefault();
-                        if ($selected.length) {
-                            $selected.click();
-                        }
-                        break;
-                    case 27: // Escape
-                        e.preventDefault();
-                        $list.hide();
-                        break;
+                if (e.keyCode === 40) { // down
+                    e.preventDefault();
+                    $selected.removeClass('selected');
+                    $items.eq(index + 1).addClass('selected');
+                }
+
+                if (e.keyCode === 38) { // up
+                    e.preventDefault();
+                    $selected.removeClass('selected');
+                    $items.eq(index - 1).addClass('selected');
+                }
+
+                if (e.keyCode === 13) { // enter
+                    e.preventDefault();
+                    if ($selected.length)
+                        $selected.click();
+                }
+
+                if (e.keyCode === 27) { // esc
+                    $list.hide();
                 }
             });
 
-            // Handle item selection
+            /* ---------- SELECT ITEM ---------- */
             $list.on('click', '.dropdown-item', function () {
+
                 var modelId = $(this).data('model-id');
                 var brandId = $(this).data('brand-id');
                 var modelName = $(this).data('model-name');
                 var brandName = $(this).data('brand-name');
                 var description = $(this).data('description');
+
                 var displayText = modelName + ' - ' + brandName;
 
-                // Set values
-                $input.val(displayText);
+                $input.val(displayText)
+                        .addClass('has-selection')
+                        .attr('readonly', true);
+
                 $modelHidden.val(modelId);
                 $brandHidden.val(brandId);
                 $brandDisplay.val(brandName);
                 $description.val(description);
 
-                // Set the selected text for validation
                 selectedModelText = displayText;
 
-                // Add visual indicator and show clear button
-                $input.addClass('has-selection').attr('readonly', true);
-                $clearBtn.show();
-
-                // Hide dropdown
+                $clearBtn.show(); // ✅ FIXED: always show after select
                 $list.hide();
             });
 
-            // Clear button handler
+            /* ---------- CLEAR BUTTON ---------- */
             $clearBtn.on('click', function (e) {
                 e.stopPropagation();
 
-                // Clear all fields
                 $input.val('').removeClass('has-selection').attr('readonly', false);
                 $modelHidden.val('');
                 $brandHidden.val('');
                 $brandDisplay.val('');
                 $description.val('');
+
                 selectedModelText = '';
                 $clearBtn.hide();
 
-                // Focus and show dropdown
                 $input.focus();
                 $list.show();
                 filterItems('');
             });
 
-            // Filter dropdown items
-            function filterItems(searchTerm) {
+            /* ---------- FILTER ---------- */
+            function filterItems(term) {
                 var $items = $list.find('.dropdown-item');
 
-                if (!searchTerm) {
+                if (!term) {
                     $items.show().removeClass('selected');
                     $items.first().addClass('selected');
                     return;
                 }
 
-                var term = searchTerm.toLowerCase();
-                var hasVisible = false;
+                var t = term.toLowerCase();
+                var first = true;
 
                 $items.each(function () {
-                    var modelName = $(this).data('model-name').toLowerCase();
-                    var brandName = $(this).data('brand-name').toLowerCase();
-                    var combinedText = modelName + ' ' + brandName;
+                    var text = ($(this).data('model-name') + ' ' + $(this).data('brand-name')).toLowerCase();
 
-                    if (combinedText.indexOf(term) !== -1) {
+                    if (text.includes(t)) {
                         $(this).show();
-                        if (!hasVisible) {
+                        if (first) {
                             $(this).addClass('selected');
-                            hasVisible = true;
+                            first = false;
                         } else {
                             $(this).removeClass('selected');
                         }
@@ -432,95 +423,59 @@ $isLegacy = $isLegacy ?? false;
                 });
             }
 
-            // Initialize if editing existing record
+            /* ---------- INIT EXISTING VALUE ---------- */
             if ($modelHidden.val() && $input.val()) {
                 selectedModelText = $input.val();
                 $input.addClass('has-selection').attr('readonly', true);
-                $clearBtn.show();
+                $clearBtn.show(); // ✅ IMPORTANT FIX
             }
 
-            // Initialize if editing existing record
-            if ($modelHidden.val() && $input.val()) {
-                selectedModelText = $input.val();
-                $input.addClass('has-selection').attr('readonly', true);
-                $clearBtn.show();
-            }
-
-            // Lock fields permanently if existing non-legacy record
+            /* ---------- EXISTING RECORD LOCK ---------- */
             var isExistingRecord = <?= (!$model->isNewRecord) ? 'true' : 'false' ?>;
+
             if (isExistingRecord && !isLegacy) {
                 $input.attr('readonly', true).addClass('has-selection');
-                $clearBtn.hide().prop('disabled', true);
+
+                // ✅ DO NOT HIDE BUTTON ANYMORE
+                if ($modelHidden.val() && $input.val()) {
+                    $clearBtn.show();
+                }
             }
         }
 
-        // Initialize dropdown if not legacy
+        /* ================= INIT ================= */
         if (!isLegacy) {
             initSearchableDropdown();
         }
 
-        // Form validation before submit
-        $('#stockoutbound-details-form').on('beforeSubmit', function (e) {
+        /* ================= VALIDATION ================= */
+        $('#stockoutbound-details-form').on('beforeSubmit', function () {
+
             if (!isLegacy) {
                 var modelValue = $('#model-type-search').val();
                 var modelHidden = $('#model-type-hidden').val();
                 var brandHidden = $('#brand-hidden').val();
 
-                if (!modelValue || modelValue.trim() === '') {
-                    alert('Please select a Model Type.');
-                    $('#model-type-search').focus();
+                if (!modelValue) {
+                    alert('Please select Model Type');
                     return false;
                 }
 
-                if (!modelHidden) {
-                    alert('Please select a Model Type from the dropdown list.');
+                if (!modelHidden || !brandHidden) {
+                    alert('Invalid selection');
                     return false;
                 }
 
-                if (!brandHidden) {
-                    alert('Please select a valid Model Type with Brand.');
-                    return false;
-                }
-
-                // CRITICAL: Verify the displayed text matches the selected item exactly
                 if (modelValue !== selectedModelText) {
-                    alert('The Model Type field has been modified. Please use the × button to change selection.');
+                    alert('Use × button to change selection');
                     $('#model-type-search').val(selectedModelText);
-                    return false;
-                }
-
-                // Double-check: Verify the model and brand IDs match an actual item in the dropdown
-                var $matchingItem = $('#model-type-list').find('.dropdown-item[data-model-id="' + modelHidden + '"][data-brand-id="' + brandHidden + '"]');
-                if ($matchingItem.length === 0) {
-                    alert('Invalid selection. Please select a valid Model Type from the dropdown.');
-                    $('#clear-selection').click();
-                    return false;
-                }
-
-                // Triple-check: Verify the displayed text matches the dropdown item text
-                var expectedText = $matchingItem.data('model-name') + ' - ' + $matchingItem.data('brand-name');
-                if (modelValue !== expectedText) {
-                    alert('The Model Type value does not match the selected item. Please use the × button to select again.');
-                    $('#clear-selection').click();
-                    return false;
-                }
-            } else {
-                var legacyModel = $('#model-type-legacy').val();
-                var legacyBrand = $('#brand-legacy').val();
-
-                if (!legacyModel || legacyModel.trim() === '') {
-                    alert('Legacy Model Type is required.');
-                    return false;
-                }
-
-                if (!legacyBrand || legacyBrand.trim() === '') {
-                    alert('Legacy Brand is required.');
                     return false;
                 }
             }
 
             return true;
         });
+
     });
 </script>
 

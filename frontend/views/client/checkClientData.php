@@ -7,10 +7,20 @@ $this->title = 'Check Client Detail';
 $this->params['breadcrumbs'][] = ['label' => 'Client', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => 'Import Outstanding Balance', 'url' => ['add-by-template-clients']];
 $this->params['breadcrumbs'][] = $this->title;
+$company = \frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 ?>
 <?= Html::beginForm(['client/save-exist-client'], 'post') ?>
+    <div class="mb-3">
 
+        <strong>Company Group :</strong> <?= Html::encode($company->company_name) ?><br>
+
+        <strong>Month :</strong> <?= date('F', mktime(0, 0, 0, $month, 1)) ?><br>
+
+        <strong>Year :</strong> <?= Html::encode($year) ?>
+
+    </div>
 <div class="row">
+
     <div class="col-md-6">
         <h4 class="text-success">Existing Clients</h4>
         <table class="table table-bordered">
@@ -20,7 +30,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <tbody>
                 <?php if (!empty($existData)): ?>
                     <?php foreach ($existData as $i => $row): ?>
-                    
+
                         <tr>
                             <td><?= $i + 1 ?></td>
                             <td><?= Html::encode($row['cust_no']) ?></td>

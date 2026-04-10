@@ -759,7 +759,7 @@ class BomController extends Controller {
             foreach ($normalized as $prevIndex => $prevNormalized) {
                 similar_text($current, $prevNormalized, $percent);
 
-                if ($percent >= 90) {
+                if ($percent >= 100) {
                     $errors[] = [
                         'row1' => $prevIndex + 1,
                         'row2' => $index + 1,

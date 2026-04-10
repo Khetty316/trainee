@@ -9,13 +9,13 @@ use common\models\myTools\MyFormatter;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 
 if ($moduleIndex === 'execStock') {
-    $pageName = 'Stock - Executive';
+    $pageName = 'Inventory Master - Executive';
 } else if ($moduleIndex === 'assistStock') {
-    $pageName = 'Stock - Assistant';
+    $pageName = 'Inventory Master - Assistant';
 } else if ($moduleIndex === 'projcoorStock') {
-    $pageName = 'Stock - Project Coordinator';
+    $pageName = 'Inventory Master - Project Coordinator';
 } else if ($moduleIndex === 'maintenanceHeadStock') {
-    $pageName = 'Stock - Head of Maintenance';
+    $pageName = 'Inventory Master - Head of Maintenance';
 }
 
 $this->title = 'Inventory Control';
@@ -29,14 +29,14 @@ $this->params['breadcrumbs'][] = $pageName;
     <p>
         <?php if ($moduleIndex === 'execStock' || $moduleIndex === 'assistStock' || $moduleIndex === 'projcoorStock' || $moduleIndex === 'maintenanceHeadStock') { ?>
             <?=
-            Html::a("Add New Brand", "javascript:void(0)", [
+            Html::a("Add New Brand <i class='fas fa-plus'></i>", "javascript:void(0)", [
                 'title' => "Add Brand",
                 "value" => yii\helpers\Url::to(['add-new-brand', 'type' => $moduleIndex]),
                 "class" => "modalButtonMedium btn btn-success ml-1",
                 'data-modaltitle' => 'Add Brand',
             ]);
             ?>
-            <?= Html::a('Upload Template', ['add-by-template-brand', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Upload Template <i class="fas fa-upload"></i>', ['add-by-template-brand', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?php } ?>
 
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 

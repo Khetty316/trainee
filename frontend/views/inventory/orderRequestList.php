@@ -61,7 +61,7 @@ Html::a(
     ?>
 <?php } ?>
 
-<?= Html::a('Add New Order Request', ['add-new-order-request', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
+<?= Html::a('Add New Order Request  <i class="fas fa-plus"></i>', ['add-new-order-request', 'type' => $moduleIndex], ['class' => 'btn btn-success']) ?>
 
 <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?type=' . $moduleIndex, ['class' => 'btn btn-primary']) ?> 
 
@@ -153,6 +153,10 @@ Html::a(
                             } else if ($model->reference_type === 'reserve') {
                                 $id = common\models\User::findOne($model->reference_id);
                                 $referenceId = $id->fullname;
+                            } else if ($model->reference_type === 'cm') {
+                                $referenceId = 'Work Order - ' . $model->reference_id;
+                            } else if ($model->reference_type === 'pm') {
+                                $referenceId = 'Work Order - ' . $model->reference_id;
                             }
                             return $referenceId ?? $model->reference_id;
                         },

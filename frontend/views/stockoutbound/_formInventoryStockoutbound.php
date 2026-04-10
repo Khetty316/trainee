@@ -15,7 +15,7 @@ foreach ($inventoryStockoutbound as $data) {
     $total_reserved_qty += $data->qty;
 }
 
-$disableReturn = ($total_reserved_qty <= $stockDetail->qty);
+$disableReturn = (($total_reserved_qty <= $stockDetail->qty) && $stockDetail->active_sts == 1);
 ?>
 
 <div class="inventory-stockoutbound-form">
@@ -57,7 +57,7 @@ $disableReturn = ($total_reserved_qty <= $stockDetail->qty);
                             'class' => 'form-control text-center item-qty',
                             'data-index' => $index,
                             'style' => 'height: auto; width: 100%;',
-                            'max' => max(0, ($data->qty - $data->dispatched_qty)),
+                            'max' => $stockDetail->qty,
                             'min' => 0,
                             'readonly' => $disableReturn
                         ]))

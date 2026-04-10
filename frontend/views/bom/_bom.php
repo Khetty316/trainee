@@ -19,11 +19,11 @@ $panel = $bomMaster->productionPanel;
 <div class="bomdetails-index">
 
     <?php // if (($canReverse ?? false) && (MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super]))) { ?>
-        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? Html::a(" (Finalized)", 'javascript:void(0)', ['class' => 'text-primary', 'id' => 'revertBtn']) : "")            ?></h4>-->
+        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? Html::a(" (Finalized)", 'javascript:void(0)', ['class' => 'text-primary', 'id' => 'revertBtn']) : "")             ?></h4>-->
     <?php // } else { ?>
-        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? " <span class='text-warning'>(Finalized)</span>" : "")            ?></h4>-->
+        <!--<h4><?php //= Html::encode($this->title) . ($bomMaster->finalized_status ? " <span class='text-warning'>(Finalized)</span>" : "")             ?></h4>-->
     <?php // } ?>
-    <!--<h5><?php //= $panel->project_production_panel_code . ": " . $panel->panel_description            ?></h5>-->
+    <!--<h5><?php //= $panel->project_production_panel_code . ": " . $panel->panel_description             ?></h5>-->
 
     <h4><?= Html::encode($this->title) ?></h4>
     <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Bom_Super, AuthItem::ROLE_Bom_Normal])) { ?>
@@ -69,13 +69,14 @@ $panel = $bomMaster->productionPanel;
                 ]);
                 ?>
             <?php } ?>
-            <?=
-            Html::button("Delete Selected", [
-                'class' => 'btn btn-danger ml-2 float-right',
-                'id' => 'deleteSelectedBtn',
-            ]);
-            ?>
-
+            <?php if ($bomMaster->finalized_status != 1) { ?>
+                <?=
+                Html::button("Delete Selected", [
+                    'class' => 'btn btn-danger ml-2 float-right',
+                    'id' => 'deleteSelectedBtn',
+                ]);
+                ?>
+            <?php } ?>
         </p>
         <?php
 //        }
@@ -187,9 +188,10 @@ $panel = $bomMaster->productionPanel;
                                         'title' => 'Select to finalize'
                                     ]) .
                                     '</div>';
-                        } else {
-                            return '<span class="badge badge-warning">Pending</span>';
-                        }
+                        } 
+//                        else {
+//                            return '<span class="badge badge-warning">Pending</span>';
+//                        }
                     } else if ($model->is_finalized == 3 && $model->active_status == 1) {
                         return '<span class="badge badge-secondary">Outbound</span>';
                     } else {
@@ -233,7 +235,7 @@ $panel = $bomMaster->productionPanel;
                 'headerOptions' => ['class' => 'text-center'],
                 'contentOptions' => ['class' => 'text-center'],
                 'value' => function ($model) {
-                    if ($model->active_status == 1 && ($model->is_finalized != 2 && $model->is_finalized != 3)) {
+                    if ($model->active_status == 1 && ($model->is_finalized != 2 || $model->is_finalized != 3) && ($model->inventory_sts == 0 || $model->inventory_sts == 3)) {
                         return Html::checkbox('delete_items[]', false, [
                                     'value' => $model->id,
                                     'class' => 'delete-checkbox',
@@ -477,13 +479,15 @@ $panel = $bomMaster->productionPanel;
                 $.post('<?= Url::to(['stockoutbound/outbound-finalized-item']) ?>', {
                     productionPanelId: <?= $panel->id ?>,
                     ids: selectedIds
-                }, function (response) {
+                }, 
+                function (response) {
                     if (response.success) {
                         alert(response.message || 'Outbound initiated successfully!');
                         location.reload();
-                    } else {
-                        alert('Error: ' + (response.message || 'Failed to initiate outbound'));
-                    }
+                    } 
+//                    else {
+//                        alert('Error: ' + (response.message || 'Failed to initiate outbound'));
+//                    }
                 }).fail(function (xhr) {
                     alert('Error: ' + (xhr.responseJSON?.message || 'Server error occurred'));
                 });

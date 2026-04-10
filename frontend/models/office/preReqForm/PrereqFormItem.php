@@ -19,6 +19,7 @@ use common\models\User;
  * @property string|null $model_group
  * @property string|null $item_description
  * @property int $quantity
+ * @property string|null $model_unit_type
  * @property string|null $currency
  * @property float $unit_price
  * @property float $total_price
@@ -34,9 +35,9 @@ use common\models\User;
  * @property string|null $currency_approved
  * @property float|null $unit_price_approved
  * @property float|null $total_price_approved
+ * @property string|null $reference_type
+ * @property string|null $reference_id
  *
- * @property InventoryPurchaseRequestItem[] $inventoryPurchaseRequestItems
- * @property InventoryReorderItem[] $inventoryReorderItems
  * @property PrereqFormMaster $prereqFormMaster
  * @property User $createdBy
  * @property User $updatedBy
@@ -60,9 +61,10 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
             [['prereq_form_master_id', 'supplier_id', 'brand_id', 'quantity', 'created_by', 'updated_by', 'is_deleted', 'status', 'quantity_approved'], 'integer'],
             [['item_description', 'purpose_or_function', 'remark'], 'string'],
             [['unit_price', 'total_price', 'unit_price_approved', 'total_price_approved'], 'number'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['created_at', 'updated_at', 'reference_id'], 'safe'],
             [['department_code'], 'string', 'max' => 50],
-            [['supplier_name', 'brand_name', 'model_name', 'model_group', 'currency', 'currency_approved'], 'string', 'max' => 255],
+            [['supplier_name', 'brand_name', 'model_name', 'model_group', 'model_unit_type', 'currency', 'currency_approved'], 'string', 'max' => 255],
+            [['reference_type'], 'string', 'max' => 100],
             [['prereq_form_master_id'], 'exist', 'skipOnError' => true, 'targetClass' => PrereqFormMaster::className(), 'targetAttribute' => ['prereq_form_master_id' => 'id']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['updated_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['updated_by' => 'id']],
@@ -85,6 +87,7 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
             'model_group' => 'Model Group',
             'item_description' => 'Item Description',
             'quantity' => 'Quantity',
+            'model_unit_type' => 'Model Unit Type',
             'currency' => 'Currency',
             'unit_price' => 'Unit Price',
             'total_price' => 'Total Price',
@@ -100,25 +103,9 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
             'currency_approved' => 'Currency Approved',
             'unit_price_approved' => 'Unit Price Approved',
             'total_price_approved' => 'Total Price Approved',
+            'reference_type' => 'Reference Type',
+            'reference_id' => 'Reference ID',
         ];
-    }
-
-    /**
-     * Gets query for [[InventoryPurchaseRequestItems]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getInventoryPurchaseRequestItems() {
-        return $this->hasMany(InventoryPurchaseRequestItem::className(), ['source_id' => 'id']);
-    }
-
-    /**
-     * Gets query for [[InventoryReorderItems]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getInventoryReorderItems() {
-        return $this->hasMany(InventoryReorderItem::className(), ['prereq_form_item_id' => 'id']);
     }
 
     /**
@@ -191,8 +178,8 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
         ]);
 
         if ($excludeId) {
-        $query->andWhere(['!=', 'id', $excludeId]);
-    }
+            $query->andWhere(['!=', 'id', $excludeId]);
+        }
         return $query->exists();
     }
 
@@ -211,9 +198,9 @@ class PrereqFormItem extends \yii\db\ActiveRecord {
 
     private function syncBomDetail() {
         $bom = \frontend\models\bom\BomDetails::findOne($this->reference_id);
-        if (!$bom)
+        if (!$bom) {
             throw new \Exception('BOM detail not found');
-
+        }
         if ($this->status == 0) {
             $bom->inventory_sts = 4; // approved but pending requestor confirmation
         } else {

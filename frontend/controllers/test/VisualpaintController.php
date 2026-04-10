@@ -153,6 +153,7 @@ class VisualpaintController extends Controller {
             } elseif ($model->status === RefTestStatus::STS_FAIL || $model->status === RefTestStatus::STS_COMPLETE) {
                 $model->status = RefTestStatus::STS_IN_TESTING;
             }
+
             $model->save();
             $master->checkMasterStatus($master->id);
             FlashHandler::success('Form reverted successfully');

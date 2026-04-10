@@ -63,7 +63,7 @@ $this->params['breadcrumbs'][] = ['label' => $pageName];
         <?php //        if ($page === 'newItem'):  ?>
         <?php //= Html::a('Pre-requisition', ['prerequisition', 'moduleIndex' => $moduleIndex], ['class' => 'btn btn-success']) ?>
         <?=
-        Html::a('Pre-requisition', ['create-prerequisition', 'sourceModule' => 'inventory', 'moduleIndex' => $moduleIndex, 'referenceType' => null, 'referenceId' => null], [
+        Html::a("Pre-requisition <i class='fas fa-plus'></i>", ['create-prerequisition', 'sourceModule' => 'inventory', 'moduleIndex' => $moduleIndex, 'referenceType' => null, 'referenceId' => null], [
             'class' => 'btn btn-success',
             'target' => '_blank',
             'rel' => 'noopener noreferrer'

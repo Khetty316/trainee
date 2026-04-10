@@ -231,10 +231,12 @@ class InventoryOrderRequest extends \yii\db\ActiveRecord {
         $balanceQty = $requiredQty - $allocatedQty;
 
         // Priority 1: specific reserve
-        if ($referenceType === 'bom_detail' || $referenceType === 'bomstockoutbound') {
-            $referenceType = 'bom_detail';
+        if ($referenceType === 'bomstockoutbound') {
+            $referenceType1 = 'bom_detail';
+        } else {
+            $referenceType1 = $referenceType;
         }
-        $allocatedQty += self::allocateFromReserve($item, $userId, $referenceType, $referenceId, $balanceQty);
+        $allocatedQty += self::allocateFromReserve($item, $userId, $referenceType1, $referenceId, $balanceQty);
 
         // Priority 2: General reserve
         if ($allocatedQty < $requiredQty) {
@@ -253,11 +255,7 @@ class InventoryOrderRequest extends \yii\db\ActiveRecord {
         // Priority 4
         // Raise an order request for any unmet balance
         if ($allocatedQty < $requiredQty) {
-
             $reference_type = $referenceType;
-            if ($referenceType === 'bom_detail' || $referenceType === 'bomstockoutbound') {
-                $reference_type = 'bomstockoutbound';
-            }
 
             //check order request if exist
             $orderRequest = self::findOne(['reference_type' => $reference_type, 'reference_id' => $item->id]);
@@ -348,12 +346,13 @@ class InventoryOrderRequest extends \yii\db\ActiveRecord {
 
             self::createStockOutbound($inventoryDetail->id, $item->id, $reserve->id, $qtyToAllocate, $referenceType);
 
-            $inventoryDetail->stock_reserved += $qtyToAllocate;
-            $inventoryDetail->stock_available -= $qtyToAllocate;
-
-            if (!$inventoryDetail->save()) {
-                throw new \Exception("Failed updating inventory detail {$inventoryDetail->id}");
-            }
+//            $inventoryDetail->stock_reserved -= $qtyToAllocate;
+//            $inventoryDetail->stock_on_hand -= $qtyToAllocate;
+//            $inventoryDetail->stock_out += $qtyToAllocate;
+//
+//            if (!$inventoryDetail->save()) {
+//                throw new \Exception("Failed updating inventory detail {$inventoryDetail->id}");
+//            }
 
             $allocated += $qtyToAllocate;
             $item->qty_stock_available += $qtyToAllocate;

@@ -55,8 +55,8 @@ $isLegacy = $isLegacy ?? false;
         </div>
 
         <!-- Hidden inputs carrying legacy values on submit -->
-        <input type="hidden" name="CmmsWoMaterialRequestDetails[model_type]" id="model-type-legacy"  value="<?= Html::encode($model->model_type) ?>">
-        <input type="hidden" name="CmmsWoMaterialRequestDetails[brand]"       id="brand-legacy"       value="<?= Html::encode($model->brand) ?>">
+        <input type="hidden" name="CmmsWoMaterialRequestDetails[model_type]" id="model-type-legacy" value="<?= Html::encode($model->model_type) ?>">
+        <input type="hidden" name="CmmsWoMaterialRequestDetails[brand]" id="brand-legacy" value="<?= Html::encode($model->brand) ?>">
 
         <!-- Dropdown fields — hidden until migration -->
         <div id="dropdown-fields" style="display: none;">

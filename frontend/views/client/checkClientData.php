@@ -101,8 +101,9 @@ $this->params['breadcrumbs'][] = $this->title;
                 var month = String(today.getMonth() + 1).padStart(2, '0');
                 var year = today.getFullYear();
                 var formattedDate = day + '-' + month + '-' + year;
+                var companyGroup = <?= json_encode($companyGroup) ?>;
 
-                link.download = 'NotFoundClientsInDMS - ' + formattedDate + '.xls';
+                link.download = companyGroup + ' - NotFoundClientsInDMS - ' + formattedDate + '.xls';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);

@@ -102,7 +102,6 @@ class ClientDebt extends \yii\db\ActiveRecord {
     }
 
     public function beforeSave($insert) {
-
         if ($this->isNewRecord) {
             $this->created_at = new \yii\db\Expression('NOW()');
             $this->created_by = Yii::$app->user->id;

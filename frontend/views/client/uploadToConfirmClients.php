@@ -101,11 +101,11 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 
 </table>
 
-<div style="text-align:right; margin-top:10px; padding: 10px 22px; border-radius: 8px;">
+<p class="mb-5 pb-2">
     <?= Html::submitButton('Proceed', [
-        'class' => 'btn btn-primary mb-2'
+        'class' => 'btn btn-primary float-right mb-5'
     ]) ?>
-</div>
+</p>
 
 <script>
     $(document).ready(function () {

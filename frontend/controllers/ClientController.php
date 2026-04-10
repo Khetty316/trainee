@@ -578,8 +578,6 @@ class ClientController extends Controller {
 
     public function actionProcessClientData() {
         $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
         $postClients = Yii::$app->request->post('Clients');
 
         if (!$postClients) {
@@ -591,12 +589,12 @@ class ClientController extends Controller {
         $buffer = [];
 
         foreach ($custNos as $index => $custNo) {
-
             if (empty($custNo))
                 continue;
 
             $buffer[] = ['cust_no' => trim($custNo), 'name' => $names[$index] ?? '', 'balance' => $balances[$index] ?? 0, 'company_group' => $companyGroup,];
         }
+        
         Yii::$app->session->set('client_upload_data', $buffer);
 
         return $this->redirect(['check-client-data']);
@@ -647,23 +645,18 @@ class ClientController extends Controller {
                     'existData' => $existData,
                     'notExistData' => $notExistData,
                     'companyGroup' => Yii::$app->session->get('companyGroup'),
-                    'month' => Yii::$app->session->get('month'),
-                    'year' => Yii::$app->session->get('year'),
         ]);
     }
 
     public function actionCheckClientData() {
         $companyGroup = Yii::$app->session->get('companyGroup');
-        $month = Yii::$app->session->get('month');
-        $year = Yii::$app->session->get('year');
         $clientData = Yii::$app->session->get('client_upload_data');
         $existData = [];
         $notExistData = [];
         $columnMap = ['TK' => 'ac_no_tk', 'TKE' => 'ac_no_tke', 'TKM' => 'ac_no_tkm',];
         $column = $columnMap[$companyGroup] ?? null;
         $custNos = array_column($clientData, 'cust_no');
-        $allClients = Clients::find()->where([$column => $custNos])
-                ->all();
+        $allClients = Clients::find()->where([$column => $custNos])->all();
 
         $clientMap = [];
         foreach ($allClients as $client) {
@@ -685,6 +678,7 @@ class ClientController extends Controller {
         }
         Yii::$app->session->set('exist_data', $existData);
         Yii::$app->session->set('not_exist_data', $notExistData);
+        Yii::$app->session->set('companyGroup', $companyGroup);
 
         return $this->redirect(['confirm-submit']);
     }
@@ -693,7 +687,6 @@ class ClientController extends Controller {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
 
         $existData = Yii::$app->session->get('exist_data') ?? [];
-        $notExistData = Yii::$app->session->get('not_exist_data') ?? [];
         $start = Yii::$app->request->post('start', 0);
         $limit = 20;
         $existDataChunk = array_slice($existData, $start, $limit);
@@ -704,6 +697,7 @@ class ClientController extends Controller {
         if (empty($existDataChunk)) {
             return ['success' => true, 'done' => true, 'next' => $start];
         }
+        
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
@@ -717,16 +711,14 @@ class ClientController extends Controller {
             }
 
             $custNos = array_column($existDataChunk, 'cust_no');
-            $allClients = Clients::find()->where([$column => $custNos])
-                    ->all();
+            $allClients = Clients::find()->where([$column => $custNos])->all();
             $clientMap = [];
             foreach ($allClients as $client) {
                 $clientMap[$client->$column][] = $client;
             }
 
             $clientIds = array_map(fn($c) => $c->id, $allClients);
-            $allDebts = ClientDebt::find()->where(['client_id' => $clientIds, 'tk_group_code' => $companyGroup, 'year' => $year, 'month' => $month])
-                    ->all();
+            $allDebts = ClientDebt::find()->where(['client_id' => $clientIds, 'tk_group_code' => $companyGroup, 'year' => $year, 'month' => $month])->all();
             $debtMap = [];
             foreach ($allDebts as $debt) {
                 $debtMap[$debt->client_id] = $debt;
@@ -760,14 +752,15 @@ class ClientController extends Controller {
                     $updatedClients[$client->id] = $client;
                 }
             }
+            
             if (!empty($insertRows)) {
-                Yii::$app->db->createCommand()
-                        ->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
+                Yii::$app->db->createCommand()->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
             }
+            
             foreach ($updateRows as $row) {
-                Yii::$app->db->createCommand()
-                        ->update('client_debt', ['balance' => $row['balance']], ['id' => $row['id']])->execute();
+                Yii::$app->db->createCommand()->update('client_debt', ['balance' => $row['balance']], ['id' => $row['id']])->execute();
             }
+            
             foreach ($updatedClients as $client) {
                 $client->save(false);
             }

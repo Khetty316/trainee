@@ -129,7 +129,7 @@ class ClientController extends Controller {
                         $cells->setIterateOnlyExistingCells(false);
                         $data = [];
                         $companyGroup = $clientDebt->tk_group_code;
-                        
+
                         foreach ($cells as $cell) {
 
                             $data[] = $cell ? $cell->getCalculatedValue() : null;
@@ -141,7 +141,7 @@ class ClientController extends Controller {
                         if ($custNo === 'Cust.No.' || empty($custNo)) {
                             continue;
                         }
-                        $buffer[] = ['cust_no' => $custNo,'name' => $name,'balance' => $balance,'company_group' => $companyGroup,];
+                        $buffer[] = ['cust_no' => $custNo, 'name' => $name, 'balance' => $balance, 'company_group' => $companyGroup,];
                     }
 
                     Yii::$app->session->set('client_upload_data', $buffer);
@@ -277,7 +277,7 @@ class ClientController extends Controller {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
             }
             $transaction = Yii::$app->db->beginTransaction();
             try {
@@ -297,10 +297,10 @@ class ClientController extends Controller {
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 FlashHandler::err($e->getMessage());
-                return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
             }
         }
-        return $this->render('createClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => false]);
+        return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
     }
 
     /**
@@ -335,7 +335,7 @@ class ClientController extends Controller {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
+                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
             }
 
             foreach ($contacts as $contact) {
@@ -368,14 +368,14 @@ class ClientController extends Controller {
                 } catch (\Exception $e) {
                     $transaction->rollBack();
                     FlashHandler::err($e->getMessage());
-                    return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
+                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
                 }
             } else {
                 FlashHandler::err("Validation failed.");
             }
         }
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-        return $this->render('updateClient', ['model' => $model,'contactModels' => $contacts,'isUpdate' => true]);
+        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
     }
 
 //    public function actionUpdateClient($id) {
@@ -572,8 +572,8 @@ class ClientController extends Controller {
     public function actionAjaxAddContact($key, $isUpdate) {
         Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;
         $contact = new \frontend\models\client\ClientContact();
-        
-        return $this->renderPartial('_formClient_row', ['contact' => $contact,'index' => $key,'isUpdate' => $isUpdate]);
+
+        return $this->renderPartial('_formClient_row', ['contact' => $contact, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
 
     public function actionProcessClientData() {
@@ -594,7 +594,7 @@ class ClientController extends Controller {
 
             $buffer[] = ['cust_no' => trim($custNo), 'name' => $names[$index] ?? '', 'balance' => $balances[$index] ?? 0, 'company_group' => $companyGroup,];
         }
-        
+
         Yii::$app->session->set('client_upload_data', $buffer);
 
         return $this->redirect(['check-client-data']);
@@ -697,7 +697,7 @@ class ClientController extends Controller {
         if (empty($existDataChunk)) {
             return ['success' => true, 'done' => true, 'next' => $start];
         }
-        
+
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
@@ -752,17 +752,36 @@ class ClientController extends Controller {
                     $updatedClients[$client->id] = $client;
                 }
             }
-            
+
             if (!empty($insertRows)) {
-                Yii::$app->db->createCommand()->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
+//                Yii::$app->db->createCommand()->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
+                $newDebt = new clientDebt();
+                $newDebt->client_id = $client->id;
+                $newDebt->tk_group_code = $companyGroup;
+                $newDebt->year = $year;
+                $newDebt->month = $month;
+                $newDebt->balance = $row['balance'];
+                if (!$newDebt->save()) {
+                    throw new \Exception("Failed saving new client debt: " . json_encode($newDebt->errors));
+                }
             }
-            
-            foreach ($updateRows as $row) {
-                Yii::$app->db->createCommand()->update('client_debt', ['balance' => $row['balance']], ['id' => $row['id']])->execute();
+
+            if (!empty($updateRows)) {
+                foreach ($updateRows as $row) {
+//                Yii::$app->db->createCommand()->update('client_debt', ['balance' => $row['balance']], ['id' => $row['id']])->execute();
+                    $updateOldRecord = ClientDebt::find()->where(['id' => $row['id']])->one();
+                    $updateOldRecord->balance = $row['balance'];
+                    if (!$updateOldRecord->save(false)) {
+                        throw new \Exception("Failed updating new client debt: " . json_encode($updateOldRecord->errors));
+                    }
+                }
             }
-            
+
+
             foreach ($updatedClients as $client) {
-                $client->save(false);
+                if (!$client->save(false)) {
+                    throw new \Exception("Failed updating client outstanding balance: " . json_encode($client->errors));
+                }
             }
 
             $transaction->commit();
@@ -771,6 +790,8 @@ class ClientController extends Controller {
         } catch (\Exception $e) {
             $transaction->rollBack();
             FlashHandler::err("Failed: " . $e->getMessage());
+            return $this->redirect([Yii::$app->request->referrer]);
+//            return $this->redirect(['index']);
         }
     }
 

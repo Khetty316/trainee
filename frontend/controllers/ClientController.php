@@ -778,11 +778,35 @@ class ClientController extends Controller {
                 }
             }
 
+            // 4. Get latest record for this client
+            $latestRecord = ClientDebt::find()
+                    ->where([
+                        'client_id' => $client->id,
+                        'tk_group_code' => $companyGroup
+                    ])
+                    ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
+                    ->one();
 
-            foreach ($updatedClients as $client) {
-                if (!$client->save(false)) {
-                    throw new \Exception("Failed updating client outstanding balance: " . json_encode($client->errors));
-                }
+            // 5. Update balance fields
+            $fieldMap = [
+                'TK' => 'tk_balance',
+                'TKE' => 'tke_balance',
+                'TKM' => 'tkm_balance',
+            ];
+
+            $field = $fieldMap[$companyGroup] ?? null;
+
+            if ($latestRecord && $field) {
+                $client->$field = $latestRecord->balance;
+            }
+
+            // Calculate total
+            $client->current_outstanding_balance = ($client->tk_balance ?? 0) +
+                    ($client->tke_balance ?? 0) +
+                    ($client->tkm_balance ?? 0);
+
+            if (!$client->save(false)) {
+                throw new \Exception("Failed updating outstanding debt balance: " . json_encode($client->errors));
             }
 
             $transaction->commit();

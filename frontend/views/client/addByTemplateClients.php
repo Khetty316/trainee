@@ -28,7 +28,8 @@ $this->params['breadcrumbs'][] = $this->title;
 
             <!-- Month -->
             <div class="col-md-4">
-                <?= $form->field($clientDebt, 'month')->dropDownList([
+                <?=
+                $form->field($clientDebt, 'month')->dropDownList([
                     1 => 'January',
                     2 => 'February',
                     3 => 'March',
@@ -41,7 +42,11 @@ $this->params['breadcrumbs'][] = $this->title;
                     10 => 'October',
                     11 => 'November',
                     12 => 'December',
-                ], ['prompt' => 'Select Month']) ?>
+                        ], [
+                    'prompt' => 'Select Month',
+                    'required' => true
+                ])
+                ?>
             </div>
 
             <!-- Year -->
@@ -55,7 +60,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 }
 
                 echo $form->field($clientDebt, 'year')
-                        ->dropDownList($years, ['prompt' => 'Select Year']);
+                        ->dropDownList($years, [
+                            'prompt' => 'Select Year',
+                            'required' => true
+                ]);
                 ?>
             </div>
 

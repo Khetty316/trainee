@@ -11,7 +11,6 @@ use common\modules\auth\models\AuthItem;
 /* @var $this yii\web\View */
 /* @var $model frontend\models\projectquotation\ProjectQRevisions */
 
-
 $this->title = "Upload Excel Template";
 $this->params['breadcrumbs'][] = ['label' => 'Project Quotation List', 'url' => ['/projectquotation/index']];
 $this->params['breadcrumbs'][] = ['label' => $model->projectQType->project->quotation_display_no, 'url' => ['/projectquotation/view-projectquotation', 'id' => $model->projectQType->project_id]];
@@ -39,7 +38,6 @@ $totalSSTAmount = 0
         <div class="col-xs-12 col-xl-9">
             <fieldset class="form-group border p-3">
                 <legend class="w-auto px-2  m-0 ">Panels:</legend>
-
 
                 <?php
                 $panels = $model->projectQPanels;
@@ -80,24 +78,17 @@ $totalSSTAmount = 0
     </div>
 </div>
 
-
-
-
 <script>
     $(function () {
-
-
-
         $(document).on('beforeSubmit', 'form', function (event) {
-            var currentYOffset = window.pageYOffset;  // save current page postion.
+            var currentYOffset = window.pageYOffset;
             setCookie('jumpToScrollPostion', currentYOffset, 2);
         });
 
-        // check if we should jump to postion.
         var jumpTo = getCookie('jumpToScrollPostion');
         if (jumpTo !== "undefined" && jumpTo !== null) {
             window.scrollTo(0, jumpTo);
-            eraseCookie('jumpToScrollPostion');  // and delete cookie so we don't jump again.
+            eraseCookie('jumpToScrollPostion');
         }
     });
 

@@ -206,21 +206,31 @@ ActiveForm::end();
 ?>
 
 <script>
+
     $(document).ready(function () {
 
         $('td').addClass('p-0');
 
         $('.table').on('click', '.delete-row', function () {
-            $(this).closest('tr').hide();
-
-            $(this).closest('tr').find('input, select').val('');
+            $(this).closest('tr').remove();
+            reindexRows();
         });
 
-        $(document).on('submit', 'form', function () {
+        function reindexRows() {
+            $('table tbody tr').each(function (index) {
 
-            console.log('REINDEX RUNNING');
+                $(this).find('td:first').text(index + 1);
 
-        });
+                $(this).find('input, select').each(function () {
+                    let name = $(this).attr('name');
+
+                    if (name) {
+                        name = name.replace(/Panel\[\d+\]/, 'Panel[' + index + ']');
+                        $(this).attr('name', name);
+                    }
+                });
+            });
+        }
 
     });
 </script>

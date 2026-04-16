@@ -782,12 +782,8 @@ class ProjectqrevisionController extends Controller {
     public function actionSavePanelUpload($revisionId) {
 //        ini_set('max_input_vars', 10000); change from 1000 to 10000 in php.ini 15/4/2026
 
+        $errors = [];
         $postData = Yii::$app->request->post('Panel');
-        if (!empty($postData)) {
-            $panelData = array_values($postData);
-        } else {
-            $panelData = Yii::$app->session->get('panel_upload_data');
-        }
 
         $panelData = [];
 
@@ -800,7 +796,9 @@ class ProjectqrevisionController extends Controller {
                 if (
                         empty($row['panel']) &&
                         empty($row['unit']) &&
-                        empty($row['price'])
+                        empty($row['price']) &&
+                        empty($row['qty']) &&
+                        empty($row['panel_type'])
                 ) {
                     continue;
                 }
@@ -809,13 +807,14 @@ class ProjectqrevisionController extends Controller {
             }
 
             Yii::$app->session->set('panel_upload_data', $panelData);
+        } else {
+            $panelData = Yii::$app->session->get('panel_upload_data', []);
         }
 
-        $panelData = Yii::$app->session->get('panel_upload_data');
-
         if (empty($panelData)) {
-            Yii::$app->session->setFlash('error', 'No data found. Please upload again.');
-            return $this->redirect(['upload-panel', 'revisionId' => $revisionId]);
+            Yii::$app->session->setFlash('error', 'Please fill in all the required fields.');
+
+            $panelData = [[]];
         }
 
         $maxSort = ProjectQPanels::find()
@@ -827,8 +826,6 @@ class ProjectqrevisionController extends Controller {
         $transaction = Yii::$app->db->beginTransaction();
 
         try {
-
-            $errors = [];
 
             foreach ($panelData as $index => $row) {
 
@@ -884,7 +881,7 @@ class ProjectqrevisionController extends Controller {
             }
             $transaction->commit();
 
-            Yii::$app->session->remove('panelData');
+            Yii::$app->session->remove('panel_upload_data');
         } catch (\Exception $e) {
             $transaction->rollBack();
             throw $e;

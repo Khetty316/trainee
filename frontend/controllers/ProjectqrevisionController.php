@@ -331,6 +331,9 @@ class ProjectqrevisionController extends Controller {
                 $mpdf->Output($pdfPath, 'F');
                 $model->with_sst = (int) $with_sst;
                 if ($model->processAndSave()) {
+                    $revision->quotation_by = \Yii::$app->user->identity->id;
+                    $revision->quotation_date = new \yii\db\Expression('NOW()');
+                    $revision->save(false);
                     FlashHandler::success("Released.");
                 } else {
                     FlashHandler::err("Failed to save.");
@@ -779,7 +782,7 @@ class ProjectqrevisionController extends Controller {
         return $panelData;
     }
 
-    public function actionSavePanelUpload($revisionId) {
+public function actionSavePanelUpload($revisionId) {
 //        ini_set('max_input_vars', 10000); change from 1000 to 10000 in php.ini 15/4/2026
 
         $errors = [];
@@ -935,7 +938,7 @@ class ProjectqrevisionController extends Controller {
 //            }
 //
 //            // Create a new ProjectQPanels model
-//            //$panel = new ProjectQPanels();
+//            $panel = new ProjectQPanels();
 //            $panel->revision_id = $revisionId;
 //            $panel->panel_type = $rowData[1];
 //            $panel->panel_description = $rowData[2];
@@ -951,6 +954,7 @@ class ProjectqrevisionController extends Controller {
 //            }
 //        }
 //    }
+
     //Process 50 records at a time
     public function actionSecretGenerateQuotationPdfsForAll() {
         ini_set('memory_limit', '1024M'); // Increase memory limit to 1GB

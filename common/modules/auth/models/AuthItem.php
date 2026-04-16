@@ -108,6 +108,7 @@ class AuthItem extends \yii\db\ActiveRecord {
     CONST ROLE_INVENTORY_Assistant = "inventory_assistant";
     CONST ROLE_INVENTORY_ProjCoor = "inventory_projcoor";
     CONST ROLE_INVENTORY_MaintenanceHead = "inventory_maintenanceHead";
+    CONST ROLE_INVENTORY_Personal = "inventory_personal";
 
     /**
      * {@inheritdoc}

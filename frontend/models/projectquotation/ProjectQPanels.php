@@ -49,7 +49,8 @@ class ProjectQPanels extends \yii\db\ActiveRecord {
      */
     public function rules() {
         return [
-            [['revision_id', 'panel_description', 'quantity', 'panel_type'], 'required'],
+            [['revision_id','panel_description','quantity','unit_code','panel_type'],'required'],
+            [['remark'], 'safe'],
             [['revision_id', 'sort', 'by_item_price', 'created_by', 'updated_by'], 'integer'],
             [['remark'], 'string'],
             [['amount', 'quantity'], 'number'],
@@ -58,8 +59,8 @@ class ProjectQPanels extends \yii\db\ActiveRecord {
             [['unit_code', 'panel_type'], 'string', 'max' => 10],
             [['revision_id'], 'exist', 'skipOnError' => true, 'targetClass' => ProjectQRevisions::className(), 'targetAttribute' => ['revision_id' => 'id']],
             [['unit_code'], 'exist', 'skipOnError' => true, 'targetClass' => RefProjectQPanelUnit::className(), 'targetAttribute' => ['unit_code' => 'code']],
-            [['panel_type'], 'exist', 'skipOnError' => true, 'targetClass' => RefProjectQTypes::class, 'targetAttribute' => ['panel_type' => 'code']],
-        ];
+            [['panel_type'], 'exist', 'skipOnError' => true, 'targetClass' => RefProjectQTypes::class, 'targetAttribute' => ['panel_type' => 'code']]
+    ];
     }
 
     /**

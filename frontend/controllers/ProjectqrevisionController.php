@@ -19,6 +19,7 @@ use frontend\models\projectquotation\ProjectQClients;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use yii\web\UploadedFile;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
+use common\models\ProjectQRevision;
 
 /**
  * ProjectqrevisionController implements the CRUD actions for ProjectQRevisions model.
@@ -626,9 +627,59 @@ class ProjectqrevisionController extends Controller {
         ]);
     }
 
+    //before confirmation page - commented by vivi
+//    public function actionUploadTemplate($revisionid) {
+//        $model = $this->findModel($revisionid);
+//        $quotation = QuotationPdfMasters::findOne(['revision_id' => $revisionid]);
+//        if ($model->projectQType->is_finalized) {
+//            return "Quotation is Finalized, unable to change";
+//        }
+//
+//        if (Yii::$app->request->isPost) {
+//            $excelFile = UploadedFile::getInstanceByName('excelTemplate');
+//
+//            if ($excelFile && $excelFile->tempName) {
+//                $extension = strtolower(pathinfo($excelFile->name, PATHINFO_EXTENSION));
+//
+//                if ($extension !== 'xls') {
+//                    Yii::$app->session->setFlash('error', 'Please upload only .xls files.');
+//                    return $this->redirect(['view-project-q-revision', 'id' => $revisionid]);
+//                }
+//
+//                try {
+//                    $reader = new Xls();
+//                    $reader->setReadDataOnly(true);
+//
+//                    // Load only the first worksheet
+//                    $reader->setLoadSheetsOnly(0);
+//
+//                    $spreadsheet = $reader->load($excelFile->tempName);
+//
+//                    $this->processExcelSpreadsheet($spreadsheet, $revisionid);
+//                    $model->updateRevisionAmount();
+//                    Yii::$app->session->setFlash('success', 'Excel file processed successfully.');
+//                } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+//                    Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
+//                    Yii::error('Error reading Excel file: ' . $e->getMessage());
+//                } catch (\Exception $e) {
+//                    Yii::$app->session->setFlash('error', 'Error processing file: ' . $e->getMessage());
+//                    Yii::error('Error processing Excel file: ' . $e->getMessage());
+//                }
+//            } else {
+//                Yii::$app->session->setFlash('error', 'No file was uploaded or temporary file is missing.');
+//            }
+//
+//            return $this->redirect(['view-project-q-revision', 'id' => $revisionid]);
+//        }
+//
+//        return $this->render('uploadTemplate', [
+//                    'model' => $model
+//        ]);
+//    }
+//    
     public function actionUploadTemplate($revisionid) {
         $model = $this->findModel($revisionid);
-        $quotation = QuotationPdfMasters::findOne(['revision_id' => $revisionid]);
+//        $quotation = QuotationPdfMasters::findOne(['revision_id' => $revisionid]);
         if ($model->projectQType->is_finalized) {
             return "Quotation is Finalized, unable to change";
         }
@@ -648,26 +699,30 @@ class ProjectqrevisionController extends Controller {
                     $reader = new Xls();
                     $reader->setReadDataOnly(true);
 
-                    // Load only the first worksheet
                     $reader->setLoadSheetsOnly(0);
 
                     $spreadsheet = $reader->load($excelFile->tempName);
 
-                    $this->processExcelSpreadsheet($spreadsheet, $revisionid);
-                    $model->updateRevisionAmount();
-                    Yii::$app->session->setFlash('success', 'Excel file processed successfully.');
+                    $panelData = $this->processExcelSpreadsheet($spreadsheet, $revisionid);
+
+                    Yii::$app->session->set('panel_upload_data', $panelData);
+                    $panelData = Yii::$app->session->get('panel_upload_data');
+
+                    return $this->render('confirmPanelUpload', [
+                                'panelData' => $panelData,
+                                'revisionId' => $revisionid,
+                                'model' => $model
+                    ]);
                 } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
                     Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
-                    Yii::error('Error reading Excel file: ' . $e->getMessage());
                 } catch (\Exception $e) {
                     Yii::$app->session->setFlash('error', 'Error processing file: ' . $e->getMessage());
-                    Yii::error('Error processing Excel file: ' . $e->getMessage());
                 }
             } else {
                 Yii::$app->session->setFlash('error', 'No file was uploaded or temporary file is missing.');
             }
 
-            return $this->redirect(['view-project-q-revision', 'id' => $revisionid]);
+            //return $this->redirect(['view-project-q-revision', 'id' => $revisionid]);
         }
 
         return $this->render('uploadTemplate', [
@@ -679,61 +734,226 @@ class ProjectqrevisionController extends Controller {
         $worksheet = $spreadsheet->getActiveSheet();
         $rowIterator = $worksheet->getRowIterator();
 
-        // Get the maximum sort value for the given revision ID
-        $maxSort = ProjectQPanels::find()
-                ->where(['revision_id' => $revisionId])
-                ->max('sort');
-
-        $sort = $maxSort ? $maxSort + 1 : 1;
+        $panelData = [];
         $blankCount = 0;
+
         foreach ($rowIterator as $row) {
+
             $cellIterator = $row->getCellIterator();
             $cellIterator->setIterateOnlyExistingCells(false);
 
             $rowData = [];
             foreach ($cellIterator as $cell) {
-                $rowData[] = $cell->getValue();
+                $rowData[] = $cell->getCalculatedValue();
             }
 
-            // Check if we've reached the end
-            if (strtolower(trim($rowData[0])) === 'end') {
-                break;
-            }
-
-            // Skip the header row
             if ($row->getRowIndex() === 1) {
                 continue;
             }
 
-            // Check if Panel column is empty
-            if (empty(trim($rowData[2]))) {
+            if (isset($rowData[1]) && strtolower(trim($rowData[1])) === 'end') {
+                break;
+            }
+
+            $panel = isset($rowData[2]) ? trim($rowData[2]) : '';
+
+            if ($panel === '' || $panel === null) {
                 $blankCount++;
-                if ($blankCount >= 5) {
+                if ($blankCount >= 5)
                     break;
-                }
                 continue;
             } else {
                 $blankCount = 0;
             }
 
-            // Create a new ProjectQPanels model
-            $panel = new ProjectQPanels();
-            $panel->revision_id = $revisionId;
-            $panel->panel_type = $rowData[1];
-            $panel->panel_description = $rowData[2];
-            $panel->remark = $rowData[3];
-            $panel->quantity = $rowData[4];
-            $panel->unit_code = $rowData[5];
-            $panel->amount = $rowData[6];
-            $panel->sort = $sort++;
-
-            if (!$panel->save()) {
-                // Handle save error
-                Yii::error("Failed to save panel: " . json_encode($panel->errors));
-            }
+            $panelData[] = [
+                'panel_type' => trim($rowData[1] ?? ''),
+                'panel' => $panel,
+                'remark' => trim($rowData[3] ?? ''),
+                'qty' => $rowData[4] ?? 0,
+                'unit' => trim($rowData[5] ?? ''),
+                'price' => $rowData[6] ?? 0,
+                'total' => $rowData[7] ?? 0,
+            ];
         }
+        return $panelData;
     }
 
+    public function actionSavePanelUpload($revisionId) {
+//        ini_set('max_input_vars', 10000); change from 1000 to 10000 in php.ini 15/4/2026
+
+        $postData = Yii::$app->request->post('Panel');
+        if (!empty($postData)) {
+            $panelData = array_values($postData);
+        } else {
+            $panelData = Yii::$app->session->get('panel_upload_data');
+        }
+
+        $panelData = [];
+
+        if (!empty($postData)) {
+
+            $postData = array_values($postData);
+
+            foreach ($postData as $row) {
+
+                if (
+                        empty($row['panel']) &&
+                        empty($row['unit']) &&
+                        empty($row['price'])
+                ) {
+                    continue;
+                }
+
+                $panelData[] = $row;
+            }
+
+            Yii::$app->session->set('panel_upload_data', $panelData);
+        }
+
+        $panelData = Yii::$app->session->get('panel_upload_data');
+
+        if (empty($panelData)) {
+            Yii::$app->session->setFlash('error', 'No data found. Please upload again.');
+            return $this->redirect(['upload-panel', 'revisionId' => $revisionId]);
+        }
+
+        $maxSort = ProjectQPanels::find()
+                ->where(['revision_id' => $revisionId])
+                ->max('sort');
+
+        $sort = $maxSort ? $maxSort + 1 : 1;
+
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+
+            $errors = [];
+
+            foreach ($panelData as $index => $row) {
+
+                if (empty($row['panel_type'] ?? '')) {
+                    $errors[$index]['panel_type'] = 'Panel Type is required';
+                }
+
+                if (empty($row['panel'] ?? '')) {
+                    $errors[$index]['panel'] = 'Panel is required';
+                }
+
+                if (empty($row['unit'] ?? '')) {
+                    $errors[$index]['unit'] = 'Unit is required';
+                }
+
+                if (($row['qty'] ?? '') === '' || ($row['qty'] ?? null) === null) {
+                    $errors[$index]['qty'] = 'Quantity is required';
+                }
+
+                if (($row['price'] ?? '') === '' || ($row['price'] ?? null) === null) {
+                    $errors[$index]['price'] = 'Price is required';
+                }
+            }
+
+            if (!empty($errors)) {
+
+                Yii::$app->session->setFlash('error', 'Please fill in all required fields.');
+
+                return $this->render('confirmPanelUpload', [
+                            'panelData' => $panelData ?? [],
+                            'revisionId' => $revisionId,
+                            'model' => $this->findModel($revisionId),
+                            'errors' => $errors ?? []
+                ]);
+            }
+
+            foreach ($panelData as $row) {
+
+                $model = new ProjectQPanels();
+                $remark = trim($row['remark'] ?? '');
+                $model->revision_id = $revisionId;
+                $model->panel_description = $row['panel'];
+                $model->remark = $remark === '' ? null : $remark;
+                $model->quantity = $row['qty'];
+                $model->amount = (float) ($row['price'] ?? 0);
+                $model->sort = $sort++;
+                $model->unit_code = $row['unit'];
+                $model->panel_type = $row['panel_type'];
+
+                if (!$model->save()) {
+                    throw new \Exception(json_encode($model->errors));
+                }
+            }
+            $transaction->commit();
+
+            Yii::$app->session->remove('panelData');
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+
+        Yii::$app->session->setFlash('success', 'Panels saved successfully');
+
+        return $this->redirect(['view-project-q-revision', 'id' => $revisionId]);
+    }
+
+    //before confirmation page - commented by vivi 
+//    private function processExcelSpreadsheet($spreadsheet, $revisionId) {
+//        $worksheet = $spreadsheet->getActiveSheet();
+//        $rowIterator = $worksheet->getRowIterator();
+//
+//        // Get the maximum sort value for the given revision ID
+//        $maxSort = ProjectQPanels::find()
+//                ->where(['revision_id' => $revisionId])
+//                ->max('sort');
+//
+//        $sort = $maxSort ? $maxSort + 1 : 1;
+//        $blankCount = 0;
+//        foreach ($rowIterator as $row) {
+//            $cellIterator = $row->getCellIterator();
+//            $cellIterator->setIterateOnlyExistingCells(false);
+//
+//            $rowData = [];
+//            foreach ($cellIterator as $cell) {
+//                $rowData[] = $cell->getValue();
+//            }
+//
+//            // Check if we've reached the end
+//            if (strtolower(trim($rowData[0])) === 'end') {
+//                break;
+//            }
+//
+//            // Skip the header row
+//            if ($row->getRowIndex() === 1) {
+//                continue;
+//            }
+//
+//            // Check if Panel column is empty
+//            if (empty(trim($rowData[2]))) {
+//                $blankCount++;
+//                if ($blankCount >= 5) {
+//                    break;
+//                }
+//                continue;
+//            } else {
+//                $blankCount = 0;
+//            }
+//
+//            // Create a new ProjectQPanels model
+//            //$panel = new ProjectQPanels();
+//            $panel->revision_id = $revisionId;
+//            $panel->panel_type = $rowData[1];
+//            $panel->panel_description = $rowData[2];
+//            $panel->remark = $rowData[3];
+//            $panel->quantity = $rowData[4];
+//            $panel->unit_code = $rowData[5];
+//            $panel->amount = $rowData[6];
+//            $panel->sort = $sort++;
+//
+//            if (!$panel->save()) {
+//                // Handle save error
+//                Yii::error("Failed to save panel: " . json_encode($panel->errors));
+//            }
+//        }
+//    }
     //Process 50 records at a time
     public function actionSecretGenerateQuotationPdfsForAll() {
         ini_set('memory_limit', '1024M'); // Increase memory limit to 1GB

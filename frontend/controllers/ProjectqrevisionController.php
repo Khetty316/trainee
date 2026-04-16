@@ -782,18 +782,14 @@ class ProjectqrevisionController extends Controller {
         return $panelData;
     }
 
-public function actionSavePanelUpload($revisionId) {
+    public function actionSavePanelUpload($revisionId) {
 //        ini_set('max_input_vars', 10000); change from 1000 to 10000 in php.ini 15/4/2026
-
         $errors = [];
         $postData = Yii::$app->request->post('Panel');
 
         $panelData = [];
-
         if (!empty($postData)) {
-
             $postData = array_values($postData);
-
             foreach ($postData as $row) {
 
                 if (
@@ -808,16 +804,14 @@ public function actionSavePanelUpload($revisionId) {
 
                 $panelData[] = $row;
             }
-
-            Yii::$app->session->set('panel_upload_data', $panelData);
         } else {
-            $panelData = Yii::$app->session->get('panel_upload_data', []);
-        }
-
-        if (empty($panelData)) {
-            Yii::$app->session->setFlash('error', 'Please fill in all the required fields.');
-
-            $panelData = [[]];
+            Yii::$app->session->setFlash('info', 'No Panels Found');
+            return $this->render('confirmPanelUpload', [
+                        'panelData' => $panelData ?? [],
+                        'revisionId' => $revisionId,
+                        'model' => $this->findModel($revisionId),
+                        'errors' => $errors ?? []
+            ]);
         }
 
         $maxSort = ProjectQPanels::find()
@@ -866,7 +860,6 @@ public function actionSavePanelUpload($revisionId) {
             }
 
             foreach ($panelData as $row) {
-
                 $model = new ProjectQPanels();
                 $remark = trim($row['remark'] ?? '');
                 $model->revision_id = $revisionId;
@@ -954,7 +947,6 @@ public function actionSavePanelUpload($revisionId) {
 //            }
 //        }
 //    }
-
     //Process 50 records at a time
     public function actionSecretGenerateQuotationPdfsForAll() {
         ini_set('memory_limit', '1024M'); // Increase memory limit to 1GB

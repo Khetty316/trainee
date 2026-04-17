@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use yii\helpers\Url;
 
+//debug
 /**
  * ClientController implements the CRUD actions for Clients model.
  */
@@ -213,7 +214,74 @@ class ClientController extends Controller {
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
-    //updated by khetty, 15/11/2025
+    //updated by khetty, 15/11/2025, 17/4/2026 - got bug validation failed!
+//    public function actionUpdateClient($id) {
+//        $model = $this->findModel($id);
+//        $existingContacts = \frontend\models\client\ClientContact::find()
+//                ->where(['client_id' => $id])
+//                ->indexBy('id')
+//                ->all();
+//
+//        if ($model->load(Yii::$app->request->post())) {
+//
+//            $oldIDs = array_keys($existingContacts);
+//            $contacts = \frontend\models\ModelHelper::createMultiple(
+//                    \frontend\models\client\ClientContact::class, $existingContacts
+//            );
+//            $email_model = new \frontend\models\projectquotation\QuotationEmails();
+//            $validationErrors = [];
+//            foreach ($contacts as $index => $contact) {
+//                if (!empty($contact->email_address) && !$email_model->validateEmailAddress($contact->email_address)) {
+//                    $validationErrors[] = "Invalid email address for contact " . ($contact->name ?: ($index + 1)) . ": " . $contact->email_address;
+//                }
+//            }
+//            if (!empty($validationErrors)) {
+//                foreach ($validationErrors as $error) {
+//                    FlashHandler::err($error);
+//                }
+//                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+//            }
+//
+//            foreach ($contacts as $contact) {
+//                $contact->client_id = $model->id;
+//                if (!$contact->save(false)) {
+//                    throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
+//                }
+//            }
+//            $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id'));
+//            $deletedIDs = array_diff($oldIDs, $postedIDs);
+//            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
+//
+//            if ($valid) {
+//                $transaction = Yii::$app->db->beginTransaction();
+//                try {
+//                    if ($model->processAndSave()) {
+//                        if (!empty($deletedIDs)) {
+//                            \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
+//                        }
+//                        foreach ($contacts as $contact) {
+//                            $contact->client_id = $model->id;
+//                            if (!$contact->save(false)) {
+//                                throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
+//                            }
+//                        }
+//                        $transaction->commit();
+//                        FlashHandler::success("Client and contacts updated successfully.");
+//                        return $this->redirect(['view-client', 'id' => $model->id]);
+//                    }
+//                } catch (\Exception $e) {
+//                    $transaction->rollBack();
+//                    FlashHandler::err($e->getMessage());
+//                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+//                }
+//            } else {
+//                FlashHandler::err("Validation failed.");
+//            }
+//        }
+//        $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
+//        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+//    }
+    
     public function actionUpdateClient($id) {
         $model = $this->findModel($id);
         $existingContacts = \frontend\models\client\ClientContact::find()
@@ -222,11 +290,12 @@ class ClientController extends Controller {
                 ->all();
 
         if ($model->load(Yii::$app->request->post())) {
-
             $oldIDs = array_keys($existingContacts);
             $contacts = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContact::class, $existingContacts
             );
+
+            // Email validation
             $email_model = new \frontend\models\projectquotation\QuotationEmails();
             $validationErrors = [];
             foreach ($contacts as $index => $contact) {
@@ -234,51 +303,85 @@ class ClientController extends Controller {
                     $validationErrors[] = "Invalid email address for contact " . ($contact->name ?: ($index + 1)) . ": " . $contact->email_address;
                 }
             }
+
             if (!empty($validationErrors)) {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+                return $this->render('updateClient', [
+                            'model' => $model,
+                            'contactModels' => $contacts,
+                            'isUpdate' => true
+                ]);
             }
 
+            // Set client_id for validation
             foreach ($contacts as $contact) {
                 $contact->client_id = $model->id;
-                if (!$contact->save(false)) {
-                    throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-                }
             }
+
+            // Calculate deleted IDs
             $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id'));
             $deletedIDs = array_diff($oldIDs, $postedIDs);
+
+            // VALIDATE FIRST (before any saves)
             $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
 
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
                     if ($model->processAndSave()) {
+                        // Delete removed contacts
                         if (!empty($deletedIDs)) {
                             \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
                         }
+
+                        // Save all contacts (ONLY ONCE, inside transaction)
                         foreach ($contacts as $contact) {
-                            $contact->client_id = $model->id;
                             if (!$contact->save(false)) {
                                 throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
                             }
                         }
+
                         $transaction->commit();
                         FlashHandler::success("Client and contacts updated successfully.");
                         return $this->redirect(['view-client', 'id' => $model->id]);
+                    } else {
+                        throw new \Exception("Failed to save client: " . json_encode($model->errors));
                     }
                 } catch (\Exception $e) {
                     $transaction->rollBack();
                     FlashHandler::err($e->getMessage());
-                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+                    return $this->render('updateClient', [
+                                'model' => $model,
+                                'contactModels' => $contacts,
+                                'isUpdate' => true
+                    ]);
                 }
             } else {
+                // Add specific error messages
+                if ($model->hasErrors()) {
+                    foreach ($model->getErrors() as $attribute => $errors) {
+                        FlashHandler::err("Client {$attribute}: " . implode(', ', $errors));
+                    }
+                }
+                foreach ($contacts as $index => $contact) {
+                    if ($contact->hasErrors()) {
+                        foreach ($contact->getErrors() as $attribute => $errors) {
+                            FlashHandler::err("Contact " . ($index + 1) . " {$attribute}: " . implode(', ', $errors));
+                        }
+                    }
+                }
                 FlashHandler::err("Validation failed.");
             }
         }
+
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+        return $this->render('updateClient', [
+                    'model' => $model,
+                    'contactModels' => $contacts,
+                    'isUpdate' => true
+        ]);
     }
 
 //    public function actionUpdateClient($id) {

@@ -81,7 +81,27 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                 }
                                 $mainMenuItems[] = $menuQuotation;
 
-                                $mainMenuItems[] = MenuModel::newMenuItems('<i class="fas fa-address-book"></i>', 'Clients', '/client');
+                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Finance, AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Procurement, AuthItem::ROLE_Client_Module_Projcoor])) {
+                                    $menuClient = MenuModel::newMenuItems('<i class="fas fa-address-book"></i>', 'Client', '#');
+
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Finance])) {
+                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Finance', '/client');
+                                    }
+
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director])) {
+                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Director', '/client');
+                                    }
+
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Procurement])) {
+                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Procurement', '/client');
+                                    }
+
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Projcoor])) {
+                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Project Coordinator', '/client');
+                                    }
+
+                                    $mainMenuItems[] = $menuClient;
+                                }
                                 ?>
 
                                 <li class="dropdown">
@@ -805,7 +825,6 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                 echo "<div id='myModalContentSmall' style='padding:0px;margin:0px;'></div>";
                 Modal::end();
                 ?>
-
 
                 <div class="modal fade" tabindex="-1" role="dialog" id="spinnerModal">
                     <div class="modal-dialog modal-dialog-centered text-center" role="document">

@@ -228,7 +228,7 @@ class Clients extends \yii\db\ActiveRecord {
 
     public static function getAutocompleteList() {
         $data = Clients::find()
-                ->select(['company_name as value', 'company_name as label', 'id as id'])
+                ->select(['company_name as value', 'company_name as label', 'id as id','client_code as client_code'])
                 ->asArray()
                 ->orderBy(['company_name' => SORT_ASC])
                 ->all();

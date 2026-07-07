@@ -1486,7 +1486,7 @@ class ClientController extends Controller {
                 ->setFrom($model->sender)
                 ->setTo($toList)
                 ->setSubject($model->subject)
-                ->setHtmlBody($htmlContent)
+//                ->setHtmlBody($htmlContent) // causes white bg
                 ->setTextBody($textContent);
 
         if (!empty($CcList)) {

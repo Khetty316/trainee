@@ -1,7 +1,7 @@
 <?php
-
 use yii\bootstrap4\ActiveForm;
 use frontend\models\common\RefProjectQTypes;
+use yii\helpers\Html;
 ?>
 <style>
     .borderTopBottom {
@@ -18,6 +18,9 @@ use frontend\models\common\RefProjectQTypes;
                 <th>Fabrication (%)</th>
                 <th>Electrical (%)</th>
                 <th>Total (%)</th>
+                <th style="width:60px;">
+                    Select<br>
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -40,6 +43,13 @@ use frontend\models\common\RefProjectQTypes;
                     </div>
                     <span class="panel-error-message"></span>
                 </td>
+                <td class="text-center align-middle">
+                    <input
+                        type="checkbox"
+                        class="checkbox panel-checkbox"
+                        name="selectedPanels[]"
+                        value="<?= $panel->id ?>">
+                </td>
             </tr>
         </tbody>
     </table>
@@ -51,22 +61,17 @@ use frontend\models\common\RefProjectQTypes;
             var type = $(this).find('.fabPanel, .elecPanel').data('project-code');
             validatePanelWeight(key, type);
         });
-
         $(document).on('input', '.fabPanel, .elecPanel', function () {
             var key = $(this).data('key');
             var type = $(this).data('project-code');
             validatePanelWeight(key, type);
         });
-
     });
-
     function validatePanelWeight(key, type) {
         var fabDept = parseFloat($(`#tr_${key} .fabPanel`).val()) || 0;
         var elecDept = parseFloat($(`#tr_${key} .elecPanel`).val()) || 0;
-
         var total = fabDept + elecDept;
         $(`#tr_${key} .totalPanelWeight`).text(total.toFixed(2));
-
         var totalTd = $(`#tr_${key} .totalPanelWeight`).closest('td');
         totalTd.removeClass('bg-warning');
         $(`#tr_${key} .panel-error-message`).removeClass('text-danger');

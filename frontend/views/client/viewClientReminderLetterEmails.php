@@ -52,6 +52,9 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?=
     DetailView::widget([
+        'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
+        'template' => "<tr><th style='width: 10%;'>{label}</th><td>{value}</td></tr>",
+        'options' => ['class' => 'table table-striped table-bordered detail-view table-sm'],
         'model' => $model,
         'attributes' => [
 //            'id',

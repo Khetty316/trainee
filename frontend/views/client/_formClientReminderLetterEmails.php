@@ -365,8 +365,8 @@ $year = date('Y');
                     '<td class="text-center row-number">0</td>' +
                     '<td>' + displayName + '</td>' +
                     '<td class="text-center">' +
-                    '<button type="button" class="btn btn-primary btn-sm view-selected-file" data-index="' + index + '">View</button> ' +
-                    '<button type="button" class="btn btn-danger btn-sm remove-selected-file" data-index="' + index + '">Remove</button>' +
+                    '<button type="button" class="btn btn-primary btn-sm view-selected-file" data-index="' + index + '">View  <i class="fas fa-eye"></i></button> ' +
+                    '<button type="button" class="btn btn-danger btn-sm remove-selected-file" data-index="' + index + '">Remove <i class="fas fa-minus-circle"></i></button>' +
                     '</td>' +
                     '</tr>'
                     );

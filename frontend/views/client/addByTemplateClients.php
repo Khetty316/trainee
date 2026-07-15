@@ -3,8 +3,8 @@
 use yii\helpers\Html;
 use yii\bootstrap4\ActiveForm;
 
-$this->params['breadcrumbs'][] = ['label' => 'Clients','url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => 'Debt Summary','url' => ['index-general-client-debt']];
+$this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Debt Summary', 'url' => ['index-general-client-debt']];
 $this->params['breadcrumbs'][] = 'Import Outstanding Balance';
 ?>
 
@@ -16,7 +16,9 @@ $this->params['breadcrumbs'][] = 'Import Outstanding Balance';
 
             <div class="col-md-4">
                 <?php
-                $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data'],]);
+                $form = ActiveForm::begin([
+                    'options' => ['enctype' => 'multipart/form-data'],
+                ]);
 
                 echo $form->field($clientDebt, 'tk_group_code')
                         ->dropDownList(frontend\models\common\RefCompanyGroupList::COMPANYGROUP3);
@@ -39,7 +41,7 @@ $this->params['breadcrumbs'][] = 'Import Outstanding Balance';
                     10 => 'October',
                     11 => 'November',
                     12 => 'December',
-                        ], ['prompt' => 'Select Month','required' => true])
+                        ], ['prompt' => 'Select Month', 'required' => true])
                 ?>
             </div>
 
@@ -63,8 +65,16 @@ $this->params['breadcrumbs'][] = 'Import Outstanding Balance';
 
             <div class="col-md-12">
                 <?php
-                echo Html::fileInput('excelTemplate', null, ['accept' => '.xls,.xlsx','required' => true,]);
-                echo Html::submitButton('Upload Excel <i class="fas fa-upload"></i>',['class' => 'btn btn-success mb-2 mt-1']);
+                echo Html::fileInput('excelTemplate', null, [
+                    'accept' => '.xls,.xlsx',
+                    'required' => true,
+                ]);
+
+                echo Html::submitButton(
+                        'Upload Excel <i class="fas fa-upload"></i>',
+                        ['class' => 'btn btn-success mb-2 mt-1']
+                );
+
                 ActiveForm::end();
                 ?>
             </div>

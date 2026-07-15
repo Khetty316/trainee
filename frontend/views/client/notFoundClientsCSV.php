@@ -1,5 +1,5 @@
 <?php
-
+//debug
 echo "<table border='1' style='font-size:14px;'>";
 echo "<tr>
         <th>No.</th>

@@ -58,6 +58,13 @@ $this->registerCss("
         <?= $newEntryBtn ?>
         <?= Html::a('Import Outstanding Balance <i class="fas fa-upload"></i>', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
     </p>
 
     <?php

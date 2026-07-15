@@ -1,5 +1,7 @@
 <?php
 
+//debug
+
 namespace frontend\models\client;
 
 use Yii;
@@ -7,6 +9,7 @@ use frontend\models\common\RefArea;
 use frontend\models\common\RefCountries;
 use common\models\User;
 use frontend\models\common\RefState;
+
 //
 /**
  * This is the model class for table "clients".
@@ -42,11 +45,13 @@ use frontend\models\common\RefState;
  *
  * @property RefArea $area0
  * @property ClientContact[] $clientContacts
+ * @property ClientContactReceiver[] $clientContactReceivers
  * @property ClientDebt[] $clientDebts
  * @property ClientEmails[] $clientEmails
  * @property RefCountries $country0
  * @property User $createdBy
  * @property RefState $state0
+ * @property InventoryDeliveryOrder[] $inventoryDeliveryOrders
  * @property ProjectProductionMaster[] $projectProductionMasters
  * @property ProjectQClients[] $projectQClients
  * @property RefState $state0
@@ -73,7 +78,7 @@ class Clients extends \yii\db\ActiveRecord {
     public function rules() {
         return [
             [['client_code', 'company_name'], 'required'],
-            [['current_outstanding_balance'], 'number'],
+            [['tk_balance', 'tke_balance', 'tkm_balance', 'current_outstanding_balance'], 'number'],
             [['area', 'state', 'created_by', 'updated_by'], 'integer'],
             [['created_at', 'updated_at', 'company_registration_no', 'company_tin'], 'safe'],
             [['client_code'], 'string', 'max' => 10],
@@ -129,6 +134,15 @@ class Clients extends \yii\db\ActiveRecord {
             'tke_balance' => 'Current Outstanding Balance (TKE)',
             'tkm_balance' => 'Current Outstanding Balance (TKM)',
         ];
+    }
+
+    /**
+     * Gets query for [[ClientContactReceivers]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getClientContactReceivers() {
+        return $this->hasMany(ClientContactReceiver::className(), ['client_id' => 'id']);
     }
 
     /**
@@ -228,7 +242,7 @@ class Clients extends \yii\db\ActiveRecord {
 
     public static function getAutocompleteList() {
         $data = Clients::find()
-                ->select(['company_name as value', 'company_name as label', 'id as id','client_code as client_code'])
+                ->select(['company_name as value', 'company_name as label', 'id as id', 'client_code as client_code'])
                 ->asArray()
                 ->orderBy(['company_name' => SORT_ASC])
                 ->all();

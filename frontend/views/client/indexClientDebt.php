@@ -1,5 +1,6 @@
 <?php
 
+//debug
 use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
@@ -51,13 +52,9 @@ $this->registerCss("
     ?>
 
     <div class="table-responsive">
-        <p>
-            <button type="button"
-                    class="btn btn-primary"
-                    onclick="resetDebtFilters()">
-                Reset Filter <i class="fas fa-search-minus"></i>
-            </button>
-        </p>
+        <button type="button" class="btn btn-primary mb-1" onclick="resetDebtFilters()">
+            Reset Filter <i class="fas fa-search-minus"></i>
+        </button>
 
         <?php
         $this->registerJs("
@@ -293,11 +290,8 @@ $this->registerCss("
 </style>
 
 <script>
-
     function resetDebtFilters() {
-
         window.location.href =
                 'view-client?id=<?= Yii::$app->request->get("id") ?>#debt';
     }
-
 </script>

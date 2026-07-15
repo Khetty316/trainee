@@ -65,7 +65,6 @@ if ($model->country) {
         <div class="col-sm-12 col-md-3">
             <?=
             $form->field($model, 'ac_no_tk')->textInput([
-                
                 'class' => 'text-right form-control'
             ])
             ?>
@@ -74,7 +73,6 @@ if ($model->country) {
         <div class="col-sm-12 col-md-3">
             <?=
             $form->field($model, 'ac_no_tke')->textInput([
-               
                 'class' => 'text-right form-control'
             ])
             ?>
@@ -83,7 +81,6 @@ if ($model->country) {
         <div class="col-sm-12 col-md-3">
             <?=
             $form->field($model, 'ac_no_tkm')->textInput([
-                
                 'class' => 'text-right form-control'
             ])
             ?>
@@ -110,7 +107,7 @@ if ($model->country) {
 
         </div>
         <div class="col-sm-12 col-md-6 col-lg-3">
-            <?php //= $form->field($model, 'area')->textInput()->label(false) ?>
+            <?php //= $form->field($model, 'area')->textInput()->label(false)  ?>
             <?php
             echo $form->field($model, 'areaName')->widget(\yii\jui\AutoComplete::className(), [
                 'clientOptions' => [
@@ -132,7 +129,7 @@ if ($model->country) {
             ?>
         </div>
         <div class="col-sm-12 col-md-6 col-lg-3">
-            <?php //= $form->field($model, 'state')->textInput()  ?>
+            <?php //= $form->field($model, 'state')->textInput()   ?>
             <?php
             echo $form->field($model, 'stateName')->widget(\yii\jui\AutoComplete::className(), [
                 'clientOptions' => [
@@ -148,7 +145,7 @@ if ($model->country) {
             ?>
         </div>
         <div class="col-sm-12 col-md-6 col-lg-3">
-            <?php //= $form->field($model, 'country')->textInput(['maxlength' => true])  ?>
+            <?php //= $form->field($model, 'country')->textInput(['maxlength' => true])   ?>
             <?php
             echo $form->field($model, 'countryName')->widget(\yii\jui\AutoComplete::className(), [
                 'clientOptions' => [
@@ -164,7 +161,7 @@ if ($model->country) {
             ?>
         </div>
     </div>
-    <legend class="w-auto px-2 m-0">Contact:</legend>
+    <legend class="w-auto px-2 m-0">Contact (For Quotation):</legend>
     <table class="table table-sm table-borderless" width="100%">
         <!--<div class="form-row">-->
         <thead class="table-dark">
@@ -177,7 +174,7 @@ if ($model->country) {
             </tr>
         </thead>
 <!--<tr>-->
-        <tbody id="listTBody">
+        <tbody id="contactTBody">
             <?php if (!empty($contactModels)) : ?>
                 <?php foreach ($contactModels as $i => $contactModel) : ?>
                     <?=
@@ -202,8 +199,53 @@ if ($model->country) {
         <tfoot>
             <tr>
                 <td>
-                    <a Add Row class='btn btn-primary' href='javascript:addRow()'> 
-                        Add Row <i class="fas fa-plus-circle"></i></a> 
+                    <a class='btn btn-primary' href='javascript:addContactRow()'> 
+                        Add Row <i class="fas fa-plus-circle"></i></a>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <legend class="w-auto px-2 m-0">Contact (Receiver):</legend>
+    <table class="table table-sm table-borderless" width="100%">
+        <!--<div class="form-row">-->
+        <thead class="table-dark">
+            <tr>
+                <th class="text-center">Name</th>
+                <th class="text-center">Position</th>
+                <th class="text-center">Contact number</th>
+                <th class="text-center">Fax</th>
+                <th class="text-center">Email address</th>
+            </tr>
+        </thead>
+<!--<tr>-->
+        <tbody id="receiverTBody">
+            <?php if (!empty($receiverModels)) : ?>
+                <?php foreach ($receiverModels as $i => $receiverModel) : ?>
+                    <?=
+                    $this->render('_formClientReceiver_row', [
+                        'contact' => $receiverModel,
+                        'index' => $i,
+                        'isUpdate' => $isUpdate
+                    ])
+                    ?>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <?=
+                $this->render('_formClientReceiver_row', [
+                    'contacts' => $receivers,
+                    'contactModels' => $receivers,
+                    'index' => 0,
+                    'isUpdate' => $isUpdate
+                ])
+                ?>
+            <?php endif; ?>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <a class='btn btn-primary' href='javascript:addReceiverRow()'> 
+                        Add Row <i class="fas fa-plus-circle"></i></a>
                 </td>
             </tr>
         </tfoot>
@@ -231,22 +273,19 @@ if ($model->country) {
 </style>
 <script>
     let currentKey = <?= count($contactModels) ?>;
-    let isValidating = false;
-    let isSubmitting = false; // Add this flag
+    let receiverKey = <?= count($receiverModels) ?>;
 
-    function addRow() {
+    let isValidating = false;
+    let isSubmitting = false;
+
+    function addContactRow() {
         $.ajax({
             url: '<?= \yii\helpers\Url::to(['ajax-add-contact']) ?>',
             type: 'GET',
-            data: {
-                key: currentKey,
-                isUpdate: '<?= $isUpdate ?>'
-            },
+            data: {key: currentKey, isUpdate: '<?= $isUpdate ?>'},
             success: function (response) {
-                $('#listTBody').append($.trim(response));
+                $('#contactTBody').append($.trim(response));
                 currentKey++;
-
-                // Attach email validation to newly added row
                 attachEmailValidation();
             },
             error: function () {
@@ -255,7 +294,22 @@ if ($model->country) {
         });
     }
 
-    // Helper function to show error message
+    function addReceiverRow() {
+        $.ajax({
+            url: '<?= \yii\helpers\Url::to(['ajax-add-receiver']) ?>',
+            type: 'GET',
+            data: {key: receiverKey, isUpdate: '<?= $isUpdate ?>'},
+            success: function (response) {
+                $('#receiverTBody').append($.trim(response));
+                receiverKey++;
+                attachEmailValidation();
+            },
+            error: function () {
+                alert('Unable to add new receiver row.');
+            }
+        });
+    }
+
     function showError(inputElement, errorElementId, message) {
         const errorElement = document.getElementById(errorElementId);
         if (errorElement) {
@@ -266,7 +320,6 @@ if ($model->country) {
         }
     }
 
-    // Helper function to show success
     function showSuccess(inputElement, errorElementId) {
         const errorElement = document.getElementById(errorElementId);
         if (errorElement) {
@@ -276,7 +329,6 @@ if ($model->country) {
         }
     }
 
-    // Helper function to clear validation
     function clearValidation(inputElement, errorElementId) {
         const errorElement = document.getElementById(errorElementId);
         if (errorElement) {
@@ -285,94 +337,57 @@ if ($model->country) {
         }
     }
 
-    // Helper function to reset button state
-    function resetButtonState() {
-        const $submitButton = $('form').find('button[type="submit"], input[type="submit"]');
-        if (isValidating && !isSubmitting) { // Check both flags
-            $submitButton.prop('disabled', false).text('Save');
-            isValidating = false;
-        }
-    }
-
-    // Validate single email
     async function validateEmail(email) {
-        if (!email || email.trim() === '') {
-            return {success: true}; // Empty is valid (optional field)
-        }
-
+        if (!email || email.trim() === '')
+            return {success: true};
         try {
-            const response = await $.post('<?= \yii\helpers\Url::to(['/projectqrevision/check-email-exists']) ?>', {
-                email_address: email
-            });
-            return response;
+            return await $.post(
+                    '<?= \yii\helpers\Url::to(['/projectqrevision/check-email-exists']) ?>',
+                    {email_address: email}
+            );
         } catch (error) {
-            return {
-                success: false,
-                error: {type: 'Server error. Please try again.'}
-            };
+            return {success: false, error: {type: 'Server error. Please try again.'}};
         }
     }
 
-    // Attach email validation to all email inputs using event delegation
     function attachEmailValidation() {
-        // Remove old event listener to prevent duplicates
-        $('#listTBody').off('input', '.email-input');
-
-        // Use event delegation for dynamic rows
-        $('#listTBody').on('input', '.email-input', function () {
-            const key = $(this).data('key');
-            clearValidation(this, 'email-error-' + key);
-
-            // Reset button to "Save" when user starts typing
-            if (!isSubmitting) { // Only reset if not currently submitting
-                resetButtonState();
-            }
+        $('#contactTBody, #receiverTBody').off('input', '.email-input');
+        $('#contactTBody, #receiverTBody').on('input', '.email-input', function () {
+            const errorId = $(this).data('error-id');
+            clearValidation(this, errorId);
         });
-    }  
+    }
 
-    // Also attach to form inputs outside the table
-    $(document).on('input', '.email-input', function () {
-        const key = $(this).data('key');
-        if (key !== undefined && !isSubmitting) {
-            clearValidation(this, 'email-error-' + key);
-            resetButtonState();
-        }
-    });
-
-    // Validate all emails on form submit
+// =========================
+// SINGLE FORM SUBMIT HANDLER
+// =========================
     $('form').on('submit', async function (e) {
         e.preventDefault();
 
-        // Prevent double submission
-        if (isSubmitting) {
-            console.log('Form already submitting, ignoring duplicate submit');
+        if (isSubmitting)
             return false;
-        }
 
-        let isValid = true;
+        isSubmitting = true;
+
         const $form = $(this);
         const $submitButton = $form.find('button[type="submit"], input[type="submit"]');
-        const originalText = 'Save';
-
-        // Show loading state
         $submitButton.prop('disabled', true).text('Validating...');
+
         isValidating = true;
+        let isValid = true;
 
-        // Get all email inputs
         const emailInputs = $('.email-input');
-
         for (let i = 0; i < emailInputs.length; i++) {
             const input = emailInputs[i];
-            const key = $(input).data('key');
+            const errorId = $(input).data('error-id');
             const email = $(input).val();
 
             if (email && email.trim() !== '') {
                 const result = await validateEmail(email);
-
                 if (result.success) {
-                    showSuccess(input, 'email-error-' + key);
+                    showSuccess(input, errorId);
                 } else {
-                    showError(input, 'email-error-' + key, result.error?.type || 'Invalid email address');
+                    showError(input, errorId, result.error?.type || 'Invalid email address');
                     isValid = false;
                 }
             }
@@ -380,27 +395,21 @@ if ($model->country) {
 
         isValidating = false;
 
-        // If all valid, submit the form
         if (isValid) {
-            // Set submitting flag BEFORE submission
-            isSubmitting = true;
-
-            // Change button text to indicate submission
             $submitButton.text('Saving...');
-
-            // Submit the form natively (without triggering this event again)
             $form[0].submit();
         } else {
-            // Restore button state if validation failed
-            $submitButton.prop('disabled', false).text(originalText);
+            isSubmitting = false;
+            $submitButton.prop('disabled', false).text('Save');
             alert('Please fix the invalid email addresses before saving.');
         }
 
-        return false; // Always prevent default
+        return false;
     });
 
-    // Initialize validation on page load
     $(document).ready(function () {
         attachEmailValidation();
     });
 </script>
+
+

@@ -40,10 +40,30 @@ $this->registerCss("
 ?>
 
 <div class="general-debt-reminder-letter-email-log-index">
+
     <h3><?= Html::encode($this->title) ?></h3>
+
     <?= $this->render('_navbarClient', ['pageKey' => '3']) ?>
-    <p> <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?></p>
-<!--    <div class="table-responsive">-->
+
+    <p>
+        <?=
+        Html::a(
+                'Reset Filter <i class="fas fa-search-minus"></i>',
+                '?',
+                ['class' => 'btn btn-primary']
+        )
+        ?>
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
+    </p>
+
+    <!--<div class="table-responsive">-->
+
         <?=
         GridView::widget([
             'layout' => "{summary}\n{pager}\n{items}\n{pager}",
@@ -59,7 +79,9 @@ $this->registerCss("
             'tableOptions' => [
                 'class' => 'table table-striped table-bordered table-sm'
             ],
-            'columns' => [['class' => 'yii\grid\SerialColumn'], [
+            'columns' => [
+                ['class' => 'yii\grid\SerialColumn'],
+                [
                     'attribute' => 'client_code',
                     'label' => 'Client Code',
                     'enableSorting' => true,
@@ -221,4 +243,4 @@ $this->registerCss("
         ?>
 
 <!--    </div>-->
-</div>
+    </div>

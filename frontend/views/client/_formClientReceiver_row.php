@@ -1,6 +1,6 @@
 <?php
 
-//_formClient_row
+//_formClientReceiver_row
 use yii\helpers\Html;
 use yii\bootstrap4\ActiveForm;
 
@@ -24,16 +24,16 @@ $key = $contact->id ?? $index;
         Html::activeTextInput($contact, "[$key]email_address", [
             'class' => 'form-control email-input',
             'maxlength' => true,
-            'id' => 'email-input-contact-' . $key,
+            'id' => 'email-input-receiver-' . $key,
             'data-key' => $key,
-            'data-error-id' => 'email-error-contact-' . $key
+            'data-error-id' => 'email-error-receiver-' . $key
         ])
         ?>
-        <div id="email-error-contact-<?= $key ?>" class="invalid-feedback" style="display: none;"></div>
+        <div id="email-error-receiver-<?= $key ?>" class="invalid-feedback" style="display: none;"></div>
     </td>
     <td>
         <button type="button" class="btn btn-danger" onclick="$(this).closest('tr').remove()">
-            Delete <i class="fas fa-minus-circle"></i>
+            <i class="fas fa-minus-circle"></i>
         </button>
     </td>
 </tr>

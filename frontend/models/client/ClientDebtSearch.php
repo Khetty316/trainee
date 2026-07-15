@@ -1,5 +1,7 @@
 <?php
 
+//debug
+
 namespace frontend\models\client;
 
 use yii\base\Model;

@@ -1,5 +1,6 @@
 <?php
 
+//debug
 use yii\helpers\Html;
 use yii\widgets\DetailView;
 use common\models\User;
@@ -159,10 +160,7 @@ $this->params['breadcrumbs'][] = $this->title;
         </button>
 
         <?php
-        if (MyCommonFunction::checkRoles([
-                    AuthItem::ROLE_Client_Module_Director,
-                    AuthItem::ROLE_Client_Module_Finance,
-                ])) {
+        if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) {
             ?>
             <button class="tab-btn" data-tab="emailLog"
                     onclick="showTab('emailLog')">
@@ -173,9 +171,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <!-- client contacts -->
     <div id="contact" class="tab-content">
-        <h3 style="margin-top: 0; margin-bottom: 15px;">
-            Contact Person:
-        </h3>
+        <legend class="w-auto px-2 m-0">For Quotation:</legend>
 
         <table class="table table-sm mt-2">
 
@@ -201,6 +197,31 @@ $this->params['breadcrumbs'][] = $this->title;
                 <?php endforeach; ?>
             </tbody>
 
+        </table>
+
+        <legend class="w-auto px-2 m-0">Receiver:</legend>
+        <table class="table table-sm mt-2" width="100%">
+            <thead class="table-dark">
+                <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Position</th>
+                    <th class="text-center">Contact number</th>
+                    <th class="text-center">Fax</th>
+                    <th class="text-center">Email address</th>
+                </tr>
+            </thead>
+            <tbody id="listTBody">   
+                <?php foreach ($receivers as $i => $contact) : ?>
+                    <?php $key = $contact->id ?? $index; ?>
+                    <tr data-index="<?= $key ?>">
+                        <td class="text-center"><?= $contact->name ?></td>
+                        <td class="text-center"><?= $contact->position ?></td>
+                        <td class="text-center"><?= $contact->contact_number ?></td>
+                        <td class="text-center"><?= $contact->fax ?></td>
+                        <td class="text-center"><?= $contact->email_address ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
         </table>
     </div>
 
@@ -228,74 +249,74 @@ $this->params['breadcrumbs'][] = $this->title;
 
 <!--    <?
 DetailView::widget([
-'model' => $model,
-'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
-'template' => "<tr><th style='width: 30%;'>{label}</th><td>{value}</td></tr>",
-'options' => ['class' => 'table table-striped table-bordered detail-view table-sm'],
-'attributes' => [
+    'model' => $model,
+    'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
+    'template' => "<tr><th style='width: 30%;'>{label}</th><td>{value}</td></tr>",
+    'options' => ['class' => 'table table-striped table-bordered detail-view table-sm'],
+    'attributes' => [
 //                    'contact_person',
-    [
-        'attribute' => 'contact_person',
-        'format' => 'raw',
-        'value' => function ($model) {
-            $contacts = $model->clientContacts;
-            if (!$contacts) return '<span class="text-muted">(no name)</span>';
-            
-            $nameList = [];
-            foreach ($contacts as $contact) {
-                if (!empty($contact->name))  $nameList[] = htmlspecialchars($contact->name);
-                else    $nameList[] = '<span class="text-muted">(no name)</span>';
-            }
-            return implode('<br>', $nameList);
-        },
-    ],
+        [
+            'attribute' => 'contact_person',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $contacts = $model->clientContacts;
+                if (!$contacts) return '<span class="text-muted">(no name)</span>';
+                
+                $nameList = [];
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->name))  $nameList[] = htmlspecialchars($contact->name);
+                    else    $nameList[] = '<span class="text-muted">(no name)</span>';
+                }
+                return implode('<br>', $nameList);
+            },
+        ],
 //            'contact_position',
-    [
-        'attribute' => 'contact_position',
-        'format' => 'raw',
-        'value' => function ($model) {
-            $contacts = $model->clientContacts;
-            if (!$contacts) return '<span class="text-muted">(no position)</span>';
-            
-            $positionList = [];
-            foreach ($contacts as $contact) {
-                if (!empty($contact->position))  $positionList[] = htmlspecialchars($contact->position);
-                else    $positionList[] = '<span class="text-muted">(no position)</span>';
+        [
+            'attribute' => 'contact_position',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $contacts = $model->clientContacts;
+                if (!$contacts) return '<span class="text-muted">(no position)</span>';
+                
+                $positionList = [];
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->position))  $positionList[] = htmlspecialchars($contact->position);
+                    else    $positionList[] = '<span class="text-muted">(no position)</span>';
+                }
+                return implode('<br>', $positionList);
             }
-            return implode('<br>', $positionList);
-        }
-    ],
+        ],
 //            'contact_number',
-    [
-        'attribute' => 'contact_number',
-        'format' => 'raw',
-        'value' => function ($model) {
-            $contacts = $model->clientContacts;
-            if (!$contacts) return '<span class="text-muted">(no contact number)</span>';
-            
-            $numList = [];
-            foreach ($contacts as $contact) {
-                if (!empty($contact->contact_number))  $numList[] = htmlspecialchars($contact->contact_number);
-                else    $numList[] = '<span class="text-muted">(no contact number)</span>';
+        [
+            'attribute' => 'contact_number',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $contacts = $model->clientContacts;
+                if (!$contacts) return '<span class="text-muted">(no contact number)</span>';
+                
+                $numList = [];
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->contact_number))  $numList[] = htmlspecialchars($contact->contact_number);
+                    else    $numList[] = '<span class="text-muted">(no contact number)</span>';
+                }
+                return implode('<br>', $numList);
             }
-            return implode('<br>', $numList);
-        }
-    ],
+        ],
 //            'contact_email',
-    [
-        'attribute' => 'contact_email',
-        'format' => 'raw',
-        'value' => function ($model) {
-            $contacts = $model->clientContacts;
-            if (!$contacts) return '<span class="text-muted">(no email)</span>';
+        [
+            'attribute' => 'contact_email',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $contacts = $model->clientContacts;
+                if (!$contacts) return '<span class="text-muted">(no email)</span>';
+                
+                $emailList = [];
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->email_address))  $emailList[] = htmlspecialchars($contact->email_address);
+                    else    $emailList[] = '<span class="text-muted">(no email)</span>';
+                }
+                return implode('<br>', $emailList);
             
-            $emailList = [];
-            foreach ($contacts as $contact) {
-                if (!empty($contact->email_address))  $emailList[] = htmlspecialchars($contact->email_address);
-                else    $emailList[] = '<span class="text-muted">(no email)</span>';
-            }
-            return implode('<br>', $emailList);
-        
 //                $emails = $model->getEmails($model->id);
 //                foreach ($emails as $email) {
 //                    if (!empty($email)) $emails = htmlspecialchars($email);
@@ -305,24 +326,24 @@ DetailView::widget([
 //                if (!$emails) 
 //                    $emails = array_map(fn($c) => htmlspecialchars($c->email_address), $model->clientContacts);
 //                    return $emails ? implode('<br>', $emails) : '<span class="text-muted">(no email)</span>';   
-        },
+            },
+        ],
+        [
+            'attribute' => 'contact_fax',
+            'format' => 'raw',
+            'value' => function ($model) {
+                $contacts = $model->clientContacts;
+                if (!$contacts) return '<span class="text-muted">(no fax)</span>';
+                
+                $faxList = [];
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->fax))  $faxList[] = htmlspecialchars($contact->fax);
+                    else    $faxList[] = '<span class="text-muted">(no fax)</span>';
+                }
+                return implode('<br>', $faxList);
+            },
+        ],
     ],
-    [
-        'attribute' => 'contact_fax',
-        'format' => 'raw',
-        'value' => function ($model) {
-            $contacts = $model->clientContacts;
-            if (!$contacts) return '<span class="text-muted">(no fax)</span>';
-            
-            $faxList = [];
-            foreach ($contacts as $contact) {
-                if (!empty($contact->fax))  $faxList[] = htmlspecialchars($contact->fax);
-                else    $faxList[] = '<span class="text-muted">(no fax)</span>';
-            }
-            return implode('<br>', $faxList);
-        },
-    ],
-],
 ])
 ?>-->
 </div>
@@ -451,17 +472,6 @@ DetailView::widget([
         transition: all 0.2s ease;
     }
 
-    .email-log-wrapper {
-        overflow-x: auto;
-    }
-
-    .email-log-wrapper .grid-view {
-        overflow: visible;
-    }
-
-    .email-log-wrapper table {
-        min-width: 1050px;
-    }
 </style>
 
 

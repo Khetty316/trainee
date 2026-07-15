@@ -5,11 +5,11 @@ use yii\helpers\Html;
 use yii\jui\DatePicker;
 ?>
 
-<div id="emailLog">
+<div id="emailLog" class="table-responsive">
     <?=
     Html::a('Reset Filter <i class="fas fa-search-minus"></i>',
             ['view-client', 'id' => Yii::$app->request->get('id'), '#' => 'emailLog'],
-            ['class' => 'btn btn-primary'])
+            ['class' => 'btn btn-primary mb-1'])
     ?> 
     <?php
     $this->registerJs("

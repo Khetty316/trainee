@@ -1,5 +1,5 @@
 <?php
-
+//debug
 use yii\bootstrap4\ActiveForm;
 use yii\helpers\Html;
 
@@ -12,12 +12,10 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 ?>
 <h4><?= Html::encode($this->title) ?></h4>
 
-<?php
-$form = ActiveForm::begin([
+<?php $form = ActiveForm::begin([
     'method' => 'post',
-    'action' => ['client/process-client-data']
-        ]);
-?>
+    'action' => ['client/process-client-data'] 
+]); ?>
 
 <!--hidden input-->
 <?= Html::hiddenInput('companyGroup', $companyGroup) ?>
@@ -38,11 +36,11 @@ $form = ActiveForm::begin([
 
     <thead>
         <tr>
-            <th style="width:40px;">#</th>
+            <th style="width:1%">#</th>
             <th>Cust. No</th>
             <th>Name</th>
-            <th style="width:130px;">Balance</th>
-            <th style="width:110px;" class="text-center">Delete</th>
+            <th>Balance</th>
+            <th style="width:1%">Delete</th>
         </tr>
     </thead>
 
@@ -78,28 +76,26 @@ $form = ActiveForm::begin([
                     ?>
                 </td>
 
-                <td style="width:130px;">
+                <td>
                     <?=
                     Html::input(
                             'number',
                             "Clients[balance][$index]",
                             $row['balance'] ?? '',
-                            [
-                                'class' => 'form-control',
-                                'step' => 'any',
-                            ]
+                            ['class' => 'form-control',
+                             'step' => 'any']
                     )
                     ?>
                 </td>
 
-                <td style="width:120px;" class="text-center">
+                <td class="text-center">
                     <button type="button" class="btn btn-danger btn-sm delete-row">
                         Delete <i class="far fa-trash-alt"></i>
                     </button>
                 </td>
             </tr>
 
-<?php endforeach; ?>
+        <?php endforeach; ?>
 
     </tbody>
 

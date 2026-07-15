@@ -79,8 +79,8 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="float-left">
             <?= Html::a('Cancel <i class="fas fa-times"></i>', ['create-reminder-letter-emails', 'client_id' => $model->client_id, 'restore' => 1], ['class' => 'btn btn-danger']) ?>
         </div>
-        <?= Html::submitButton('Save as Draft <i class="fas fa-check"></i>', ['class' => 'btn btn-success', 'name' => 'action', 'value' => 'draft']) ?>
-        <?= Html::submitButton('Process & Send <i class="fas fa-arrow-right"></i>', ['class' => 'btn btn-primary', 'name' => 'action', 'value' => 'send']) ?>
+        <?= Html::submitButton('Save as Draft <i class="fas fa-save"></i>', ['class' => 'btn btn-secondary', 'name' => 'action', 'value' => 'draft']) ?>
+        <?= Html::submitButton('Process & Send <i class="fas fa-check"></i>', ['class' => 'btn btn-success', 'name' => 'action', 'value' => 'send']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>

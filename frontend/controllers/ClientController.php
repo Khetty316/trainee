@@ -11,7 +11,7 @@ use common\models\myTools\FlashHandler;
 use yii\helpers\VarDumper;
 use frontend\models\common\RefCompanyGroupList;
 use frontend\models\client\ClientDebt;
-use frontend\models\client\ClientDebtSeXarch;
+use frontend\models\client\ClientDebtSearch;
 use common\models\myTools\Mydebug;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -30,7 +30,6 @@ use yii\web\JsExpression;
 use common\modules\auth\models\AuthItem;
 use yii\filters\AccessControl;
 use frontend\models\client\ClientReminderLetterEmailDetail;
-use frontend\models\client\ClientDebtSearch;
 
 //debug
 /**
@@ -86,7 +85,10 @@ class ClientController extends Controller {
         $searchModel = new ClientSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        return $this->render('indexClient', ['searchModel' => $searchModel, 'dataProvider' => $dataProvider,]);
+        return $this->render('indexClient', [
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+        ]);
     }
 
     /**
@@ -99,6 +101,11 @@ class ClientController extends Controller {
         $model = $this->findModel($id);
 
         $contacts = \frontend\models\client\ClientContact::find()
+                ->where(['client_id' => $id])
+                ->indexBy('id')
+                ->all();
+
+        $receivers = \frontend\models\client\ClientContactReceiver::find()
                 ->where(['client_id' => $id])
                 ->indexBy('id')
                 ->all();
@@ -125,6 +132,7 @@ class ClientController extends Controller {
         return $this->render('viewClient', [
                     'model' => $model,
                     'contacts' => $contacts,
+                    'receivers' => $receivers,
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
                     'emailLogSearchModel' => $emailLogSearchModel,
@@ -137,88 +145,28 @@ class ClientController extends Controller {
      * If creation is successful, the browser will be redirected to the 'view' page.
      * @return mixed
      */
-//    public function actionCreateClient() {
-//        $model = new \frontend\models\client\Clients();
-//        $contacts = [new \frontend\models\client\ClientContact()]; // start with one row
-//
-//        if ($model->load(Yii::$app->request->post())) {
-//            // dynamically create multiple contact models based on POST
-//            $contacts = \frontend\models\ModelHelper::createMultiple(
-//                    \frontend\models\client\ClientContact::class
-//            );
-//
-//            $email_model = new \frontend\models\projectquotation\QuotationEmails();
-//            $validationErrors = [];
-//            foreach ($contacts as $index => $contact) {
-//                if (!empty($contact->email_address) && !$email_model->validateEmailAddress($contact->email_address)) {
-//                    $contactName = !empty($contact->name) ? $contact->name : "Contact " . ($index + 1);
-//                    $validationErrors[] = "Invalid email address for {$contactName}: {$contact->email_address}";
-//                }
-//            }
-//
-//            // If there are email validation errors, show them and return
-//            if (!empty($validationErrors)) {
-//                foreach ($validationErrors as $error) {
-//                    FlashHandler::err($error);
-//                }
-//
-//                return $this->render('createClient', [
-//                            'model' => $model,
-//                            'contactModels' => $contacts,
-//                            'isUpdate' => false
-//                ]);
-//            }
-//
-//            foreach ($contacts as $contact) {
-//                $contact->client_id = $model->id ?: 0; // or temporary dummy
-//            }
-//
-//            $transaction = Yii::$app->db->beginTransaction();
-//            try {
-//                if ($model->processAndSave()) {
-//                    $apiKey = "ad19915da90114ff03712278f513e26b";
-//                    foreach ($contacts as $contact) {
-//                        $contact->client_id = $model->id; // Update with actual client_id
-//                        if (!$contact->save(false)) {
-//                            throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                        }
-//                    }
-//                    $transaction->commit();
-//                    FlashHandler::success("Client and contacts created successfully.");
-//                    return $this->redirect(['view-client', 'id' => $model->id]);
-//                }
-//            } catch (\Exception $e) {
-//                $transaction->rollBack();
-//                FlashHandler::err($e->getMessage());
-//                return $this->render('createClient', [
-//                            'model' => $model,
-//                            'contactModels' => $contacts,
-//                            'isUpdate' => false
-//                ]);
-//            }
-//        }
-//
-//        return $this->render('createClient', [
-//                    'model' => $model,
-//                    'contactModels' => $contacts ?: [new \frontend\models\client\ClientContact()],
-//                    'isUpdate' => false
-//        ]);
-//    }
-
     public function actionCreateClient() {
         $model = new \frontend\models\client\Clients();
         $contacts = [new \frontend\models\client\ClientContact()];
+        $receivers = [new \frontend\models\client\ClientContactReceiver()];
 
         if ($model->load(Yii::$app->request->post())) {
-            $contacts = \frontend\models\ModelHelper::createMultiple(
+            //receiver
+            $receiverForms = \frontend\models\ModelHelper::createMultiple(
+                    \frontend\models\client\ClientContactReceiver::class
+            );
+            \yii\base\Model::loadMultiple($receiverForms, Yii::$app->request->post());
+
+            //contact for quotation
+            $contactForms = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContact::class
             );
-            \yii\base\Model::loadMultiple($contacts, Yii::$app->request->post());
+            \yii\base\Model::loadMultiple($contactForms, Yii::$app->request->post());
 
             $email_model = new \frontend\models\projectquotation\QuotationEmails();
             $validationErrors = [];
 
-            foreach ($contacts as $index => $contact) {
+            foreach ($contactForms as $index => $contact) {
                 if (!empty($contact->email_address) && !$email_model->validateEmailAddress($contact->email_address)) {
                     $contactName = !empty($contact->name) ? $contact->name : "Contact " . ($index + 1);
                     $validationErrors[] = "Invalid email address for {$contactName}: {$contact->email_address}";
@@ -229,15 +177,39 @@ class ClientController extends Controller {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
             }
+
+            //receivers
+            $validationErrorsReceiver = [];
+
+            foreach ($receiverForms as $index => $receiver) {
+                if (!empty($receiver->email_address) && !$email_model->validateEmailAddress($receiver->email_address)) {
+                    $receiverName = !empty($receiver->name) ? $receiver->name : "Receiver " . ($index + 1);
+                    $validationErrorsReceiver[] = "Invalid email address for {$receiverName}: {$receiver->email_address}";
+                }
+            }
+
+            if (!empty($validationErrorsReceiver)) {
+                foreach ($validationErrorsReceiver as $errorReceiver) {
+                    FlashHandler::err($errorReceiver);
+                }
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
+            }
+
             $transaction = Yii::$app->db->beginTransaction();
             try {
                 if ($model->processAndSave()) {
-                    foreach ($contacts as $contact) {
+                    foreach ($contactForms as $contact) {
                         $contact->client_id = $model->id;
                         if (!$contact->save(false)) {
-                            throw new \Exception("Failed throwsaving contact: " . json_encode($contact->errors));
+                            throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
+                        }
+                    }
+                    foreach ($receiverForms as $receiver) {
+                        $receiver->client_id = $model->id;
+                        if (!$receiver->save(false)) {
+                            throw new \Exception("Failed saving receiver: " . json_encode($receiver->errors));
                         }
                     }
                     $transaction->commit();
@@ -249,10 +221,10 @@ class ClientController extends Controller {
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 FlashHandler::err($e->getMessage());
-                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
             }
         }
-        return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => false]);
+        return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
     }
 
     /**
@@ -262,74 +234,7 @@ class ClientController extends Controller {
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
-    //updated by khetty, 15/11/2025, 17/4/2026 - got bug validation failed!
-//    public function actionUpdateClient($id) {
-//        $model = $this->findModel($id);
-//        $existingContacts = \frontend\models\client\ClientContact::find()
-//                ->where(['client_id' => $id])
-//                ->indexBy('id')
-//                ->all();
-//
-//        if ($model->load(Yii::$app->request->post())) {
-//
-//            $oldIDs = array_keys($existingContacts);
-//            $contacts = \frontend\models\ModelHelper::createMultiple(
-//                    \frontend\models\client\ClientContact::class, $existingContacts
-//            );
-//            $email_model = new \frontend\models\projectquotation\QuotationEmails();
-//            $validationErrors = [];
-//            foreach ($contacts as $index => $contact) {
-//                if (!empty($contact->email_address) && !$email_model->validateEmailAddress($contact->email_address)) {
-//                    $validationErrors[] = "Invalid email address for contact " . ($contact->name ?: ($index + 1)) . ": " . $contact->email_address;
-//                }
-//            }
-//            if (!empty($validationErrors)) {
-//                foreach ($validationErrors as $error) {
-//                    FlashHandler::err($error);
-//                }
-//                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
-//            }
-//
-//            foreach ($contacts as $contact) {
-//                $contact->client_id = $model->id;
-//                if (!$contact->save(false)) {
-//                    throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                }
-//            }
-//            $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id'));
-//            $deletedIDs = array_diff($oldIDs, $postedIDs);
-//            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
-//
-//            if ($valid) {
-//                $transaction = Yii::$app->db->beginTransaction();
-//                try {
-//                    if ($model->processAndSave()) {
-//                        if (!empty($deletedIDs)) {
-//                            \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
-//                        }
-//                        foreach ($contacts as $contact) {
-//                            $contact->client_id = $model->id;
-//                            if (!$contact->save(false)) {
-//                                throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                            }
-//                        }
-//                        $transaction->commit();
-//                        FlashHandler::success("Client and contacts updated successfully.");
-//                        return $this->redirect(['view-client', 'id' => $model->id]);
-//                    }
-//                } catch (\Exception $e) {
-//                    $transaction->rollBack();
-//                    FlashHandler::err($e->getMessage());
-//                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
-//                }
-//            } else {
-//                FlashHandler::err("Validation failed.");
-//            }
-//        }
-//        $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-//        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
-//    }
-
+    //updated by khetty, 15/11/2025
     public function actionUpdateClient($id) {
         $model = $this->findModel($id);
         $existingContacts = \frontend\models\client\ClientContact::find()
@@ -337,12 +242,23 @@ class ClientController extends Controller {
                 ->indexBy('id')
                 ->all();
 
+        $existingReceivers = \frontend\models\client\ClientContactReceiver::find()
+                ->where(['client_id' => $id])
+                ->indexBy('id')
+                ->all();
+
         if ($model->load(Yii::$app->request->post())) {
+            //receiver
+            $oldIDsReceiver = array_keys($existingReceivers);
+            $receivers = \frontend\models\ModelHelper::createMultiple(
+                    \frontend\models\client\ClientContactReceiver::class, $existingReceivers
+            );
+
+            //contact
             $oldIDs = array_keys($existingContacts);
             $contacts = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContact::class, $existingContacts
             );
-
             $email_model = new \frontend\models\projectquotation\QuotationEmails();
             $validationErrors = [];
             foreach ($contacts as $index => $contact) {
@@ -350,223 +266,86 @@ class ClientController extends Controller {
                     $validationErrors[] = "Invalid email address for contact " . ($contact->name ?: ($index + 1)) . ": " . $contact->email_address;
                 }
             }
-
             if (!empty($validationErrors)) {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'isUpdate' => true]);
+                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
             }
 
             foreach ($contacts as $contact) {
                 $contact->client_id = $model->id;
+                if (!$contact->save(false)) {
+                    throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
+                }
             }
-
-            // Calculate deleted IDs
             $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id'));
             $deletedIDs = array_diff($oldIDs, $postedIDs);
 
-            // VALIDATE FIRST (before any saves)
-            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
+            //receiver
+            $validationErrorsReceiver = [];
+            foreach ($receivers as $index => $receiver) {
+                if (!empty($receiver->email_address) && !$email_model->validateEmailAddress($receiver->email_address)) {
+                    $validationErrorsReceiver[] = "Invalid email address for contact " . ($receiver->name ?: ($index + 1)) . ": " . $receiver->email_address;
+                }
+            }
+            if (!empty($validationErrorsReceiver)) {
+                foreach ($validationErrorsReceiver as $error) {
+                    FlashHandler::err($error);
+                }
+                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
+            }
+
+            foreach ($receivers as $receiver) {
+                $receiver->client_id = $model->id;
+                if (!$receiver->save(false)) {
+                    throw new \Exception("Failed saving receiver: " . json_encode($receiver->errors));
+                }
+            }
+            $postedIDsReceiver = array_filter(\yii\helpers\ArrayHelper::getColumn($receivers, 'id'));
+            $deletedIDsReceiver = array_diff($oldIDsReceiver, $postedIDsReceiver);
+
+            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($receivers);
 
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
                     if ($model->processAndSave()) {
-                        // Delete removed contacts
                         if (!empty($deletedIDs)) {
                             \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
                         }
-
-                        // Save all contacts (ONLY ONCE, inside transaction)
                         foreach ($contacts as $contact) {
+                            $contact->client_id = $model->id;
                             if (!$contact->save(false)) {
                                 throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
                             }
                         }
-
+                        if (!empty($deletedIDsReceiver)) {
+                            \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
+                        }
+                        foreach ($receivers as $receiver) {
+                            $receiver->client_id = $model->id;
+                            if (!$receiver->save(false)) {
+                                throw new \Exception("Failed saving contact: " . json_encode($receiver->errors));
+                            }
+                        }
                         $transaction->commit();
                         FlashHandler::success("Client and contacts updated successfully.");
                         return $this->redirect(['view-client', 'id' => $model->id]);
-                    } else {
-                        throw new \Exception("Failed to save client: " . json_encode($model->errors));
                     }
                 } catch (\Exception $e) {
                     $transaction->rollBack();
                     FlashHandler::err($e->getMessage());
-                    return $this->render('updateClient', [
-                                'model' => $model,
-                                'contactModels' => $contacts,
-                                'isUpdate' => true
-                    ]);
+                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
                 }
             } else {
-                // Add specific error messages
-                if ($model->hasErrors()) {
-                    foreach ($model->getErrors() as $attribute => $errors) {
-                        FlashHandler::err("Client {$attribute}: " . implode(', ', $errors));
-                    }
-                }
-                foreach ($contacts as $index => $contact) {
-                    if ($contact->hasErrors()) {
-                        foreach ($contact->getErrors() as $attribute => $errors) {
-                            FlashHandler::err("Contact " . ($index + 1) . " {$attribute}: " . implode(', ', $errors));
-                        }
-                    }
-                }
                 FlashHandler::err("Validation failed.");
             }
         }
-
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-        return $this->render('updateClient', [
-                    'model' => $model,
-                    'contactModels' => $contacts,
-                    'isUpdate' => true
-        ]);
+        $receivers = $existingReceivers ?: [new \frontend\models\client\ClientContactReceiver()];
+        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
     }
-
-//    public function actionUpdateClient($id) {
-//        $model = $this->findModel($id);
-//
-//        $existingContacts = \frontend\models\client\ClientContact::find()
-//                ->where(['client_id' => $id])
-//                ->indexBy('id')
-//                ->all();
-//
-//        if ($model->load(Yii::$app->request->post())) {
-//            $oldIDs = array_keys($existingContacts);
-//
-//            $contacts = \frontend\models\ModelHelper::createMultiple(
-//                    \frontend\models\client\ClientContact::class, $existingContacts
-//            );
-//
-////        \yii\base\Model::loadMultiple($contacts, Yii::$app->request->post());
-//
-//            foreach ($contacts as $contact) {
-//                $contact->client_id = $model->id;
-//                if (!$contact->save(false)) {
-//                    throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                }
-//            }
-//            $postedIDs = array_filter(\yii\helpers\ArrayHelper::getColumn($contacts, 'id')); // Debug: check what is in the array
-//            $deletedIDs = array_diff($oldIDs, $postedIDs); // Debug: Check what is in the deleted IDs
-//
-//            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts);
-// 
-//            if ($valid) {
-//                $transaction = Yii::$app->db->beginTransaction();
-//                try {
-//                    if ($model->processAndSave()) {
-//                        if (!empty($deletedIDs)) {
-//                            \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
-//                        }
-//
-////                    $apiKey = "ad19915da90114ff03712278f513e26b";
-//                        foreach ($contacts as $contact) {
-//                            $contact->client_id = $model->id;
-//                            if (!empty($contact->email_address)) {
-////                            $response = @file_get_contents($url);
-////                            if ($response === false) {
-////                                $error = error_get_last();
-////                                Yii::error("Email validation API request failed: " . json_encode($error), __METHOD__);
-////
-////                                $transaction->rollBack();
-////                                FlashHandler::err("Failed to reach the email validation API. Please try again later.");
-////                                return $this->render('createClient', [
-////                                    'model' => $model,
-////                                    'contactModels' => $contacts,
-////                                ]);
-////                            }
-////                            $data = json_decode($response, true);
-//
-//                                $ch = curl_init();
-//
-//                                // Set the URL that you want to GET by using the CURLOPT_URL option.
-//                                curl_setopt($ch, CURLOPT_URL, "https://emailreputation.abstractapi.com/v1/?api_key=b0a1b5fe90f34ba1bf5064296db85cdb&email=" . urlencode($contact->email_address));
-//
-//                                // Set CURLOPT_RETURNTRANSFER so that the content is returned as a variable.
-//                                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//
-//                                // Set CURLOPT_FOLLOWLOCATION to true to follow redirects.
-//                                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-//
-//                                // Execute the request.
-//                                $response = curl_exec($ch);
-//                                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//
-//                                // Close the cURL handle.
-//                                curl_close($ch);
-//
-//                                if ($httpCode !== 200 || !$response) {
-//                                    $transaction->rollBack();
-//                                    FlashHandler::err("Failed to contact email validation API (HTTP $httpCode).");
-//                                    return $this->render('createClient', [
-//                                                'model' => $model,
-//                                                'contactModels' => $contacts,
-//                                    ]);
-//                                }
-//
-//                                $data = json_decode($response, true);
-//                                if (!is_array($data) || empty($data['email_deliverability'])) {
-//                                    $transaction->rollBack();
-//                                    FlashHandler::err("Invalid response from email validation API for {$contact->email_address}");
-//                                    return $this->render('createClient', [
-//                                                'model' => $model,
-//                                                'contactModels' => $contacts,
-//                                                'isUpdate' => false
-//                                    ]);
-//                                }
-//
-//                                $isFormatValid = $data['email_deliverability']['is_format_valid'] ?? null;
-//                                $isSmtpValid = $data['email_deliverability']['is_smtp_valid'] ?? null;
-//                                if (!$isFormatValid || !$isSmtpValid) {
-////                            if (!is_array($data) || isset($data['error']) || !($data['smtp_check'] ?? false)) {
-//                                    FlashHandler::err("The email is either invalid or does not exist in any server: {$contact->email_address}");
-//                                    $contact->email_address = NULL;
-//                                    if (!$contact->save(false)) {
-//                                        throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                                    }
-//                                    $transaction->commit();
-//                                    return $this->render('updateClient', [
-//                                                'model' => $model,
-//                                                'contactModels' => $contacts,
-//                                                'isUpdate' => true
-//                                    ]);
-//                                }
-//                            }
-//
-//                            if (!$contact->save(false)) {
-//                                throw new \Exception("Failed saving contact: " . json_encode($contact->errors));
-//                            }
-//                        }
-//
-//                        $transaction->commit();
-//                        FlashHandler::success("Client and contacts updated successfully.");
-//                        return $this->redirect(['view-client', 'id' => $model->id]);
-//                    }
-//                } catch (\Exception $e) {
-//                    $transaction->rollBack();
-//                    FlashHandler::err($e->getMessage());
-//                    return $this->render('updateClient', [
-//                                'model' => $model,
-//                                'contactModels' => $contacts,
-//                                'isUpdate' => true
-//                    ]);
-//                }
-//            } else {
-//                FlashHandler::err("Validation failed.");
-//            }
-//        }
-//
-//        // Initial render
-//        $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
-//        return $this->render('updateClient', [
-//                    'model' => $model,
-//                    'contactModels' => $contacts,
-//                    'isUpdate' => true
-//        ]);
-//    }
 
     /**
      * Deletes an existing Clients model.
@@ -576,9 +355,15 @@ class ClientController extends Controller {
      * @throws NotFoundHttpException if the model cannot be found
      */
     public function actionDeleteClient($id) {
+        $model = Clients::findOne($id);
+        $clientName = $model->company_name;
         \frontend\models\client\ClientContact::deleteAll(['client_id' => $id]);
-
+        \frontend\models\client\ClientContactReceiver::deleteAll(['client_id' => $id]);
+        ClientDebt::deleteAll(['client_id' => $id]);
+//        \frontend\models\client\ClientEmails::deleteAll(['client_id' => $id]);
+        \frontend\models\projectquotation\ProjectQClients::deleteAll(['client_id' => $id]);
         $this->findModel($id)->delete();
+        FlashHandler::success("Client '{$clientName}' has been deleted successfully.");
 
         return $this->redirect(['index']);
     }
@@ -608,14 +393,15 @@ class ClientController extends Controller {
     public function actionGetClientEmails() {
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
         $clientId = Yii::$app->request->get('clientId');
-
         if (!$clientId) {
             return [];
         }
+
         $client = Clients::findOne($clientId);
         if (!$client) {
             return [];
         }
+
         $emails = $client->getEmailsList();
         $results = [];
         foreach ($emails as $email) {
@@ -632,7 +418,6 @@ class ClientController extends Controller {
         return $this->renderPartial('_formClient_row', ['contact' => $contact, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
 
-    //Mydebug::dumpFileW();
     public function actionAddByTemplateClients() {
         $model = new Clients();
         $clientDebt = new \frontend\models\client\ClientDebt();
@@ -663,26 +448,23 @@ class ClientController extends Controller {
                     } else {
                         $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
                     }
-                    $reader->setReadDataOnly(true);
 
-                    \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(
-                            new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder()
-                    );
+                    $reader->setReadDataOnly(true);
+                    \PhpOffice\PhpSpreadsheet\Cell\Cell::setValueBinder(new \PhpOffice\PhpSpreadsheet\Cell\StringValueBinder());
                     $spreadsheet = $reader->load($excelFile->tempName);
                     $worksheet = $spreadsheet->getActiveSheet();
                     $buffer = [];
 
                     foreach ($worksheet->getRowIterator(4) as $row) {
-
                         $cells = $row->getCellIterator();
                         $cells->setIterateOnlyExistingCells(false);
                         $data = [];
                         $companyGroup = $clientDebt->tk_group_code;
 
                         foreach ($cells as $cell) {
-
                             $data[] = $cell ? $cell->getCalculatedValue() : null;
                         }
+
                         $custNo = isset($data[0]) ? trim((string) $data[0]) : null;
                         $name = isset($data[1]) ? trim((string) $data[1]) : null;
                         $balance = isset($data[15]) ? (float) $data[15] : 0;
@@ -696,13 +478,23 @@ class ClientController extends Controller {
                     Yii::$app->session->set('client_upload_data', $buffer);
 
                     if (!empty($buffer)) {
-                        return $this->render('uploadToConfirmClients', ['buffer' => $buffer, 'companyGroup' => $clientDebt->tk_group_code, 'month' => $clientDebt->month, 'year' => $clientDebt->year,]);
+                        return $this->render('uploadToConfirmClients', [
+                                    'buffer' => $buffer,
+                                    'companyGroup' => $clientDebt->tk_group_code,
+                                    'month' => $clientDebt->month,
+                                    'year' => $clientDebt->year,
+                        ]);
                     } else {
-                        \common\models\myTools\FlashHandler::err("Upload failed: Please ensure that the Excel file contains valid data.");
+                        \common\models\myTools\FlashHandler::err(
+                                "Upload failed: Please ensure that the Excel file contains valid data."
+                        );
                         return $this->redirect(['add-by-template-clients']);
                     }
                 } catch (\Throwable $e) {
-                    Yii::$app->session->setFlash('error', 'Error reading the Excel file: ' . $e->getMessage());
+                    Yii::$app->session->setFlash(
+                            'error',
+                            'Error reading the Excel file: ' . $e->getMessage()
+                    );
                     return $this->redirect(['add-by-template-clients']);
                 }
             }
@@ -711,21 +503,25 @@ class ClientController extends Controller {
         $searchModel = new ClientDebtSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        return $this->render('addByTemplateClients', ['model' => $model, 'clientDebt' => $clientDebt, 'searchModel' => $searchModel, 'dataProvider' => $dataProvider,]);
+        return $this->render('addByTemplateClients', [
+                    'model' => $model,
+                    'clientDebt' => $clientDebt,
+                    'searchModel' => $searchModel,
+                    'dataProvider' => $dataProvider,
+        ]);
     }
 
     public function actionProcessClientData() {
         $companyGroup = Yii::$app->session->get('companyGroup');
         $postClients = Yii::$app->request->post('Clients');
-
         if (!$postClients) {
             return $this->redirect(['add-by-template-clients']);
         }
+
         $custNos = $postClients['cust_no'];
         $names = $postClients['name'];
         $balances = $postClients['balance'];
         $buffer = [];
-
         foreach ($custNos as $index => $custNo) {
             if (empty($custNo))
                 continue;
@@ -734,7 +530,6 @@ class ClientController extends Controller {
         }
 
         Yii::$app->session->set('client_upload_data', $buffer);
-
         return $this->redirect(['check-client-data']);
     }
 
@@ -742,7 +537,13 @@ class ClientController extends Controller {
         $existData = Yii::$app->session->get('exist_data');
         $notExistData = Yii::$app->session->get('not_exist_data');
 
-        return $this->render('checkClientData', ['existData' => $existData, 'notExistData' => $notExistData, 'companyGroup' => Yii::$app->session->get('companyGroup'), 'month' => Yii::$app->session->get('month'), 'year' => Yii::$app->session->get('year'),]);
+        return $this->render('checkClientData', [
+                    'existData' => $existData,
+                    'notExistData' => $notExistData,
+                    'companyGroup' => Yii::$app->session->get('companyGroup'),
+                    'month' => Yii::$app->session->get('month'),
+                    'year' => Yii::$app->session->get('year'),
+        ]);
     }
 
     public function actionCheckClientData() {
@@ -826,25 +627,20 @@ class ClientController extends Controller {
 
             foreach ($existDataChunk as $row) {
                 $clients = $clientMap[$row['cust_no']] ?? [];
-
                 if (empty($clients)) {
                     continue;
                 }
 
                 foreach ($clients as $client) {
-
                     $oldDebt = $debtMap[$client->id] ?? null;
-
                     if ($oldDebt === null) {
                         $insertRows[] = [$client->id, $companyGroup, $year, $month, (float) $row['balance']];
                     } else {
                         $updateRows[] = ['id' => $oldDebt->id, 'balance' => (float) $row['balance']];
                     }
-                    $client->$field = (float) $row['balance'];
-                    $client->current_outstanding_balance = (float) ($client->tk_balance ?? 0) +
-                            (float) ($client->tke_balance ?? 0) +
-                            (float) ($client->tkm_balance ?? 0);
 
+                    $client->$field = (float) $row['balance'];
+                    $client->current_outstanding_balance = (float) ($client->tk_balance ?? 0) + (float) ($client->tke_balance ?? 0) + (float) ($client->tkm_balance ?? 0);
                     $updatedClients[$client->id] = $client;
                 }
             }
@@ -852,7 +648,6 @@ class ClientController extends Controller {
             if (!empty($insertRows)) {
 //                Yii::$app->db->createCommand()->batchInsert('client_debt', ['client_id', 'tk_group_code', 'year', 'month', 'balance'], $insertRows)->execute();
                 foreach ($insertRows as $insert) {
-
                     $newDebt = new ClientDebt();
                     $newDebt->client_id = $insert[0];
                     $newDebt->tk_group_code = $insert[1];
@@ -877,8 +672,8 @@ class ClientController extends Controller {
                 }
             }
 
+            // 4. Get latest record for this client
             foreach ($updatedClients as $client) {
-
                 $latestRecord = ClientDebt::find()
                         ->where(['client_id' => $client->id, 'tk_group_code' => $companyGroup])
                         ->orderBy(['year' => SORT_DESC, 'month' => SORT_DESC])
@@ -889,7 +684,6 @@ class ClientController extends Controller {
                 }
 
                 $client->current_outstanding_balance = ($client->tk_balance ?? 0) + ($client->tke_balance ?? 0) + ($client->tkm_balance ?? 0);
-
                 if (!$client->save(false)) {
                     throw new \Exception("Failed updating client: " . json_encode($client->errors));
                 }
@@ -928,11 +722,8 @@ class ClientController extends Controller {
         $model = new ClientReminderLetterTemplate();
 
         if (Yii::$app->request->post()) {
-
             $transaction = Yii::$app->db->beginTransaction();
-
             try {
-
                 $contentTemplate = Yii::$app->request->post('ClientReminderLetterTemplate');
 
                 $model->letter_name = $contentTemplate["letter_name"];
@@ -965,7 +756,6 @@ class ClientController extends Controller {
     }
 
     public function actionViewClientReminderLetterTemplate($id) {
-
         $model = ClientReminderLetterTemplate::find()->where(['id' => $id])->one();
         return $this->render('viewClientReminderLetterTemplate', ['model' => $model,]);
     }
@@ -974,12 +764,10 @@ class ClientController extends Controller {
         $model = ClientReminderLetterTemplate::find()->where(['id' => $id])->one();
 
         if (Yii::$app->request->post()) {
-
             $transaction = Yii::$app->db->beginTransaction();
 
             try {
                 $contentTemplate = Yii::$app->request->post('ClientReminderLetterTemplate');
-
                 $model->letter_name = $contentTemplate["letter_name"];
 
                 $content = $contentTemplate["content"];
@@ -1012,14 +800,11 @@ class ClientController extends Controller {
 
     public function actionCreateReminderLetterEmails($client_id, $id = null) {
         if ($id === null) {
-
             $model = new ClientReminderLetterEmails();
             $model->client_id = $client_id;
             $model->sender = Yii::$app->user->identity->email;
         } else {
-
             $model = ClientReminderLetterEmails::findOne($id);
-
             if ($model === null) {
                 throw new \yii\web\NotFoundHttpException('Draft not found.');
             }
@@ -1035,15 +820,13 @@ class ClientController extends Controller {
         $keyForm = 'form_data_' . $client_id;
         $keyReminderRows = 'reminder_rows_' . $client_id;
 
-        if (
-                !Yii::$app->request->isPost &&
-                Yii::$app->request->get('restore') != 1
-        ) {
+        if (!Yii::$app->request->isPost && Yii::$app->request->get('restore') != 1) {
             $session->remove($keyPdf);
             $session->remove($keyFiles);
             $session->remove($keyForm);
             $session->remove($keyReminderRows);
         }
+
         if ($id != null && empty($session->get($keyForm))) {
             $formData = $model->attributes;
             $session->set($keyForm, $formData);
@@ -1070,6 +853,7 @@ class ClientController extends Controller {
             $uploadedFiles = $session->get($keyFiles, []);
             $reminderRows = $session->get($keyReminderRows, []);
         }
+
         if (!empty($formData)) {
             $model->attributes = $formData;
         }
@@ -1079,7 +863,6 @@ class ClientController extends Controller {
                 ->all();
 
         if ($model->load(Yii::$app->request->post())) {
-
             $sender = trim($model->sender);
 
             $cc = preg_split('/[\r\n,]+/', $model->Cc);
@@ -1094,25 +877,14 @@ class ClientController extends Controller {
             switch (Yii::$app->request->post('action')) {
 
                 case 'preview':
-                    return $this->previewReminderLetterEmail(
-                                    $model,
-                                    $client_id,
-                                    $session
-                            );
+                    return $this->previewReminderLetterEmail($model, $client_id, $session);
 
                 case 'draft':
-                    return $this->saveReminderLetterDraft(
-                                    $model,
-                                    $client_id,
-                                    $session
-                            );
+                    return $this->saveReminderLetterDraft($model, $client_id, $session);
 
                 case 'send':
-                    return $this->sendReminderLetterEmail(
-                                    $model,
-                                    $client_id,
-                                    $session
-                            );
+                    return $this->sendReminderLetterEmail($model, $client_id, $session);
+
                 default:
                     Yii::$app->session->setFlash('error', 'Invalid action.');
                     return $this->refresh();
@@ -1147,7 +919,6 @@ class ClientController extends Controller {
         $uploadedFileNames = $session->get($keyFiles, []);
 
         foreach ($uploadedFilesInput as $file) {
-
             if (!$file) {
                 continue;
             }
@@ -1184,7 +955,6 @@ class ClientController extends Controller {
         $year = date('Y');
 
         foreach ($reminderRows as $index => $row) {
-
             if (empty($row['template_content'])) {
                 continue;
             }
@@ -1197,7 +967,7 @@ class ClientController extends Controller {
 
             $companyGroup = $row['company_group'];
 
-            $pdfName = 'Reminder Letter_' .
+            $pdfName = 'Reminder_Letter_' .
                     $companyGroup . '_' .
                     $clientName . '_' .
                     $month . '_' .
@@ -1206,10 +976,7 @@ class ClientController extends Controller {
             $pdfPath = $pathFolder . $pdfName;
 
             if (empty($companyGroup)) {
-                Yii::$app->session->setFlash(
-                        'error',
-                        'Please select a Company Group for Reminder Letter #' . ($index + 1) . '.'
-                );
+                Yii::$app->session->setFlash('error', 'Please select a Company Group for Reminder Letter #' . ($index + 1) . '.');
 
                 return $this->redirect([
                             'create-reminder-letter-emails',
@@ -1218,15 +985,10 @@ class ClientController extends Controller {
                 ]);
             }
 
-            $company = RefCompanyGroupList::find()
-                    ->where(['code' => $companyGroup])
-                    ->one();
+            $company = RefCompanyGroupList::find()->where(['code' => $companyGroup])->one();
 
             if ($company === null) {
-                Yii::$app->session->setFlash(
-                        'error',
-                        'Invalid Company Group selected for Reminder Letter #' . ($index + 1) . '.'
-                );
+                Yii::$app->session->setFlash('error', 'Invalid Company Group selected for Reminder Letter #' . ($index + 1) . '.');
 
                 return $this->redirect([
                             'create-reminder-letter-emails',
@@ -1235,11 +997,7 @@ class ClientController extends Controller {
                 ]);
             }
 
-            $this->generateReminderLetterPDF(
-                    $pdfContent,
-                    $pdfPath,
-                    $companyGroup
-            );
+            $this->generateReminderLetterPDF($pdfContent, $pdfPath, $companyGroup);
 
             $pdfFiles[] = $pdfName;
         }
@@ -1251,10 +1009,7 @@ class ClientController extends Controller {
         $session->set($keyFiles, $uploadedFileNames);
         $session->set($keyForm, $formData);
 
-        return $this->redirect([
-                    'confirm-reminder-letter-emails',
-                    'client_id' => $client_id,
-        ]);
+        return $this->redirect(['confirm-reminder-letter-emails', 'client_id' => $client_id]);
     }
 
     private function saveReminderLetterDraft($model, $client_id, $session) {
@@ -1267,7 +1022,6 @@ class ClientController extends Controller {
         $reminderRows = $session->get($keyReminderRows, []);
 
         if (!empty($formData['id'])) {
-
             $existingModel = ClientReminderLetterEmails::findOne($formData['id']);
 
             if ($existingModel !== null) {
@@ -1295,14 +1049,8 @@ class ClientController extends Controller {
         }
 
         if ($model->save(false)) {
-
-            ClientReminderLetterEmailDetail::deleteAll([
-                'email_id' => $model->id,
-            ]);
-
-            ClientReminderLetterEmailAttachment::deleteAll([
-                'email_id' => $model->id,
-            ]);
+            ClientReminderLetterEmailDetail::deleteAll(['email_id' => $model->id]);
+            ClientReminderLetterEmailAttachment::deleteAll(['email_id' => $model->id]);
 
             $reminderRows = $session->get($keyReminderRows, []);
 
@@ -1329,21 +1077,12 @@ class ClientController extends Controller {
             $session->remove($keyForm);
             $session->remove($keyReminderRows);
 
-            Yii::$app->session->setFlash(
-                    'success',
-                    'Draft saved successfully.'
-            );
+            Yii::$app->session->setFlash('success', 'Draft saved successfully.');
 
-            return $this->redirect([
-                        'view-client-reminder-letter-emails',
-                        'id' => $model->id,
-            ]);
+            return $this->redirect(['view-client-reminder-letter-emails', 'id' => $model->id]);
         }
 
-        Yii::$app->session->setFlash(
-                'error',
-                'Unable to save draft.'
-        );
+        Yii::$app->session->setFlash('error', 'Unable to save draft.');
 
         return $this->redirect([
                     'create-reminder-letter-emails',
@@ -1419,43 +1158,39 @@ class ClientController extends Controller {
         $model->content = $htmlContent;
 
         foreach (array_filter(array_map('trim', explode(',', $model->recipient))) as $email) {
-
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 Yii::$app->session->setFlash('error', 'Invalid recipient email.');
                 return $this->refresh();
             }
         }
-        foreach (array_filter(array_map('trim', explode(',', $model->Cc))) as $email) {
 
+        foreach (array_filter(array_map('trim', explode(',', $model->Cc))) as $email) {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 Yii::$app->session->setFlash('error', 'Invalid CC email.');
                 return $this->refresh();
             }
         }
-        foreach (array_filter(array_map('trim', explode(',', $formData['Bcc'] ?? ''))) as $email) {
 
+        foreach (array_filter(array_map('trim', explode(',', $formData['Bcc'] ?? ''))) as $email) {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 Yii::$app->session->setFlash('error', 'Invalid BCC email.');
                 return $this->refresh();
             }
         }
+
         if (!empty($reminderRows[0]['template_id'])) {
             $model->template_id = $reminderRows[0]['template_id'];
         }
+
         if (!$model->save(false)) {
             Yii::$app->session->setFlash('error', 'Unable to save email.');
             return $this->refresh();
         }
-        ClientReminderLetterEmailDetail::deleteAll([
-            'email_id' => $model->id,
-        ]);
 
-        ClientReminderLetterEmailAttachment::deleteAll([
-            'email_id' => $model->id,
-        ]);
+        ClientReminderLetterEmailDetail::deleteAll(['email_id' => $model->id]);
+        ClientReminderLetterEmailAttachment::deleteAll(['email_id' => $model->id]);
 
         foreach ($reminderRows as $row) {
-
             $detail = new ClientReminderLetterEmailDetail();
             $detail->email_id = $model->id;
             $detail->template_id = $row['template_id'];
@@ -1468,25 +1203,14 @@ class ClientController extends Controller {
         $CcList = array_filter(array_map('trim', explode(',', $model->Cc)));
         $BccList = array_filter(array_map('trim', explode(',', $formData['Bcc'] ?? '')));
 
-        $textContent = html_entity_decode(
-                trim(
-                        strip_tags(
-                                str_replace(
-                                        ['</p>', '</div>', '<br>', '<br/>', '<br />'],
-                                        PHP_EOL,
-                                        $htmlContent
-                                )
-                        )
-                )
-        );
-
+        $textContent = html_entity_decode(trim(strip_tags(str_replace(['</p>', '</div>', '<br>', '<br/>', '<br />'], PHP_EOL, $htmlContent))));
         $textContent = preg_replace("/(\r?\n){3,}/", "\n\n", $textContent);
 
         $mail = Yii::$app->mailer->compose()
                 ->setFrom($model->sender)
                 ->setTo($toList)
                 ->setSubject($model->subject)
-//                ->setHtmlBody($htmlContent) // causes white bg
+//                ->setHtmlBody($htmlContent)
                 ->setTextBody($textContent);
 
         if (!empty($CcList)) {
@@ -1500,39 +1224,27 @@ class ClientController extends Controller {
         $pathFolder = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
 
         foreach ($pdfFiles as $pdfFile) {
-
             if (!empty($pdfFile) && file_exists($pathFolder . $pdfFile)) {
                 $mail->attach($pathFolder . $pdfFile);
             }
         }
 
         foreach ($uploadedFiles as $file) {
-
             if (file_exists($pathFolder . $file)) {
                 $mail->attach($pathFolder . $file);
             }
         }
 
         try {
-
             if ($mail->send()) {
-
-                $this->saveAttachments(
-                        $model->id,
-                        $pdfFiles,
-                        $uploadedFiles,
-                        $reminderRows
-                );
+                $this->saveAttachments($model->id, $pdfFiles, $uploadedFiles, $reminderRows);
 
                 $session->remove($keyPdf);
                 $session->remove($keyFiles);
                 $session->remove($keyForm);
                 $session->remove($keyReminderRows);
 
-                Yii::$app->session->setFlash(
-                        'success',
-                        'Email sent successfully.'
-                );
+                Yii::$app->session->setFlash('success', 'Email sent successfully.');
 
                 return $this->redirect([
                             'view-client-reminder-letter-emails',
@@ -1540,19 +1252,11 @@ class ClientController extends Controller {
                 ]);
             }
 
-            Yii::$app->session->setFlash(
-                    'error',
-                    'Email failed to send.'
-            );
+            Yii::$app->session->setFlash('error', 'Email failed to send.');
 
             return $this->refresh();
         } catch (\Exception $e) {
-
-            Yii::$app->session->setFlash(
-                    'error',
-                    $e->getMessage()
-            );
-
+            Yii::$app->session->setFlash('error', $e->getMessage());
             return $this->refresh();
         }
     }
@@ -1575,7 +1279,6 @@ class ClientController extends Controller {
 
         // Save uploaded attachments
         foreach ($uploadedFiles as $file) {
-
             $attachment = new ClientReminderLetterEmailAttachment();
             $attachment->email_id = $emailId;
             $attachment->file_name = $file;
@@ -1673,9 +1376,7 @@ class ClientController extends Controller {
         $mpdf->defaultfooterline = 0;
         $mpdf->SetHTMLFooter('<div style="text-align:right; font-size:8pt;"> Page: {PAGENO} of {nbpg} </div> ');
 
-        $company = RefCompanyGroupList::find()
-                ->where(['code' => $companyGroup])
-                ->one();
+        $company = RefCompanyGroupList::find()->where(['code' => $companyGroup])->one();
 
         $htmlHeader = $this->renderPartial('_reminderLetterHeader', ['company' => $company]);
         $mpdf->SetHTMLHeader($htmlHeader);
@@ -1690,7 +1391,6 @@ class ClientController extends Controller {
     }
 
     public function actionRemoveTempFile($file, $client_id, $from = null) {
-
         $session = Yii::$app->session;
         $keyPdf = 'temp_pdf_' . $client_id;
         $keyFiles = 'uploaded_files_' . $client_id;
@@ -1702,7 +1402,6 @@ class ClientController extends Controller {
         $filePath = $pathFolder . $file;
 
         if (in_array($file, $pdfFiles)) {
-
             $pdfFiles = array_filter($pdfFiles, function ($f) use ($file) {
                 return trim($f) !== trim($file);
             });
@@ -1714,7 +1413,6 @@ class ClientController extends Controller {
                 unlink($filePath);
             }
         } else {
-
             $files = array_filter($files, function ($f) use ($file) {
                 return trim($f) !== trim($file);
             });
@@ -1728,7 +1426,6 @@ class ClientController extends Controller {
         }
 
         if ($from === 'confirm') {
-
             return $this->redirect([
                         'confirm-reminder-letter-emails',
                         'client_id' => $client_id,
@@ -1760,14 +1457,12 @@ class ClientController extends Controller {
         $filePath = $path . $file;
 
         if (in_array($file, $pdfFiles)) {
-
             $pdfFiles = array_values(array_filter($pdfFiles, function ($f) use ($file) {
                         return trim($f) !== trim($file);
                     }));
 
             $session->set($keyPdf, $pdfFiles);
         } else {
-
             $files = array_values(array_filter($files, function ($f) use ($file) {
                         return trim($f) !== trim($file);
                     }));
@@ -1804,16 +1499,13 @@ class ClientController extends Controller {
         $id = $formData['id'] ?? null;
 
         if (!empty($id)) {
-
             $model = ClientReminderLetterEmails::findOne($id);
-
             if ($model === null) {
                 throw new \yii\web\NotFoundHttpException('Draft not found.');
             }
 
             $model->attributes = $formData;
         } else {
-
             $model = new ClientReminderLetterEmails();
             $model->attributes = $formData;
         }
@@ -1867,7 +1559,8 @@ class ClientController extends Controller {
             }
             return $this->redirect(array_merge(['index-general-client-debt'], Yii::$app->request->queryParams));
         }
-        return $this->renderAjax('_formUpdateClientDebt', ['model' => $model,]);
+        
+        return $this->renderAjax('_formUpdateClientDebt', ['model' => $model]);
     }
 
     public function actionDeleteDebt($id) {
@@ -1891,19 +1584,15 @@ class ClientController extends Controller {
         $tkmBalance = 0;
 
         foreach ($latestRecords as $record) {
-            if (
-                    $record->tk_group_code == 'TK' && $tkBalance == 0
-            ) {
+            if ($record->tk_group_code == 'TK' && $tkBalance == 0) {
                 $tkBalance = $record->balance;
             }
-            if (
-                    $record->tk_group_code == 'TKE' && $tkeBalance == 0
-            ) {
+
+            if ($record->tk_group_code == 'TKE' && $tkeBalance == 0) {
                 $tkeBalance = $record->balance;
             }
-            if (
-                    $record->tk_group_code == 'TKM' && $tkmBalance == 0
-            ) {
+
+            if ($record->tk_group_code == 'TKM' && $tkmBalance == 0) {
                 $tkmBalance = $record->balance;
             }
         }
@@ -1927,9 +1616,7 @@ class ClientController extends Controller {
             $transaction = Yii::$app->db->beginTransaction();
 
             try {
-                $existingRecord = ClientDebt::find()
-                        ->where(['client_id' => $model->client_id, 'tk_group_code' => $model->tk_group_code, 'month' => $model->month, 'year' => $model->year,])
-                        ->one();
+                $existingRecord = ClientDebt::find()->where(['client_id' => $model->client_id, 'tk_group_code' => $model->tk_group_code, 'month' => $model->month, 'year' => $model->year])->one();
 
                 if ($existingRecord) {
                     $existingRecord->balance = $model->balance;
@@ -1960,13 +1647,16 @@ class ClientController extends Controller {
                     if ($record->tk_group_code == 'TK' && $tkBalance == 0) {
                         $tkBalance = $record->balance;
                     }
+
                     if ($record->tk_group_code == 'TKE' && $tkeBalance == 0) {
                         $tkeBalance = $record->balance;
                     }
+
                     if ($record->tk_group_code == 'TKM' && $tkmBalance == 0) {
                         $tkmBalance = $record->balance;
                     }
                 }
+
                 $client = Clients::findOne($model->client_id);
                 if ($client) {
                     $client->tk_balance = $tkBalance;
@@ -1975,6 +1665,7 @@ class ClientController extends Controller {
                     $client->current_outstanding_balance = $tkBalance + $tkeBalance + $tkmBalance;
                     $client->save(false);
                 }
+
                 $transaction->commit();
                 Yii::$app->session->setFlash('success', 'Client debt record saved successfully.');
                 return $this->redirect(['index-general-client-debt']);
@@ -2004,7 +1695,6 @@ class ClientController extends Controller {
                 ->all();
 
         $result = [];
-
         foreach ($clients as $client) {
             $result[] = [
                 'label' => $client->client_code . ' - ' . $client->company_name,
@@ -2015,4 +1705,11 @@ class ClientController extends Controller {
         }
         return $result;
     }
-}
+
+    public function actionAjaxAddReceiver($key, $isUpdate) {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;
+        $receiver = new \frontend\models\client\ClientContactReceiver();
+
+        return $this->renderPartial('_formClientReceiver_row', ['contact' => $receiver, 'index' => $key, 'isUpdate' => $isUpdate]);
+    }
+} 

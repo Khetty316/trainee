@@ -1,5 +1,5 @@
 <?php
-
+//debug
 use yii\helpers\Html;
 
 /* @var $this yii\web\View */
@@ -17,7 +17,8 @@ $this->params['breadcrumbs'][] = 'Update';
     <?= $this->render('_formClient', [
         'model' => $model,
         'contactModels' => $contactModels,
-        'isUpdate' => true
+        'isUpdate' => true,
+        'receiverModels' => $receiverModels,
     ]) ?>
 
 </div>

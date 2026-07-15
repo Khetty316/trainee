@@ -1,11 +1,11 @@
 <?php
-//debug
+
 namespace frontend\models\client;
 
 use Yii;
 
 /**
- * This is the model class for table "client_contact".
+ * This is the model class for table "client_contact_receiver".
  *
  * @property int $id
  * @property int $client_id
@@ -17,14 +17,14 @@ use Yii;
  *
  * @property Clients $client
  */
-class ClientContact extends \yii\db\ActiveRecord
+class ClientContactReceiver extends \yii\db\ActiveRecord
 {
     /**
      * {@inheritdoc}
      */
     public static function tableName()
     {
-        return 'client_contact';
+        return 'client_contact_receiver';
     }
 
     /**
@@ -36,7 +36,6 @@ class ClientContact extends \yii\db\ActiveRecord
             [['client_id'], 'required'],
             [['client_id'], 'integer'],
             [['email_address', 'name', 'position', 'contact_number', 'fax'], 'string', 'max' => 255],
-            [['email_address', 'name', 'position', 'contact_number', 'fax', 'id'], 'safe'],
             [['client_id'], 'exist', 'skipOnError' => true, 'targetClass' => Clients::className(), 'targetAttribute' => ['client_id' => 'id']],
         ];
     }

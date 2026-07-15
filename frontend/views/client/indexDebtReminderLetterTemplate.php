@@ -20,11 +20,19 @@ $this->params['breadcrumbs'][] = [
     <p>
         <?= Html::a('Create New Template <i class="fas fa-plus"></i>', ['create-reminder-letter-template'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
+        <?=
+        Html::a(
+                'User Manual <i class="fas fa-book"></i>',
+                ['user-manual'],
+                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
+        )
+        ?>
     </p>
 
 </div>
 
 <div class="table-responsive">
+
     <?=
     GridView::widget([
         'layout' => "{summary}\n{pager}\n{items}\n{pager}",

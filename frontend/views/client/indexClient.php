@@ -17,14 +17,14 @@ use common\modules\auth\models\AuthItem;
     <div class="d-flex justify-content-between mb-3">
         <div>
             <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Projcoor, AuthItem::ROLE_Client_Module_Procurement, AuthItem::ROLE_Client_Module_Finance])) { ?>
-                <?= Html::a('Create Clients', ['create-client'], ['class' => 'btn btn-success']) ?>
+                <?= Html::a('Create Clients <i class="fas fa-plus"></i>', ['create-client'], ['class' => 'btn btn-success']) ?>
             <?php } ?>
 
             <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
         </div>
         <div>
             <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Projcoor, AuthItem::ROLE_Client_Module_Procurement, AuthItem::ROLE_Client_Module_Finance])) { ?>
-                <?= Html::a('<i class="fas fa-file-pdf"></i> User Manual', ['user-manual'], ['class' => 'btn btn-warning']) ?>
+                <?= Html::a('User Manual <i class="fas fa-file-pdf"></i>', ['user-manual'], ['class' => 'btn btn-warning']) ?>
             <?php } ?>
         </div>
     </div>

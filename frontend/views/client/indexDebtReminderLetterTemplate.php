@@ -18,14 +18,13 @@ $this->params['breadcrumbs'][] = [
     <?= $this->render('_navbarClient', ['pageKey' => '4']) ?>
 
     <p>
-        <?= Html::a('Create New Template', ['create-reminder-letter-template'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Create New Template <i class="fas fa-plus"></i>', ['create-reminder-letter-template'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
     </p>
 
 </div>
 
 <div class="table-responsive">
-
     <?=
     GridView::widget([
         'layout' => "{summary}\n{pager}\n{items}\n{pager}",
@@ -158,5 +157,4 @@ $this->params['breadcrumbs'][] = [
         ],
     ]);
     ?>
-
 </div>

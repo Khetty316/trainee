@@ -45,8 +45,8 @@ $this->params['breadcrumbs'][] = $this->title;
                     <div>
                         <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $pdfFile) ?>"
                            target="_blank"
-                           class="btn btn-primary btn-sm">
-                            View
+                           class="btn btn-info btn-sm">
+                            View <i class="fas fa-eye"></i>
                         </a>
                     </div>
                 </div>
@@ -58,8 +58,8 @@ $this->params['breadcrumbs'][] = $this->title;
                         <div>
                             <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $file) ?>"
                                target="_blank"
-                               class="btn btn-primary btn-sm">
-                                View
+                               class="btn btn-info btn-sm">
+                                View <i class="fas fa-eye"></i>
                             </a>
                         </div>
                     </div>
@@ -77,10 +77,10 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= Html::hiddenInput('ClientReminderLetterEmails[id]', $model->id) ?>
     <div class="form-group text-right">
         <div class="float-left">
-            <?= Html::a('Cancel', ['create-reminder-letter-emails', 'client_id' => $model->client_id, 'restore' => 1], ['class' => 'btn btn-danger']) ?>
+            <?= Html::a('Cancel <i class="fas fa-times"></i>', ['create-reminder-letter-emails', 'client_id' => $model->client_id, 'restore' => 1], ['class' => 'btn btn-danger']) ?>
         </div>
-        <?= Html::submitButton('Save as Draft', ['class' => 'btn btn-warning', 'name' => 'action', 'value' => 'draft']) ?>
-        <?= Html::submitButton('Process & Send', ['class' => 'btn btn-success', 'name' => 'action', 'value' => 'send']) ?>
+        <?= Html::submitButton('Save as Draft <i class="fas fa-check"></i>', ['class' => 'btn btn-success', 'name' => 'action', 'value' => 'draft']) ?>
+        <?= Html::submitButton('Process & Send <i class="fas fa-arrow-right"></i>', ['class' => 'btn btn-primary', 'name' => 'action', 'value' => 'send']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>

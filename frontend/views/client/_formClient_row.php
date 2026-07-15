@@ -31,7 +31,7 @@ $key = $contact->id ?? $index;
     </td>
     <td>
         <button type="button" class="btn btn-danger" onclick="$(this).closest('tr').remove()">
-            <i class="fas fa-minus-circle"></i>
+            Delete <i class="fas fa-minus-circle"></i>
         </button>
     </td>
 </tr>

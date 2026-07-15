@@ -44,7 +44,7 @@ $this->registerCss("
     <p>
         <?php
         $newEntryBtn = Html::a(
-                "New Entry",
+                'New Entry <i class="fas fa-plus"></i>',
                 "javascript:",
                 [
                     "onclick" => "event.preventDefault();",
@@ -56,7 +56,7 @@ $this->registerCss("
         ?>
 
         <?= $newEntryBtn ?>
-        <?= Html::a('Import Outstanding Balance', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Import Outstanding Balance <i class="fas fa-upload"></i>', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
     </p>
 
@@ -77,7 +77,7 @@ $this->registerCss("
     ];
     ?>
 
-    <div class="table-responsive">
+    <!--<div class="table-responsive">-->
         <?=
         GridView::widget([
             'layout' => "{summary}\n{pager}\n{items}\n{pager}",
@@ -229,7 +229,7 @@ $this->registerCss("
                     'value' => function ($model) {
 
                         $updateBtn = Html::a(
-                                "Update",
+                                'Update <i class="far fa-edit"></i>',
                                 "javascript:",
                                 [
                                     "onclick" => "event.preventDefault();",
@@ -242,7 +242,7 @@ $this->registerCss("
                                 ]
                         );
                         $deleteBtn = Html::a(
-                                'Delete',
+                                'Delete <i class="fas fa-trash"></i>',
                                 array_merge(
                                         ['delete-debt', 'id' => $model->id],
                                         Yii::$app->request->queryParams
@@ -263,4 +263,4 @@ $this->registerCss("
         ]);
         ?>
 
-    </div>
+    <!--</div>-->

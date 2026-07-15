@@ -40,23 +40,10 @@ $this->registerCss("
 ?>
 
 <div class="general-debt-reminder-letter-email-log-index">
-
     <h3><?= Html::encode($this->title) ?></h3>
-
     <?= $this->render('_navbarClient', ['pageKey' => '3']) ?>
-
-    <p>
-        <?=
-        Html::a(
-                'Reset Filter <i class="fas fa-search-minus"></i>',
-                '?',
-                ['class' => 'btn btn-primary']
-        )
-        ?>
-    </p>
-
-    <div class="table-responsive">
-
+    <p> <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?></p>
+<!--    <div class="table-responsive">-->
         <?=
         GridView::widget([
             'layout' => "{summary}\n{pager}\n{items}\n{pager}",
@@ -72,9 +59,7 @@ $this->registerCss("
             'tableOptions' => [
                 'class' => 'table table-striped table-bordered table-sm'
             ],
-            'columns' => [
-                ['class' => 'yii\grid\SerialColumn'],
-                [
+            'columns' => [['class' => 'yii\grid\SerialColumn'], [
                     'attribute' => 'client_code',
                     'label' => 'Client Code',
                     'enableSorting' => true,
@@ -144,6 +129,37 @@ $this->registerCss("
                     ],
                 ],
                 [
+                    'label' => 'Created At',
+                    'attribute' => 'created_at',
+                    'headerOptions' => [
+                        'style' => 'width:140px;',
+                    ],
+                    'filter' => \yii\jui\DatePicker::widget([
+                        'model' => $searchModel,
+                        'attribute' => 'created_at',
+                        'clientOptions' => [
+                            'dateFormat' => 'dd/mm/yy',
+                            'changeMonth' => true,
+                            'changeYear' => true,
+                            'beforeShow' => new \yii\web\JsExpression("
+                function(input, inst) {
+                    setTimeout(function(){
+                        inst.dpDiv.css({zIndex:99999});
+                    },0);
+                }
+            "),
+                        ],
+                        'options' => [
+                            'class' => 'form-control',
+                            'style' => 'min-width:110px;',
+                            'autocomplete' => 'off',
+                        ],
+                    ]),
+                    'value' => function ($model) {
+                        return $model->created_at ? Yii::$app->formatter->asDatetime($model->created_at, 'php:d/m/Y H:i') : '-';
+                    },
+                ],
+                [
                     'attribute' => 'sent_at',
                     'headerOptions' => [
                         'style' => 'width:140px;',
@@ -187,13 +203,13 @@ $this->registerCss("
                         'view' => function ($url, $model) {
 
                             return Html::a(
-                                    'View',
+                                    'View <i class="fas fa-eye"></i>',
                                     [
                                         '/client/view-client-reminder-letter-emails',
                                         'id' => $model->id
                                     ],
                                     [
-                                        'class' => 'btn btn-sm btn-primary',
+                                        'class' => 'btn btn-sm btn-info',
                                         'title' => 'View'
                                     ]
                             );
@@ -204,6 +220,5 @@ $this->registerCss("
         ]);
         ?>
 
-    </div>
-
+<!--    </div>-->
 </div>

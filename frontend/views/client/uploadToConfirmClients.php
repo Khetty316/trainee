@@ -12,10 +12,12 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 ?>
 <h4><?= Html::encode($this->title) ?></h4>
 
-<?php $form = ActiveForm::begin([
+<?php
+$form = ActiveForm::begin([
     'method' => 'post',
-    'action' => ['client/process-client-data'] 
-]); ?>
+    'action' => ['client/process-client-data']
+        ]);
+?>
 
 <!--hidden input-->
 <?= Html::hiddenInput('companyGroup', $companyGroup) ?>
@@ -36,11 +38,11 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
 
     <thead>
         <tr>
-            <th style="width:1%">#</th>
+            <th style="width:40px;">#</th>
             <th>Cust. No</th>
             <th>Name</th>
-            <th>Balance</th>
-            <th style="width:1%">Delete</th>
+            <th style="width:130px;">Balance</th>
+            <th style="width:110px;" class="text-center">Delete</th>
         </tr>
     </thead>
 
@@ -76,35 +78,39 @@ $company = frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
                     ?>
                 </td>
 
-                <td>
+                <td style="width:130px;">
                     <?=
                     Html::input(
                             'number',
                             "Clients[balance][$index]",
                             $row['balance'] ?? '',
-                            ['class' => 'form-control',
-                             'step' => 'any']
+                            [
+                                'class' => 'form-control',
+                                'step' => 'any',
+                            ]
                     )
                     ?>
                 </td>
 
-                <td class="text-center">
+                <td style="width:120px;" class="text-center">
                     <button type="button" class="btn btn-danger btn-sm delete-row">
-                        <i class="far fa-trash-alt"></i>
+                        Delete <i class="far fa-trash-alt"></i>
                     </button>
                 </td>
             </tr>
 
-        <?php endforeach; ?>
+<?php endforeach; ?>
 
     </tbody>
 
 </table>
 
 <p class="mb-5 pb-2">
-    <?= Html::submitButton('Proceed', [
+    <?=
+    Html::submitButton('Proceed <i class="fas fa-arrow-right"></i>', [
         'class' => 'btn btn-primary float-right mb-5'
-    ]) ?>
+    ])
+    ?>
 </p>
 
 <script>

@@ -36,7 +36,7 @@ $this->params['breadcrumbs'][] = $this->title;
         if ($model->status === 1) {
             echo
             Html::a(
-                    '<i class="fa fa-pencil"></i> Edit Draft',
+                    'Edit Draft <i class="fas fa-edit"></i>',
                     [
                         'create-reminder-letter-emails',
                         'client_id' => $model->client_id,

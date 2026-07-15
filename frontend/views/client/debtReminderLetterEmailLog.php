@@ -5,7 +5,7 @@ use yii\helpers\Html;
 use yii\jui\DatePicker;
 ?>
 
-<div id="emailLog" class="table-responsive">
+<div id="emailLog">
     <?=
     Html::a('Reset Filter <i class="fas fa-search-minus"></i>',
             ['view-client', 'id' => Yii::$app->request->get('id'), '#' => 'emailLog'],
@@ -164,13 +164,13 @@ document.addEventListener('click', function (e) {
                     'view' => function ($url, $model) {
 
                         return Html::a(
-                                'View',
+                                'View <i class="fas fa-eye"></i>',
                                 [
                                     '/client/view-client-reminder-letter-emails',
                                     'id' => $model->id
                                 ],
                                 [
-                                    'class' => 'btn btn-primary',
+                                    'class' => 'btn btn-info',
                                     'style' => 'padding:2px 8px; font-size:12px;',
                                     'title' => 'View'
                                 ]

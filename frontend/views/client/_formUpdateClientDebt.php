@@ -109,7 +109,7 @@ $months = [
     <div class="form-group">
         <?=
         Html::submitButton(
-                'Save',
+                'Save <i class="fas fa-check"></i>',
                 ['class' => 'btn btn-success float-right']
         )
         ?>

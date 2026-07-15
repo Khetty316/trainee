@@ -202,15 +202,15 @@ if ($model->country) {
         <tfoot>
             <tr>
                 <td>
-                    <a class='btn btn-primary' href='javascript:addRow()'> 
-                        <i class="fas fa-plus-circle"></i></a>
+                    <a Add Row class='btn btn-primary' href='javascript:addRow()'> 
+                        Add Row <i class="fas fa-plus-circle"></i></a> 
                 </td>
             </tr>
         </tfoot>
     </table>
 
     <div class="form-group">
-        <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

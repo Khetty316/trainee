@@ -176,7 +176,7 @@ for ($y = 2020; $y <= $currentYear; $y++) {
 <div class="text-right">
     <?=
     Html::submitButton(
-            'Save',
+            'Save <i class="fas fa-check"></i>',
             ['class' => 'btn btn-success']
     )
     ?>

@@ -21,9 +21,9 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div>
-            <?= Html::a('Update', ['update-client', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+            <?= Html::a('Update <i class="far fa-edit"></i>', ['update-client', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
             <?=
-            Html::a('Delete', ['delete-client', 'id' => $model->id], [
+            Html::a('Delete <i class="fas fa-trash"></i>', ['delete-client', 'id' => $model->id], [
                 'class' => 'btn btn-danger',
                 'data' => [
                     'confirm' => 'Are you sure you want to delete this client?',
@@ -216,12 +216,14 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <!-- Debt Reminder Letter Email Log -->
     <div id="emailLog" class="tab-content" style="display:none;">
-        <?=
-        $this->render('debtReminderLetterEmailLog', [
-            'emailLogDataProvider' => $emailLogDataProvider,
-            'emailLogSearchModel' => $emailLogSearchModel,
-        ])
-        ?>
+        <div class="email-log-wrapper">
+            <?=
+            $this->render('debtReminderLetterEmailLog', [
+                'emailLogDataProvider' => $emailLogDataProvider,
+                'emailLogSearchModel' => $emailLogSearchModel,
+            ])
+            ?>
+        </div>
     </div>
 
 <!--    <?
@@ -449,6 +451,17 @@ DetailView::widget([
         transition: all 0.2s ease;
     }
 
+    .email-log-wrapper {
+        overflow-x: auto;
+    }
+
+    .email-log-wrapper .grid-view {
+        overflow: visible;
+    }
+
+    .email-log-wrapper table {
+        min-width: 1050px;
+    }
 </style>
 
 

@@ -36,27 +36,55 @@ $this->params['breadcrumbs'][] = $this->title;
         <?= $form->field($model, 'Bcc')->textInput() ?>
         <?= $form->field($model, 'subject')->textInput() ?>
         <?= $form->field($model, 'content')->textarea(['rows' => 8, 'class' => 'form-control content'])->label('Email Content') ?>
-        <?= $form->field($model, 'attachment')->fileInput(['multiple' => true, 'accept' => '.pdf,.doc,.docx']) ?>
-        <?php if (!empty($uploadedFiles)): ?>
-            <div style="border:1px solid #ddd; padding:10px; border-radius:5px; margin-top:10px;">
-                <?php foreach ($uploadedFiles as $i => $file): ?>
-                    <div id="uploaded-file-row-<?= $i ?>" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                        <span><?= Html::encode($file) ?></span>
-                        <div>
-                            <?= Html::a('View', Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $file), ['class' => 'btn btn-primary btn-sm', 'target' => '_blank',]) ?>
-                            <button
-                                type="button"
-                                class="btn btn-danger btn-sm remove-temp-file"
-                                data-file="<?= Html::encode($file) ?>"
-                                data-client="<?= $model->client_id ?>"
-                                data-row="uploaded-file-row-<?= $i ?>">
-                                Remove
-                            </button>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+        <?= $form->field($model, 'attachment')->fileInput(['id' => 'clientreminderletteremails-attachment', 'name' => 'ClientReminderLetterEmails[attachment][]', 'multiple' => true, 'accept' => '.pdf,.doc,.docx',]) ?>        
+        <div
+            id="attachment-container"
+            style="<?= empty($uploadedFiles) ? 'display:none;' : '' ?> margin-top:15px;">            
+            <table class="table table-bordered table-striped" id="attachment-table">
+                <thead>
+                    <tr>
+                        <th width="60">No.</th>
+                        <th>File Name</th>
+                        <th width="180" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($uploadedFiles)): ?>
+                        <?php foreach ($uploadedFiles as $i => $file): ?>
+                            <tr id="uploaded-file-row-<?= $i ?>" data-type="uploaded">
+                                <td class="text-center row-number">
+                                    <?= $i + 1 ?>
+                                </td>
+                                <?php
+                                $displayName = preg_replace('/_\(\d+\)(?=\.[^.]+$)/', '', $file);
+                                ?>
+                                <td>
+                                    <?= Html::encode($displayName) ?>
+                                </td>                              
+                                <td class="text-center">
+                                    <?=
+                                    Html::a('View <i class="fas fa-eye"></i>', Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $file),
+                                            [
+                                                'class' => 'btn btn-info btn-sm',
+                                                'target' => '_blank',
+                                            ]
+                                    )
+                                    ?>
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger btn-sm remove-temp-file"
+                                        data-file="<?= Html::encode($file) ?>"
+                                        data-client="<?= $model->client_id ?>"
+                                        data-row="uploaded-file-row-<?= $i ?>">
+                                        Delete <i class="fas fa-minus-circle"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     </fieldset>
     <fieldset class="form-group border p-3">
         <legend class="w-auto px-2 m-0">Letter Reminder:</legend>
@@ -83,15 +111,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label>Letter Template <span class="text-danger">*</span></label>
-                                <?=
-                                Html::dropDownList("ReminderRows[$index][template_id]", $row['template_id'],
-                                        ArrayHelper::map($templates, 'id', 'letter_name'),
-                                        [
-                                            'prompt' => 'Select Letter Template',
-                                            'class' => 'form-control reminder-template'
-                                        ]
-                                )
-                                ?>
+                                <?= Html::dropDownList("ReminderRows[$index][template_id]", $row['template_id'], ArrayHelper::map($templates, 'id', 'letter_name'), ['prompt' => 'Select Letter Template', 'class' => 'form-control reminder-template']) ?>
                                 <div class="invalid-feedback reminder-template-error"></div>
                             </div>
                         </div>
@@ -101,30 +121,39 @@ $this->params['breadcrumbs'][] = $this->title;
                         <?= Html::textarea("ReminderRows[$index][template_content]", $row['template_content'], ['class' => 'form-control template-content-dynamic', 'id' => 'template-content-' . $index]) ?>
                     </div>
                     <div class="reminder-row-actions">
-                        <?= Html::button('<i class="fas fa-minus-circle"></i>', ['type' => 'button', 'class' => 'btn btn-danger btn-sm remove-reminder-row',]) ?>
+                        <?= Html::button('Remove Row <i class="fas fa-minus-circle"></i>', ['type' => 'button', 'class' => 'btn btn-danger btn-sm remove-reminder-row',]) ?>
                     </div>
                 </div>
             <?php endforeach; ?>   
         </div>
         <div class="mt-2">
-            <?= Html::button('<i class="fas fa-plus-circle"></i>', ['class' => 'btn btn-primary', 'type' => 'button', 'onclick' => 'addReminderRow()',]) ?>
+            <?= Html::button('Add Row <i class="fas fa-plus-circle"></i>', ['class' => 'btn btn-primary', 'type' => 'button', 'onclick' => 'addReminderRow()',]) ?>
         </div>
     </fieldset>
     <div class="d-flex justify-content-end w-100 mar mb-3">
-        <?= Html::submitButton('Proceed', ['class' => 'btn btn-success', 'name' => 'action', 'value' => 'preview']) ?>
+        <?= Html::submitButton('Proceed <i class="fas fa-arrow-right"></i>', ['class' => 'btn btn-primary', 'name' => 'action', 'value' => 'preview']) ?>
     </div>
     <?php ActiveForm::end(); ?>
 </div>
-
 <style>
     .reminder-row-actions {
         margin-top: 10px;
         padding-right: 5px;
         text-align: right;
     }
+    #attachment-table td,
+    #attachment-table th{
+        vertical-align: middle;
+    }
+    #attachment-table td:last-child{
+        white-space: nowrap;
+    }
+    #attachment-table .btn{
+        min-width:70px;
+        margin:0 2px;
+    }
 </style>
 <script>
-    // Summernote helper
     function getSummernoteToolbar() {
         return [
             ['style', ['style']],
@@ -149,6 +178,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 initSummernote(this);
             }
         });
+        renderAttachmentTable();
     });
     function initSummernote(selector) {
         $(selector).summernote({
@@ -158,7 +188,6 @@ $this->params['breadcrumbs'][] = $this->title;
     }
 </script>
 <script>
-    // Reminder row
     function addReminderRow() {
         var reminderIndex = $('.letter-reminder-row').length;
         var uniqueId = Date.now();
@@ -201,7 +230,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 '</textarea>' +
                 '<div class="reminder-row-actions">' +
                 '<button type="button" class="btn btn-danger btn-sm remove-reminder-row">' +
-                '<i class="fas fa-minus-circle"></i>' +
+                'Remove Row <i class="fas fa-minus-circle"></i>' +
                 '</button>' +
                 '</div>' +
                 '</div>' +
@@ -211,7 +240,6 @@ $this->params['breadcrumbs'][] = $this->title;
     }
 </script>
 <script>
-    // Template loading
     const reminderTemplateUrl = '<?= Url::to(['client/get-reminder-letter-content']) ?>';
     $(document).on('change', '.reminder-template', function () {
         var templateId = $(this).val();
@@ -226,14 +254,11 @@ $this->params['breadcrumbs'][] = $this->title;
     });
 </script>
 <script>
-    // Form submit
     $('#reminder-form').on('submit', function (e) {
         var valid = true;
-        // Save Summernote content
         $('.template-content-dynamic').each(function () {
             $(this).val($(this).summernote('code'));
         });
-        // Company Group
         $('.company-group').removeClass('is-invalid');
         $('.company-group-error').text('');
         $('.company-group').each(function () {
@@ -246,7 +271,6 @@ $this->params['breadcrumbs'][] = $this->title;
                         .text('Company Group cannot be blank.');
             }
         });
-        // Letter Template
         $('.reminder-template').removeClass('is-invalid');
         $('.reminder-template-error').text('');
         $('.reminder-template').each(function () {
@@ -280,6 +304,111 @@ $this->params['breadcrumbs'][] = $this->title;
 </script>
 
 <?php
+$clientName = preg_replace('/[^A-Za-z0-9]+/', '_', $model->client->company_name);
+$month = date('F');
+$year = date('Y');
+?>
+
+<script>
+    let dt = new DataTransfer();
+    $(document).on('change', '#clientreminderletteremails-attachment', function () {
+        Array.from(this.files).forEach(function (file) {
+            let exists = Array.from(dt.files).some(function (f) {
+                return f.name === file.name &&
+                        f.size === file.size;
+            });
+            if (!exists) {
+                dt.items.add(file);
+            }
+        });
+        this.files = dt.files;
+        console.log('DT count:', dt.files.length);
+        console.log('Input count:', this.files.length);
+        renderAttachmentTable();
+    });
+
+    function renderAttachmentTable() {
+
+        let tbody = $('#attachment-table tbody');
+
+        tbody.find('tr[data-type="selected"]').remove();
+
+        let uploadedCount = tbody.find('tr[data-type="uploaded"]').length;
+
+        if (uploadedCount === 0 && dt.files.length === 0) {
+            $('#attachment-container').hide();
+            return;
+        }
+
+        $('#attachment-container').show();
+
+        Array.from(dt.files).forEach(function (file, index) {
+
+            let dot = file.name.lastIndexOf('.');
+
+            let baseName = dot >= 0
+                    ? file.name.substring(0, dot)
+                    : file.name;
+
+            let extension = dot >= 0
+                    ? file.name.substring(dot)
+                    : '';
+
+            let displayName = baseName +
+                    '_<?= $clientName ?>' +
+                    '_<?= $month ?>' +
+                    '_<?= $year ?>' +
+                    extension;
+
+            tbody.append(
+                    '<tr data-type="selected">' +
+                    '<td class="text-center row-number">0</td>' +
+                    '<td>' + displayName + '</td>' +
+                    '<td class="text-center">' +
+                    '<button type="button" class="btn btn-primary btn-sm view-selected-file" data-index="' + index + '">View</button> ' +
+                    '<button type="button" class="btn btn-danger btn-sm remove-selected-file" data-index="' + index + '">Remove</button>' +
+                    '</td>' +
+                    '</tr>'
+                    );
+
+        });
+
+        refreshNumbers();
+
+    }
+
+    $(document).on('click', '.remove-selected-file', function () {
+        let removeIndex = parseInt($(this).data('index'));
+        let newDt = new DataTransfer();
+
+        Array.from(dt.files).forEach(function (file, index) {
+            if (index !== removeIndex) {
+                newDt.items.add(file);
+            }
+        });
+        dt = newDt;
+        $('#clientreminderletteremails-attachment')[0].files = dt.files;
+        renderAttachmentTable();
+    });
+
+    $(document).on('click', '.view-selected-file', function () {
+        let index = parseInt($(this).data('index'));
+        let file = dt.files[index];
+        if (!file) {
+            return;
+        }
+        let url = URL.createObjectURL(file);
+        window.open(url, '_blank');
+    });
+    function refreshNumbers() {
+        $('#attachment-table tbody tr').each(function (index) {
+            $(this).find('.row-number').text(index + 1);
+
+        });
+    }
+</script>
+
+<?php
 $this->registerJs(<<<JS
 $(document).on('click', '.remove-reminder-row', function () {
     if ($('.letter-reminder-row').length <= 1) {
@@ -306,14 +435,18 @@ $(document).on('click','.remove-temp-file',function(){
             client_id:btn.data('client'),
             _csrf:yii.getCsrfToken()
         },
-        success:function(res){
-            if(res.success){
-                $('#'+btn.data('row')).remove();
-            }else{
-                alert('Unable to remove attachment.');
-            }
-        },
-        error:function(){
+success:function(res){
+    if(res.success){
+        $('#'+btn.data('row')).remove();
+        refreshNumbers();
+        if($('#attachment-table tbody tr').length===0){
+            $('#attachment-container').hide();
+        }
+    }else{
+        alert('Unable to remove attachment.');
+    }
+},
+       error:function(){
             alert('Server error.');
         }
     });

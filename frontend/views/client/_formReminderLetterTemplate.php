@@ -10,15 +10,15 @@ use yii\widgets\ActiveForm;
 if ($model->isNewRecord) {
 
     $this->title = 'Create';
-    $this->params['breadcrumbs'][] = ['label' => 'Clients','url' => ['index']];
-    $this->params['breadcrumbs'][] = ['label' => 'Debt Reminder Letter Template','url' => ['index-debt-reminder-letter-template']];
+    $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
+    $this->params['breadcrumbs'][] = ['label' => 'Debt Reminder Letter Template', 'url' => ['index-debt-reminder-letter-template']];
     $this->params['breadcrumbs'][] = $this->title;
 } else {
 
     $this->title = 'Update';
-    $this->params['breadcrumbs'][] = ['label' => 'Clients','url' => ['index']];
-    $this->params['breadcrumbs'][] = ['label' => 'Debt Reminder Letter Template','url' => ['index-debt-reminder-letter-template']];
-    $this->params['breadcrumbs'][] = ['label' => $model->letter_name,'url' => ['view-client-reminder-letter-template','id' => $model->id]];
+    $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
+    $this->params['breadcrumbs'][] = ['label' => 'Debt Reminder Letter Template', 'url' => ['index-debt-reminder-letter-template']];
+    $this->params['breadcrumbs'][] = ['label' => $model->letter_name, 'url' => ['view-client-reminder-letter-template', 'id' => $model->id]];
     $this->params['breadcrumbs'][] = $this->title;
 }
 ?>
@@ -68,7 +68,7 @@ if ($model->isNewRecord) {
 
     <div class="row">
         <div class="col-md-4">
-            <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
+            <?= Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success']) ?>
         </div>
     </div>
     <?php ActiveForm::end(); ?>

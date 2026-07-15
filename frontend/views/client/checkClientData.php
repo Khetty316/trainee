@@ -83,7 +83,7 @@ $company = \frontend\models\common\RefCompanyGroupList::findOne($companyGroup);
             'Export to CSV <i class="fas fa-file-csv"></i>',
             '#',
             [
-                'class' => 'btn btn-primary float-right mr-1',
+                'class' => 'btn btn-info float-right mr-1',
                 'id' => 'exportCsvButton',
             ]
     )

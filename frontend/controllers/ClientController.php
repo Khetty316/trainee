@@ -819,6 +819,7 @@ class ClientController extends Controller {
         $keyFiles = 'uploaded_files_' . $client_id;
         $keyForm = 'form_data_' . $client_id;
         $keyReminderRows = 'reminder_rows_' . $client_id;
+        $pdfFiles = [];
 
         if (!Yii::$app->request->isPost && Yii::$app->request->get('restore') != 1) {
             $session->remove($keyPdf);
@@ -840,17 +841,28 @@ class ClientController extends Controller {
                 ];
             }
             $uploadedFiles = [];
+            $pdfFiles = [];
 
             foreach ($model->attachments as $attachment) {
-                if (strpos($attachment->file_name, 'Reminder Letter') === 0) {
-                    continue;
+
+                if (strpos($attachment->file_name, 'Reminder_Letter_') === 0) {
+                    $pdfFiles[] = [
+                        'company_group' => $attachment->company_group,
+                        'file_name' => $attachment->file_name,
+                        'template_id' => $attachment->template_id,
+                        'template_content' => $attachment->template_content,
+                    ];
+                } else {
+                    $uploadedFiles[] = $attachment->file_name;
                 }
-                $uploadedFiles[] = $attachment->file_name;
             }
+
             $session->set($keyFiles, $uploadedFiles);
+            $session->set($keyPdf, $pdfFiles);
         } else {
             $formData = $session->get($keyForm, []);
             $uploadedFiles = $session->get($keyFiles, []);
+            $pdfFiles = $session->get($keyPdf, []);
             $reminderRows = $session->get($keyReminderRows, []);
         }
 
@@ -896,6 +908,7 @@ class ClientController extends Controller {
                     'templates' => $templates,
                     'uploadedFiles' => $uploadedFiles,
                     'reminderRows' => $reminderRows,
+                    'pdfFiles' => $pdfFiles,
         ]);
     }
 
@@ -906,9 +919,8 @@ class ClientController extends Controller {
         $keyReminderRows = 'reminder_rows_' . $client_id;
         $postData = Yii::$app->request->post('ClientReminderLetterEmails');
         $reminderRows = Yii::$app->request->post('ReminderRows', []);
-
+        $reminderRows = array_values($reminderRows);
         $model->content = $postData['content'] ?? '';
-
         $pathFolder = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
 
         if (!is_dir($pathFolder)) {
@@ -922,57 +934,49 @@ class ClientController extends Controller {
             if (!$file) {
                 continue;
             }
-
+            if (strtolower($file->extension) !== 'pdf') {
+                FlashHandler::err('Only PDF files are allowed.');
+                return $this->redirect([
+                            'create-reminder-letter-emails',
+                            'client_id' => $client_id,
+                            'restore' => 1,
+                ]);
+            }
             $cleanName = preg_replace('/[^A-Za-z0-9_\- ]/', '', $file->baseName);
             $clientName = preg_replace('/[^A-Za-z0-9]+/', '_', $model->client->company_name);
-
             $month = date('F');
             $year = date('Y');
-
             $baseName = $cleanName . '_' . $clientName . '_' . $month . '_' . $year;
             $extension = '.' . $file->extension;
-
             $newName = $baseName . $extension;
             $filePath = $pathFolder . $newName;
-
             $counter = 2;
-
             while (file_exists($filePath)) {
                 $newName = $baseName . '_(' . $counter . ')' . $extension;
                 $filePath = $pathFolder . $newName;
                 $counter++;
             }
-
             $file->saveAs($filePath);
-
             $uploadedFileNames[] = $newName;
         }
-
         $pdfFiles = [];
-
         $clientName = preg_replace('/[^A-Za-z0-9]+/', '_', $model->client->company_name);
         $month = date('F');
         $year = date('Y');
-
         foreach ($reminderRows as $index => $row) {
             if (empty($row['template_content'])) {
                 continue;
             }
-
             $pdfContent = $row['template_content'];
-
             $pdfContent = preg_replace('/<\/?(ul|ol|li|table|tbody|thead|tr|td|th)[^>]*>/i', '', $pdfContent);
             $pdfContent = preg_replace('/ style=("|\')(.*?)("|\')/i', '', $pdfContent);
             $pdfContent = preg_replace('/ class=("|\')(.*?)("|\')/i', '', $pdfContent);
-
             $companyGroup = $row['company_group'];
-
             $pdfName = 'Reminder_Letter_' .
                     $companyGroup . '_' .
                     $clientName . '_' .
                     $month . '_' .
                     $year . '.pdf';
-
             $pdfPath = $pathFolder . $pdfName;
 
             if (empty($companyGroup)) {
@@ -984,9 +988,7 @@ class ClientController extends Controller {
                             'restore' => 1,
                 ]);
             }
-
             $company = RefCompanyGroupList::find()->where(['code' => $companyGroup])->one();
-
             if ($company === null) {
                 Yii::$app->session->setFlash('error', 'Invalid Company Group selected for Reminder Letter #' . ($index + 1) . '.');
 
@@ -996,10 +998,12 @@ class ClientController extends Controller {
                             'restore' => 1,
                 ]);
             }
-
             $this->generateReminderLetterPDF($pdfContent, $pdfPath, $companyGroup);
 
-            $pdfFiles[] = $pdfName;
+            $pdfFiles[] = [
+                'company_group' => $companyGroup,
+                'file_name' => $pdfName,
+            ];
         }
 
         $formData = $model->attributes;
@@ -1224,8 +1228,10 @@ class ClientController extends Controller {
         $pathFolder = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
 
         foreach ($pdfFiles as $pdfFile) {
-            if (!empty($pdfFile) && file_exists($pathFolder . $pdfFile)) {
-                $mail->attach($pathFolder . $pdfFile);
+            if (!empty($pdfFile['file_name']) &&
+                    file_exists($pathFolder . $pdfFile['file_name'])) {
+
+                $mail->attach($pathFolder . $pdfFile['file_name']);
             }
         }
 
@@ -1267,13 +1273,15 @@ class ClientController extends Controller {
 
             $attachment = new ClientReminderLetterEmailAttachment();
             $attachment->email_id = $emailId;
-            $attachment->file_name = $pdfFile;
+            $attachment->file_name = $pdfFile['file_name'];
+
+            $attachment->company_group = $pdfFile['company_group'];
 
             if (isset($reminderRows[$index])) {
-                $attachment->company_group = $reminderRows[$index]['company_group'] ?? null;
                 $attachment->template_id = $reminderRows[$index]['template_id'] ?? null;
                 $attachment->template_content = $reminderRows[$index]['template_content'] ?? null;
             }
+
             $attachment->save(false);
         }
 
@@ -1401,10 +1409,19 @@ class ClientController extends Controller {
         $pathFolder = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
         $filePath = $pathFolder . $file;
 
-        if (in_array($file, $pdfFiles)) {
-            $pdfFiles = array_filter($pdfFiles, function ($f) use ($file) {
-                return trim($f) !== trim($file);
-            });
+        $isPdf = false;
+
+        $pdfFiles = array_values(array_filter($pdfFiles, function ($pdf) use ($file, &$isPdf) {
+
+                    if (($pdf['file_name'] ?? '') === $file) {
+                        $isPdf = true;
+                        return false;
+                    }
+
+                    return true;
+                }));
+
+        if ($isPdf) {
 
             $pdfFiles = array_values($pdfFiles);
             $session->set($keyPdf, $pdfFiles);
@@ -1456,11 +1473,19 @@ class ClientController extends Controller {
         $path = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
         $filePath = $path . $file;
 
-        if (in_array($file, $pdfFiles)) {
-            $pdfFiles = array_values(array_filter($pdfFiles, function ($f) use ($file) {
-                        return trim($f) !== trim($file);
-                    }));
+        $isPdf = false;
 
+        $pdfFiles = array_values(array_filter($pdfFiles, function ($pdf) use ($file, &$isPdf) {
+
+                    if (($pdf['file_name'] ?? '') === $file) {
+                        $isPdf = true;
+                        return false;
+                    }
+
+                    return true;
+                }));
+
+        if ($isPdf) {
             $session->set($keyPdf, $pdfFiles);
         } else {
             $files = array_values(array_filter($files, function ($f) use ($file) {
@@ -1559,7 +1584,7 @@ class ClientController extends Controller {
             }
             return $this->redirect(array_merge(['index-general-client-debt'], Yii::$app->request->queryParams));
         }
-        
+
         return $this->renderAjax('_formUpdateClientDebt', ['model' => $model]);
     }
 
@@ -1712,4 +1737,4 @@ class ClientController extends Controller {
 
         return $this->renderPartial('_formClientReceiver_row', ['contact' => $receiver, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
-} 
+}

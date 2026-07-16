@@ -32,40 +32,95 @@ $this->params['breadcrumbs'][] = $this->title;
             <label>Email Content</label>
             <div class="border rounded p-3 bg-light"
                  style="min-height:300px; max-height:500px; overflow:auto;">
-                     <?= $model->content ?>
+                <?= $model->content ?>
             </div>
         </div>
     </fieldset>
+    <!-- Attachments -->
     <fieldset class="form-group border p-3">
-        <legend class="w-auto px-2 m-0"> Attachments (<?= count($pdfFiles) + count($uploadedFiles) ?>) </legend>
-        <div style="border:1px solid #ddd; padding:10px; border-radius:5px;">
-            <?php foreach ($pdfFiles as $pdfFile): ?>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <div> <?= $pdfFile ?> </div>
-                    <div>
-                        <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $pdfFile) ?>"
-                           target="_blank"
-                           class="btn btn-info btn-sm">
-                            View <i class="fas fa-eye"></i>
-                        </a>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-            <?php if (!empty($uploadedFiles)): ?>
-                <?php foreach ($uploadedFiles as $file): ?>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <div> <?= $file ?> </div>
-                        <div>
-                            <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $file) ?>"
-                               target="_blank"
-                               class="btn btn-info btn-sm">
-                                View <i class="fas fa-eye"></i>
-                            </a>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+        <legend class="w-auto px-2 m-0">
+            Uploaded Attachments (<?= count($uploadedFiles) ?>)
+        </legend>
+        <?php if (!empty($uploadedFiles)): ?>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th width="60">No.</th>
+                        <th>File Name</th>
+                        <th width="180" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($uploadedFiles as $i => $file): ?>
+                        <tr>
+                            <td class="text-center">
+                                <?= $i + 1 ?>
+                            </td>
+                            <?php
+                            $displayName = preg_replace('/_\(\d+\)(\.[^.]+)$/', '$1', $file);
+                            ?>
+                            <td>
+                                <?= Html::encode($displayName) ?>
+                            </td>
+                            <td class="text-center">
+                                <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $file) ?>"
+                                   target="_blank"
+                                   class="btn btn-info btn-sm">
+                                    View <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p class="text-muted mb-0">
+                No uploaded attachments.
+            </p>
+        <?php endif; ?>
+    </fieldset>
+    <fieldset class="form-group border p-3">
+        <legend class="w-auto px-2 m-0">
+            Generated Reminder Letters (<?= count($pdfFiles) ?>)
+        </legend>
+        <?php if (!empty($pdfFiles)): ?>
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th width="60">No.</th>
+                        <th width="150">Company Group</th>
+                        <th>File Name</th>
+                        <th width="180" class="text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($pdfFiles as $i => $pdfFile): ?>
+                        <tr>
+                            <td class="text-center">
+                                <?= $i + 1 ?>
+                            </td>
+                            <td>
+                                <?= Html::encode($reminderRows[$i]['company_group'] ?? '-') ?>
+                            </td>
+                            <td>
+                                <?= Html::encode($pdfFile['file_name']) ?>
+                            </td>
+                            <td class="text-center">
+                                <a href="<?= Yii::getAlias('@web/uploads/client-reminder-letter-attachment/' . $pdfFile['file_name']) ?>"
+                                   target="_blank"
+                                   class="btn btn-info btn-sm">
+                                    View <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php else: ?>
+            <p class="text-muted mb-0">
+                No reminder letters generated.
+            </p>
+        <?php endif; ?>
     </fieldset>
     <?= Html::hiddenInput('ClientReminderLetterEmails[sender]', $model->sender) ?>
     <?= Html::hiddenInput('ClientReminderLetterEmails[recipient]', $model->recipient) ?>

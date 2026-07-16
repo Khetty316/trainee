@@ -7,6 +7,7 @@ use yii\helpers\Url;
 use frontend\models\common\RefCompanyGroupList;
 
 $companyGroups = \frontend\models\common\RefCompanyGroupList::COMPANYGROUP3;
+$removeUrl = Url::to(['client/remove-temp-file-ajax']);
 
 /* @var $this yii\web\View */
 /* @var $model frontend\models\client\ClientReminderLetterEmails */
@@ -36,11 +37,23 @@ $this->params['breadcrumbs'][] = $this->title;
         <?= $form->field($model, 'Bcc')->textInput() ?>
         <?= $form->field($model, 'subject')->textInput() ?>
         <?= $form->field($model, 'content')->textarea(['rows' => 8, 'class' => 'form-control content'])->label('Email Content') ?>
-        <?= $form->field($model, 'attachment')->fileInput(['id' => 'clientreminderletteremails-attachment', 'name' => 'ClientReminderLetterEmails[attachment][]', 'multiple' => true, 'accept' => '.pdf,.doc,.docx',]) ?>        
+        <legend class="w-auto px-2 mb-3"> Uploaded Attachments </legend>
+        <?=
+                $form->field($model, 'attachment')
+                ->label(false)
+                ->fileInput([
+                    'id' => 'clientreminderletteremails-attachment',
+                    'name' => 'ClientReminderLetterEmails[attachment][]',
+                    'multiple' => true,
+                    'accept' => '.pdf',
+                ])
+        ?>
         <div
             id="attachment-container"
-            style="<?= empty($uploadedFiles) ? 'display:none;' : '' ?> margin-top:15px;">            
-            <table class="table table-bordered table-striped" id="attachment-table">
+            style="<?= empty($uploadedFiles) ? 'display:none;margin-top:15px;' : 'margin-top:15px;' ?>">
+            <table
+                id="attachment-table"
+                class="table table-bordered table-striped table-hover">
                 <thead>
                     <tr>
                         <th width="60">No.</th>
@@ -51,12 +64,15 @@ $this->params['breadcrumbs'][] = $this->title;
                 <tbody>
                     <?php if (!empty($uploadedFiles)): ?>
                         <?php foreach ($uploadedFiles as $i => $file): ?>
-                            <tr id="uploaded-file-row-<?= $i ?>" data-type="uploaded">
+                            <tr
+                                id="uploaded-file-row-<?= $i ?>"
+                                data-type="uploaded"
+                                data-original-name="<?= Html::encode($file) ?>">
                                 <td class="text-center row-number">
                                     <?= $i + 1 ?>
                                 </td>
                                 <?php
-                                $displayName = preg_replace('/_\(\d+\)(?=\.[^.]+$)/', '', $file);
+                                $displayName = preg_replace('/_\(\d+\)(\.[^.]+)$/', '$1', $file);
                                 ?>
                                 <td>
                                     <?= Html::encode($displayName) ?>
@@ -86,6 +102,7 @@ $this->params['breadcrumbs'][] = $this->title;
             </table>
         </div>
     </fieldset>
+    <!-- Letter Reminder -->
     <fieldset class="form-group border p-3">
         <legend class="w-auto px-2 m-0">Letter Reminder:</legend>
         <div id="letterReminderContainer">
@@ -99,7 +116,8 @@ $this->params['breadcrumbs'][] = $this->title;
             }
             ?>
             <?php foreach ($reminderRows as $index => $row): ?>
-                <div class="letter-reminder-row border p-3 mb-3">
+                <div class="letter-reminder-row border p-3 mb-3"
+                     data-index="<?= $index ?>">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -130,6 +148,23 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= Html::button('Add Row <i class="fas fa-plus-circle"></i>', ['class' => 'btn btn-primary', 'type' => 'button', 'onclick' => 'addReminderRow()',]) ?>
         </div>
     </fieldset>
+    <fieldset class="form-group border p-3">
+        <legend class="w-auto px-2 m-0">
+            Generated Reminder Letters
+        </legend>
+        <table
+            id="reminder-letter-table"
+            class="table table-bordered table-striped table-hover">
+            <thead>
+                <tr>
+                    <th width="60">No.</th>
+                    <th width="150">Company Group</th>
+                    <th>File Name</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </fieldset>
     <div class="d-flex justify-content-end w-100 mar mb-3">
         <?= Html::submitButton('Proceed <i class="fas fa-arrow-right"></i>', ['class' => 'btn btn-primary', 'name' => 'action', 'value' => 'preview']) ?>
     </div>
@@ -153,6 +188,7 @@ $this->params['breadcrumbs'][] = $this->title;
         margin:0 2px;
     }
 </style>
+<!-- Summernote -->
 <script>
     function getSummernoteToolbar() {
         return [
@@ -179,6 +215,7 @@ $this->params['breadcrumbs'][] = $this->title;
             }
         });
         renderAttachmentTable();
+        renderReminderLetterTable();
     });
     function initSummernote(selector) {
         $(selector).summernote({
@@ -187,12 +224,13 @@ $this->params['breadcrumbs'][] = $this->title;
         });
     }
 </script>
+<!-- Reminder Row -->
 <script>
     function addReminderRow() {
         var reminderIndex = $('.letter-reminder-row').length;
         var uniqueId = Date.now();
         var html =
-                '<div class="letter-reminder-row border p-3 mb-3">' +
+                '<div class="letter-reminder-row border p-3 mb-3" data-index="' + reminderIndex + '">' +
                 '<div class="row">' +
                 '<div class="col-md-6">' +
                 '<div class="form-group">' +
@@ -237,8 +275,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 '</div>';
         $('#letterReminderContainer').append(html);
         initSummernote('#template-content-' + uniqueId);
+        renderReminderLetterTable();
     }
 </script>
+<!-- Reminder Template AJAX -->
 <script>
     const reminderTemplateUrl = '<?= Url::to(['client/get-reminder-letter-content']) ?>';
     $(document).on('change', '.reminder-template', function () {
@@ -253,6 +293,7 @@ $this->params['breadcrumbs'][] = $this->title;
         });
     });
 </script>
+<!-- Form Validation -->
 <script>
     $('#reminder-form').on('submit', function (e) {
         var valid = true;
@@ -287,13 +328,6 @@ $this->params['breadcrumbs'][] = $this->title;
             e.preventDefault();
         }
     });
-    $(document).on('change', '.company-group', function () {
-        $(this).removeClass('is-invalid');
-        $(this)
-                .closest('.form-group')
-                .find('.company-group-error')
-                .text('');
-    });
     $(document).on('change', '.reminder-template', function () {
         $(this).removeClass('is-invalid');
         $(this)
@@ -302,81 +336,74 @@ $this->params['breadcrumbs'][] = $this->title;
                 .text('');
     });
 </script>
-
 <?php
 $clientName = preg_replace('/[^A-Za-z0-9]+/', '_', $model->client->company_name);
 $month = date('F');
 $year = date('Y');
 ?>
-
+<!-- Attachment Handling -->
 <script>
     let dt = new DataTransfer();
     $(document).on('change', '#clientreminderletteremails-attachment', function () {
-        Array.from(this.files).forEach(function (file) {
-            let exists = Array.from(dt.files).some(function (f) {
+        let input = this;
+        let newDt = new DataTransfer();
+        Array.from(dt.files).forEach(function (file) {
+            newDt.items.add(file);
+        });
+        Array.from(input.files).forEach(function (file) {
+            let extension = file.name.split('.').pop().toLowerCase();
+            if (extension !== 'pdf') {
+                alert('Only PDF files are allowed.');
+                return;
+            }
+            let exists = Array.from(newDt.files).some(function (f) {
                 return f.name === file.name &&
                         f.size === file.size;
             });
             if (!exists) {
-                dt.items.add(file);
+                newDt.items.add(file);
             }
         });
-        this.files = dt.files;
-        console.log('DT count:', dt.files.length);
-        console.log('Input count:', this.files.length);
+        dt = newDt;
+        input.files = dt.files;
+        
         renderAttachmentTable();
     });
-
     function renderAttachmentTable() {
-
         let tbody = $('#attachment-table tbody');
-
         tbody.find('tr[data-type="selected"]').remove();
-
         let uploadedCount = tbody.find('tr[data-type="uploaded"]').length;
-
         if (uploadedCount === 0 && dt.files.length === 0) {
             $('#attachment-container').hide();
             return;
         }
-
         $('#attachment-container').show();
-
         Array.from(dt.files).forEach(function (file, index) {
-
             let dot = file.name.lastIndexOf('.');
-
             let baseName = dot >= 0
                     ? file.name.substring(0, dot)
                     : file.name;
-
             let extension = dot >= 0
                     ? file.name.substring(dot)
                     : '';
-
             let displayName = baseName +
                     '_<?= $clientName ?>' +
                     '_<?= $month ?>' +
                     '_<?= $year ?>' +
                     extension;
-
             tbody.append(
                     '<tr data-type="selected">' +
                     '<td class="text-center row-number">0</td>' +
                     '<td>' + displayName + '</td>' +
                     '<td class="text-center">' +
-                    '<button type="button" class="btn btn-primary btn-sm view-selected-file" data-index="' + index + '">View  <i class="fas fa-eye"></i></button> ' +
-                    '<button type="button" class="btn btn-danger btn-sm remove-selected-file" data-index="' + index + '">Remove <i class="fas fa-minus-circle"></i></button>' +
+                    '<button type="button" class="btn btn-info btn-sm view-selected-file" data-index="' + index + '">View  <i class="fas fa-eye"></i></button> ' +
+                    '<button type="button" class="btn btn-danger btn-sm remove-selected-file" data-index="' + index + '">Delete <i class="fas fa-minus-circle"></i></button>' +
                     '</td>' +
                     '</tr>'
                     );
-
         });
-
         refreshNumbers();
-
     }
-
     $(document).on('click', '.remove-selected-file', function () {
         let removeIndex = parseInt($(this).data('index'));
         let newDt = new DataTransfer();
@@ -390,7 +417,6 @@ $year = date('Y');
         $('#clientreminderletteremails-attachment')[0].files = dt.files;
         renderAttachmentTable();
     });
-
     $(document).on('click', '.view-selected-file', function () {
         let index = parseInt($(this).data('index'));
         let file = dt.files[index];
@@ -407,20 +433,52 @@ $year = date('Y');
         });
     }
 </script>
-
-<?php
-$this->registerJs(<<<JS
-$(document).on('click', '.remove-reminder-row', function () {
-    if ($('.letter-reminder-row').length <= 1) {
-        return;
+<!-- Reminder Letter Preview -->
+<script>
+    function renderReminderLetterTable() {
+        let tbody = $('#reminder-letter-table tbody');
+        tbody.empty();
+        $('.letter-reminder-row').each(function (index) {
+            let companyGroup = $(this).find('.company-group').val();
+            if (!companyGroup) {
+                return;
+            }
+            let clientName = '<?= $clientName ?>';
+            let month = '<?= $month ?>';
+            let year = '<?= $year ?>';
+            let fileName =
+                    'Reminder_Letter_' +
+                    companyGroup +
+                    '_' +
+                    clientName +
+                    '_' +
+                    month +
+                    '_' +
+                    year +
+                    '.pdf';
+            tbody.append(
+                    '<tr>' +
+                    '<td class="text-center">' + (tbody.children().length + 1) + '</td>' +
+                    '<td>' + companyGroup + '</td>' +
+                    '<td>' + fileName + '</td>' +
+                    '</tr>'
+                    );
+        });
     }
-    $(this).closest('.letter-reminder-row').remove();
-});
-JS);
-?>
-
+    $(document).on('change', '.company-group', function () {
+        renderReminderLetterTable();
+    });
+</script>
+<script>
+    $(document).on('click', '.remove-reminder-row', function () {
+        if ($('.letter-reminder-row').length <= 1) {
+            return;
+        }
+        $(this).closest('.letter-reminder-row').remove();
+        renderReminderLetterTable();
+    });
+</script>
 <?php
-$removeUrl = Url::to(['client/remove-temp-file-ajax']);
 $this->registerJs(<<<JS
 $(document).on('click','.remove-temp-file',function(){
     if(!confirm('Remove this attachment?')){

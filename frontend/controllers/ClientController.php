@@ -853,8 +853,8 @@ class ClientController extends Controller {
                         'template_content' => $attachment->template_content,
                     ];
                 } else {
-                    $uploadedFiles[] = $attachment->file_name;
-                }
+                $uploadedFiles[] = $attachment->file_name;
+            }
             }
 
             $session->set($keyFiles, $uploadedFiles);
@@ -1483,7 +1483,7 @@ class ClientController extends Controller {
                     }
 
                     return true;
-                }));
+                    }));
 
         if ($isPdf) {
             $session->set($keyPdf, $pdfFiles);
@@ -1584,7 +1584,7 @@ class ClientController extends Controller {
             }
             return $this->redirect(array_merge(['index-general-client-debt'], Yii::$app->request->queryParams));
         }
-
+        
         return $this->renderAjax('_formUpdateClientDebt', ['model' => $model]);
     }
 
@@ -1737,4 +1737,4 @@ class ClientController extends Controller {
 
         return $this->renderPartial('_formClientReceiver_row', ['contact' => $receiver, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
-}
+} 

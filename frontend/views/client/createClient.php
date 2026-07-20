@@ -18,6 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
         'contactModels' => $contactModels,
         'isUpdate' => false,
         'receiverModels' => $receiverModels,
+        'accountModels' => $accountModels,
     ]) ?>
 
 </div>

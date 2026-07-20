@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="clients-view">
 
     <h1><?= Html::encode($this->title) ?></h1>
-
+    
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div>
             <?= Html::a('Update <i class="far fa-edit"></i>', ['update-client', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
@@ -34,8 +34,9 @@ $this->params['breadcrumbs'][] = $this->title;
             ?>
         </div>
 
-        <div>
-            <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) { ?>
+        <div>       
+            <?php 
+            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) { ?>
                 <?=
                 Html::a('Send Debt Reminder Letter', ['create-reminder-letter-emails', 'client_id' => $model->id], ['class' => 'btn btn-success'])
                 ?>
@@ -212,6 +213,31 @@ $this->params['breadcrumbs'][] = $this->title;
             </thead>
             <tbody id="listTBody">   
                 <?php foreach ($receivers as $i => $contact) : ?>
+                    <?php $key = $contact->id ?? $index; ?>
+                    <tr data-index="<?= $key ?>">
+                        <td class="text-center"><?= $contact->name ?></td>
+                        <td class="text-center"><?= $contact->position ?></td>
+                        <td class="text-center"><?= $contact->contact_number ?></td>
+                        <td class="text-center"><?= $contact->fax ?></td>
+                        <td class="text-center"><?= $contact->email_address ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <legend class="w-auto px-2 m-0">Account:</legend>
+        <table class="table table-sm mt-2" width="100%">
+            <thead class="table-dark">
+                <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Position</th>
+                    <th class="text-center">Contact number</th>
+                    <th class="text-center">Fax</th>
+                    <th class="text-center">Email address</th>
+                </tr>
+            </thead>
+            <tbody id="listTBody">   
+                <?php foreach ($accounts as $i => $contact) : ?>
                     <?php $key = $contact->id ?? $index; ?>
                     <tr data-index="<?= $key ?>">
                         <td class="text-center"><?= $contact->name ?></td>

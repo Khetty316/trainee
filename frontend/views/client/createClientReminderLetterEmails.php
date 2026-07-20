@@ -27,6 +27,8 @@ $this->registerCss("
         'uploadedFiles' => $uploadedFiles,
         'pdfFiles' => $pdfFiles,
         'reminderRows' => $reminderRows ?? [],
+        'recipientList' => $recipientList,
+       
     ])
     ?>
 </div>

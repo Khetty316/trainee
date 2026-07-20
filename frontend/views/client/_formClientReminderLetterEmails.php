@@ -2,9 +2,9 @@
 
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
-use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 use frontend\models\common\RefCompanyGroupList;
+use yii\helpers\ArrayHelper;
 
 $companyGroups = \frontend\models\common\RefCompanyGroupList::COMPANYGROUP3;
 $removeUrl = Url::to(['client/remove-temp-file-ajax']);
@@ -13,6 +13,7 @@ $removeUrl = Url::to(['client/remove-temp-file-ajax']);
 /* @var $model frontend\models\client\ClientReminderLetterEmails */
 /* @var $form yii\widgets\ActiveForm */
 /* @var $uploadedFiles array */
+/* @var $recipientList array */
 
 $this->title = 'New Reminder Letter Email';
 $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
@@ -25,13 +26,12 @@ $this->params['breadcrumbs'][] = $this->title;
     <?php $form = ActiveForm::begin(['id' => 'reminder-form', 'options' => ['autocomplete' => 'off', 'enctype' => 'multipart/form-data']]);
     ?>    <fieldset class="form-group border p-3">
         <legend class="w-auto px-2  m-0 ">Email Detail:</legend>
+        <!-- recipient -->
         <div class="row">
             <div class="col-md-6">
                 <?= $form->field($model, 'sender')->textInput(['id' => 'sender-email']) ?>
             </div>
-            <div class="col-md-6">
-                <?= $form->field($model, 'recipient')->textInput() ?>
-            </div>
+            <?= $this->render('_recipientDropdown', ['model' => $model, 'recipientList' => $recipientList,]) ?>
         </div>
         <?= $form->field($model, 'Cc')->textInput()->hint('Sender email will be automatically added to Cc list') ?>
         <?= $form->field($model, 'Bcc')->textInput() ?>
@@ -188,7 +188,7 @@ $this->params['breadcrumbs'][] = $this->title;
         margin:0 2px;
     }
 </style>
-<!-- Summernote -->
+<!-- Summer note -->
 <script>
     function getSummernoteToolbar() {
         return [
@@ -291,8 +291,7 @@ $this->params['breadcrumbs'][] = $this->title;
         $.get(reminderTemplateUrl, {id: templateId}, function (data) {
             currentRow.find('.template-content-dynamic').summernote('code', data);
         });
-    });
-</script>
+    });</script>
 <!-- Form Validation -->
 <script>
     $('#reminder-form').on('submit', function (e) {
@@ -334,8 +333,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 .closest('.form-group')
                 .find('.reminder-template-error')
                 .text('');
-    });
-</script>
+    });</script>
 <?php
 $clientName = preg_replace('/[^A-Za-z0-9]+/', '_', $model->client->company_name);
 $month = date('F');
@@ -366,7 +364,6 @@ $year = date('Y');
         });
         dt = newDt;
         input.files = dt.files;
-        
         renderAttachmentTable();
     });
     function renderAttachmentTable() {
@@ -407,7 +404,6 @@ $year = date('Y');
     $(document).on('click', '.remove-selected-file', function () {
         let removeIndex = parseInt($(this).data('index'));
         let newDt = new DataTransfer();
-
         Array.from(dt.files).forEach(function (file, index) {
             if (index !== removeIndex) {
                 newDt.items.add(file);
@@ -429,7 +425,6 @@ $year = date('Y');
     function refreshNumbers() {
         $('#attachment-table tbody tr').each(function (index) {
             $(this).find('.row-number').text(index + 1);
-
         });
     }
 </script>
@@ -467,8 +462,7 @@ $year = date('Y');
     }
     $(document).on('change', '.company-group', function () {
         renderReminderLetterTable();
-    });
-</script>
+    });</script>
 <script>
     $(document).on('click', '.remove-reminder-row', function () {
         if ($('.letter-reminder-row').length <= 1) {
@@ -476,8 +470,8 @@ $year = date('Y');
         }
         $(this).closest('.letter-reminder-row').remove();
         renderReminderLetterTable();
-    });
-</script>
+    });</script>
+
 <?php
 $this->registerJs(<<<JS
 $(document).on('click','.remove-temp-file',function(){

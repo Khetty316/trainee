@@ -251,6 +251,50 @@ if ($model->country) {
         </tfoot>
     </table>
 
+    <legend class="w-auto px-2 m-0">Contact (Account):</legend>
+    <table class="table table-sm table-borderless" width="100%">
+        <!--<div class="form-row">-->
+        <thead class="table-dark">
+            <tr>
+                <th class="text-center">Name</th>
+                <th class="text-center">Position</th>
+                <th class="text-center">Contact number</th>
+                <th class="text-center">Fax</th>
+                <th class="text-center">Email address</th>
+            </tr>
+        </thead>
+<!--<tr>-->
+        <tbody id="accountTBody">
+            <?php if (!empty($accountModels)) : ?>
+                <?php foreach ($accountModels as $i => $accountModel) : ?>
+                    <?=
+                    $this->render('_formClientAccount_row', [
+                        'contact' => $accountModel,
+                        'index' => $i,
+                        'isUpdate' => $isUpdate
+                    ])
+                    ?>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <?=
+                $this->render('_formClientAccount_row', [
+                    'contacts' => $accounts,
+                    'contactModels' => $accounts,
+                    'index' => 0,
+                    'isUpdate' => $isUpdate
+                ])
+                ?>
+            <?php endif; ?>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td>
+                    <a class='btn btn-primary' href='javascript:addAccountRow()'> 
+                        Add Row <i class="fas fa-plus-circle"></i></a>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
     <div class="form-group">
         <?= Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success']) ?>
     </div>
@@ -274,6 +318,7 @@ if ($model->country) {
 <script>
     let currentKey = <?= count($contactModels) ?>;
     let receiverKey = <?= count($receiverModels) ?>;
+    let accountKey = <?= count($accountModels) ?>;
 
     let isValidating = false;
     let isSubmitting = false;
@@ -302,6 +347,22 @@ if ($model->country) {
             success: function (response) {
                 $('#receiverTBody').append($.trim(response));
                 receiverKey++;
+                attachEmailValidation();
+            },
+            error: function () {
+                alert('Unable to add new receiver row.');
+            }
+        });
+    }
+
+    function addAccountRow() {
+        $.ajax({
+            url: '<?= \yii\helpers\Url::to(['ajax-add-account']) ?>',
+            type: 'GET',
+            data: {key: accountKey, isUpdate: '<?= $isUpdate ?>'},
+            success: function (response) {
+                $('#accountTBody').append($.trim(response));
+                accountKey++;
                 attachEmailValidation();
             },
             error: function () {
@@ -351,8 +412,8 @@ if ($model->country) {
     }
 
     function attachEmailValidation() {
-        $('#contactTBody, #receiverTBody').off('input', '.email-input');
-        $('#contactTBody, #receiverTBody').on('input', '.email-input', function () {
+        $('#contactTBody, #receiverTBody, #accountTBody').off('input', '.email-input');
+        $('#contactTBody, #receiverTBody, #accountTBody').on('input', '.email-input', function () {
             const errorId = $(this).data('error-id');
             clearValidation(this, errorId);
         });

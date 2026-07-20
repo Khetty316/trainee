@@ -30,6 +30,9 @@ use yii\web\JsExpression;
 use common\modules\auth\models\AuthItem;
 use yii\filters\AccessControl;
 use frontend\models\client\ClientReminderLetterEmailDetail;
+use frontend\models\client\ClientContactAccount;
+use frontend\models\client\ClientContact;
+use frontend\models\client\ClientContactReceiver;
 
 //debug
 /**
@@ -46,7 +49,7 @@ class ClientController extends Controller {
                 'class' => \yii\filters\AccessControl::className(),
                 'rules' => [
                     [
-                        'actions' => ['user-manual', 'index', 'view-client', 'create-client', 'update-client', 'delete-client', 'ajax-add-contact', 'remove-temp-file-ajax'],
+                        'actions' => ['user-manual', 'index', 'view-client', 'create-client', 'update-client', 'delete-client', 'ajax-add-contact', 'remove-temp-file-ajax', 'ajax-add-receiver', 'ajax-add-account'],
                         'allow' => true,
                         'roles' => [AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Projcoor, AuthItem::ROLE_Client_Module_Procurement, AuthItem::ROLE_Client_Module_Finance],
                     ],
@@ -110,6 +113,11 @@ class ClientController extends Controller {
                 ->indexBy('id')
                 ->all();
 
+        $accounts = \frontend\models\client\ClientContactAccount::find()
+                ->where(['client_id' => $id])
+                ->indexBy('id')
+                ->all();
+
         $searchModel = new ClientDebtSearch();
 
         $emailLogSearchModel = new ClientReminderLetterEmailsSearch();
@@ -133,6 +141,7 @@ class ClientController extends Controller {
                     'model' => $model,
                     'contacts' => $contacts,
                     'receivers' => $receivers,
+                    'accounts' => $accounts,
                     'searchModel' => $searchModel,
                     'dataProvider' => $dataProvider,
                     'emailLogSearchModel' => $emailLogSearchModel,
@@ -149,8 +158,15 @@ class ClientController extends Controller {
         $model = new \frontend\models\client\Clients();
         $contacts = [new \frontend\models\client\ClientContact()];
         $receivers = [new \frontend\models\client\ClientContactReceiver()];
+        $accounts = [new \frontend\models\client\ClientContactAccount()];
 
         if ($model->load(Yii::$app->request->post())) {
+            //account
+            $accountForms = \frontend\models\ModelHelper::createMultiple(
+                    \frontend\models\client\ClientContactAccount::class
+            );
+            \yii\base\Model::loadMultiple($accountForms, Yii::$app->request->post());
+
             //receiver
             $receiverForms = \frontend\models\ModelHelper::createMultiple(
                     \frontend\models\client\ClientContactReceiver::class
@@ -177,7 +193,7 @@ class ClientController extends Controller {
                 foreach ($validationErrors as $error) {
                     FlashHandler::err($error);
                 }
-                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => false]);
             }
 
             //receivers
@@ -194,8 +210,26 @@ class ClientController extends Controller {
                 foreach ($validationErrorsReceiver as $errorReceiver) {
                     FlashHandler::err($errorReceiver);
                 }
-                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => false]);
             }
+
+            //accounts
+            $validationErrorsAccount = [];
+
+            foreach ($accountForms as $index => $account) {
+                if (!empty($account->email_address) && !$email_model->validateEmailAddress($account->email_address)) {
+                    $accountName = !empty($account->name) ? $account->name : "Account " . ($index + 1);
+                    $validationErrorsAccount[] = "Invalid email address for {$accountName}: {$account->email_address}";
+                }
+            }
+
+            if (!empty($validationErrorsAccount)) {
+                foreach ($validationErrorsAccount as $errorAccount) {
+                    FlashHandler::err($errorAccount);
+                }
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => false]);
+            }
+
 
             $transaction = Yii::$app->db->beginTransaction();
             try {
@@ -212,6 +246,13 @@ class ClientController extends Controller {
                             throw new \Exception("Failed saving receiver: " . json_encode($receiver->errors));
                         }
                     }
+
+                    foreach ($accountForms as $account) {
+                        $account->client_id = $model->id;
+                        if (!$account->save(false)) {
+                            throw new \Exception("Failed saving account: " . json_encode($account->errors));
+                        }
+                    }
                     $transaction->commit();
                     FlashHandler::success("Client and contacts created successfully.");
                     return $this->redirect(['view-client', 'id' => $model->id]);
@@ -221,10 +262,10 @@ class ClientController extends Controller {
             } catch (\Exception $e) {
                 $transaction->rollBack();
                 FlashHandler::err($e->getMessage());
-                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
+                return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => false]);
             }
         }
-        return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => false]);
+        return $this->render('createClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => false]);
     }
 
     /**
@@ -247,7 +288,19 @@ class ClientController extends Controller {
                 ->indexBy('id')
                 ->all();
 
+        $existingAccounts = \frontend\models\client\ClientContactAccount::find()
+                ->where(['client_id' => $id])
+                ->indexBy('id')
+                ->all();
+
         if ($model->load(Yii::$app->request->post())) {
+
+            //account
+            $oldIDsAccount = array_keys($existingAccounts);
+            $accounts = \frontend\models\ModelHelper::createMultiple(
+                    \frontend\models\client\ClientContactAccount::class, $existingAccounts
+            );
+
             //receiver
             $oldIDsReceiver = array_keys($existingReceivers);
             $receivers = \frontend\models\ModelHelper::createMultiple(
@@ -307,6 +360,31 @@ class ClientController extends Controller {
 
             $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($receivers);
 
+            //account
+            $validationErrorsAccount = [];
+            foreach ($accounts as $index => $account) {
+                if (!empty($account->email_address) && !$email_model->validateEmailAddress($account->email_address)) {
+                    $validationErrorsAccount[] = "Invalid email address for contact " . ($account->name ?: ($index + 1)) . ": " . $account->email_address;
+                }
+            }
+            if (!empty($validationErrorsAccount)) {
+                foreach ($validationErrorsAccount as $error) {
+                    FlashHandler::err($error);
+                }
+                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'accountModels' => $accounts, 'isUpdate' => true]);
+            }
+
+            foreach ($accounts as $account) {
+                $account->client_id = $model->id;
+                if (!$account->save(false)) {
+                    throw new \Exception("Failed saving account: " . json_encode($account->errors));
+                }
+            }
+            $postedIDsAccount = array_filter(\yii\helpers\ArrayHelper::getColumn($accounts, 'id'));
+            $deletedIDsAccount = array_diff($oldIDsAccount, $postedIDsAccount);
+
+            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($accounts);
+
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
                 try {
@@ -321,12 +399,22 @@ class ClientController extends Controller {
                             }
                         }
                         if (!empty($deletedIDsReceiver)) {
-                            \frontend\models\client\ClientContact::deleteAll(['id' => $deletedIDs]);
+                            \frontend\models\client\ClientContactReceiver::deleteAll(['id' => $deletedIDsReceiver]);
                         }
                         foreach ($receivers as $receiver) {
                             $receiver->client_id = $model->id;
                             if (!$receiver->save(false)) {
                                 throw new \Exception("Failed saving contact: " . json_encode($receiver->errors));
+                            }
+                        }
+                        if (!empty($deletedIDsAccount)) {
+                            \frontend\models\client\ClientContactAccount::deleteAll(['id' => $deletedIDsAccount]);
+                        }
+                        foreach ($accounts as $account) {
+                            $account->client_id = $model->id;
+
+                            if (!$account->save(false)) {
+                                throw new \Exception("Failed saving account: " . json_encode($account->errors));
                             }
                         }
                         $transaction->commit();
@@ -336,7 +424,7 @@ class ClientController extends Controller {
                 } catch (\Exception $e) {
                     $transaction->rollBack();
                     FlashHandler::err($e->getMessage());
-                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
+                    return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => true]);
                 }
             } else {
                 FlashHandler::err("Validation failed.");
@@ -344,7 +432,8 @@ class ClientController extends Controller {
         }
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
         $receivers = $existingReceivers ?: [new \frontend\models\client\ClientContactReceiver()];
-        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'isUpdate' => true]);
+        $accounts = $existingAccounts ?: [new \frontend\models\client\ClientContactAccount()];
+        return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => true]);
     }
 
     /**
@@ -359,6 +448,7 @@ class ClientController extends Controller {
         $clientName = $model->company_name;
         \frontend\models\client\ClientContact::deleteAll(['client_id' => $id]);
         \frontend\models\client\ClientContactReceiver::deleteAll(['client_id' => $id]);
+        \frontend\models\client\ClientContactAccount::deleteAll(['client_id' => $id]);
         ClientDebt::deleteAll(['client_id' => $id]);
 //        \frontend\models\client\ClientEmails::deleteAll(['client_id' => $id]);
         \frontend\models\projectquotation\ProjectQClients::deleteAll(['client_id' => $id]);
@@ -903,12 +993,31 @@ class ClientController extends Controller {
             }
         }
 
+$recipientList = [];
+
+$accounts = ClientContactAccount::find()
+    ->where(['client_id' => $client_id])
+    ->all();
+
+foreach ($accounts as $account) {
+
+    if (empty($account->email_address)) {
+        continue;
+    }
+
+    $recipientList[] = [
+        'label' => $account->name . ' - ' . $account->email_address,
+        'email' => $account->email_address,
+    ];
+}
+
         return $this->render('createClientReminderLetterEmails', [
                     'model' => $model,
                     'templates' => $templates,
                     'uploadedFiles' => $uploadedFiles,
                     'reminderRows' => $reminderRows,
                     'pdfFiles' => $pdfFiles,
+                    'recipientList' => $recipientList,
         ]);
     }
 
@@ -1461,20 +1570,14 @@ class ClientController extends Controller {
 
         $file = Yii::$app->request->post('file');
         $client_id = Yii::$app->request->post('client_id');
-
         $session = Yii::$app->session;
-
         $keyPdf = 'temp_pdf_' . $client_id;
         $keyFiles = 'uploaded_files_' . $client_id;
-
         $pdfFiles = $session->get($keyPdf, []);
         $files = $session->get($keyFiles, []);
-
         $path = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
         $filePath = $path . $file;
-
         $isPdf = false;
-
         $pdfFiles = array_values(array_filter($pdfFiles, function ($pdf) use ($file, &$isPdf) {
 
                     if (($pdf['file_name'] ?? '') === $file) {
@@ -1736,5 +1839,12 @@ class ClientController extends Controller {
         $receiver = new \frontend\models\client\ClientContactReceiver();
 
         return $this->renderPartial('_formClientReceiver_row', ['contact' => $receiver, 'index' => $key, 'isUpdate' => $isUpdate]);
+    }
+
+    public function actionAjaxAddAccount($key, $isUpdate) {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_HTML;
+        $account = new \frontend\models\client\ClientContactAccount();
+
+        return $this->renderPartial('_formClientAccount_row', ['contact' => $account, 'index' => $key, 'isUpdate' => $isUpdate]);
     }
 }

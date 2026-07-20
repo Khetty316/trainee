@@ -56,7 +56,7 @@ $this->registerCss("
         ?>
 
         <?= $newEntryBtn ?>
-        <?= Html::a('Import Outstanding Balance <i class="fas fa-upload"></i>', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Import Outstanding Balance <i class="fas fa-download"></i>', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
         <?=
         Html::a(

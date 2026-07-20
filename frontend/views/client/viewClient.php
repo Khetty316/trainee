@@ -38,7 +38,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php 
             if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) { ?>
                 <?=
-                Html::a('Send Debt Reminder Letter', ['create-reminder-letter-emails', 'client_id' => $model->id], ['class' => 'btn btn-success'])
+                Html::a('Send Debt Reminder Letter <i class="far fa-envelope"></i>', ['create-reminder-letter-emails', 'client_id' => $model->id], ['class' => 'btn btn-success'])
                 ?>
             <?php } ?>
         </div>

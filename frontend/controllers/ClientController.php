@@ -993,23 +993,23 @@ class ClientController extends Controller {
             }
         }
 
-$recipientList = [];
+        $recipientList = [];
 
-$accounts = ClientContactAccount::find()
-    ->where(['client_id' => $client_id])
-    ->all();
+        $accounts = ClientContactAccount::find()
+                ->where(['client_id' => $client_id])
+                ->all();
 
-foreach ($accounts as $account) {
+        foreach ($accounts as $account) {
 
-    if (empty($account->email_address)) {
-        continue;
-    }
+            if (empty($account->email_address)) {
+                continue;
+            }
 
-    $recipientList[] = [
-        'label' => $account->name . ' - ' . $account->email_address,
-        'email' => $account->email_address,
-    ];
-}
+            $recipientList[] = [
+                'label' => $account->name . ' - ' . $account->email_address,
+                'email' => $account->email_address,
+            ];
+        }
 
         return $this->render('createClientReminderLetterEmails', [
                     'model' => $model,

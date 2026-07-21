@@ -46,17 +46,28 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
 
         <?php $this->registerCsrfMetaTags() ?>
         <title><?= Html::encode(Yii::$app->params['application_name']) ?></title>
+
+        <?php
+        $this->registerLinkTag([
+            'rel' => 'icon',
+            'type' => 'image/png',
+            'href' => Yii::getAlias('@web/images/logo.png')
+        ]);
+        ?>
+
         <?php $this->head() ?>
 
     </head>
     <body>
         <?php $this->beginBody() ?>
         <div class="wrap">
-            <nav id="w1-navbar" class="navbar navbar-dark bg-dark navbar-expand-lg fixed-top mainmenu p-0 m-0" >
+            <nav id="w1-navbar" class="navbar navbar-dark bg-dark navbar-expand-lg fixed-top mainmenu p-0 m-0">
                 <button class="navbar-toggler ml-2" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <a class="navbar-brand" href="/" style="align-self: center"><b><?= Html::encode(Yii::$app->params['application_name']) ?></b></a>
+                <!--<a class="navbar-brand ml-4" href="/" style="align-self: center"><b><?= Html::encode(Yii::$app->params['application_name']) ?></b></a>-->
+                <?= Html::a(Html::img('/images/logo.png', ['alt' => Yii::$app->params['application_name'], 'style' => 'width:35px;']), Yii::$app->homeUrl, ['class' => 'navbar-brand ml-4 p-1', 'style' => 'align-self: center'])
+                ?>
                 <?php
                 if (!$thisUser->isGuest) {
 //                    if ($this->beginCache($thisUser->id, ['variations' => ['varyBySession' => 0]])) {
@@ -68,10 +79,11 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                             $mainMenuItems = [];
 
                             if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin,
-                                        AuthItem::ROLE_InventoryCtrl, AuthItem::ROLE_FinanceExecutive])) {
+                                        AuthItem::ROLE_InventoryCtrl, AuthItem::ROLE_FinanceExecutive, AuthItem::ROLE_HR_Senior])) {
 
                                 $menuQuotation = MenuModel::newMenuItems('<i class="fas fa-clipboard-list"></i>', 'Management', '#');
                                 $menuQuotation->children[] = MenuModel::newMenuItems('', 'Project', '/projectquotation');
+                                $menuQuotation->children[] = MenuModel::newMenuItems('', 'Summary', '/v-project-master-summary/index-project-summary');
                                 $menuQuotation->children[] = MenuModel::newMenuItems('', 'Template', '/projectqtemplate/indexpqrevision');
                                 if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_SystemAdmin])) {
                                     $menuQuotation->children[] = MenuModel::newMenuItems('', 'Approval', '/projectquotation/director-pending-approval');
@@ -81,6 +93,7 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                 }
                                 $mainMenuItems[] = $menuQuotation;
 
+//                                $mainMenuItems[] = MenuModel::newMenuItems('<i class="fas fa-address-book"></i>', 'Clients', '/client');
                                 if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Finance, AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Procurement, AuthItem::ROLE_Client_Module_Projcoor])) {
                                     $menuClient = MenuModel::newMenuItems('<i class="fas fa-address-book"></i>', 'Client', '#');
 
@@ -93,7 +106,7 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                     }
 
                                     if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Procurement])) {
-                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Procurement', '/client');
+                                        $menuClient->children[] = MenuModel::newMenuItems('', 'Inventory Control', '/client');
                                     }
 
                                     if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Projcoor])) {
@@ -149,14 +162,17 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                             <?php
                             $mainMenuProduction = [];
 
-                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin])) {
+                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin, AuthItem::ROLE_InventoryCtrl])) {
                                 $menuProduction = MenuModel::newMenuItems('<i class="fas fa-hammer"></i>', 'Tracking', '#');
-                                $menuProduction->children[] = MenuModel::newMenuItems('', 'Project Production', '/production/production/index-production-main');
-                                $menuProduction->children[] = MenuModel::newMenuItems('', 'Panel Defect Complaint', '/productiontaskerror/index');
+                                $menuProduction->children[] = MenuModel::newMenuItems('', 'Project', '/production/production/index-production-main');
+                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin])) {
+                                    $menuProduction->children[] = MenuModel::newMenuItems('', 'Panel Defect Complaint', '/productiontaskerror/index');
+                                }
+                                
                                 $mainMenuProduction[] = $menuProduction;
                             }
 
-                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director])) {
+                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_SystemAdmin])) {
                                 $mainMenuTaskWeight = MenuModel::newMenuItems('<i class="fas fa fa-percent"></i>', 'Task Weight', '#');
                                 $mainMenuTaskWeight->children[] = MenuModel::newMenuItems('', 'Project List', '/production/production/index-production-project-list');
                                 $mainMenuTaskWeight->children[] = MenuModel::newMenuItems('', 'Default', '/reporting/reconfigure-task-weight');
@@ -165,8 +181,8 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
 
                             if (MyCommonFunction::checkRoles([AuthItem::ROLE_PrdnElec_Executive, AuthItem::ROLE_PrdnFab_Executive, AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin])) {
                                 $menuTaskAssignment = MenuModel::newMenuItems('<i class="fas fa-tasks"></i>', 'Task Assignment', '#');
-                                $menuTaskAssignment->children[] = MenuModel::newMenuItems('', 'Fabrication Department', '/fab-task/index-fab-project-list');
-                                $menuTaskAssignment->children[] = MenuModel::newMenuItems('', 'Electrical Department', '/elec-task/index-elec-project-list');
+                                $menuTaskAssignment->children[] = MenuModel::newMenuItems('', 'Fabrication', '/fab-task/index-fab-project-list');
+                                $menuTaskAssignment->children[] = MenuModel::newMenuItems('', 'Electrical', '/elec-task/index-elec-project-list');
                                 $mainMenuProduction[] = $menuTaskAssignment;
                             }
 
@@ -177,13 +193,13 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                             }
 
                             if (true) {
-                                $menuTesting = MenuModel::newMenuItems('<i class="far fa-thumbs-up"></i>', 'Panel Testing', '#');
+                                $menuTesting = MenuModel::newMenuItems('<i class="far fa-thumbs-up"></i>', 'Testing', '#');
                                 $menuTesting->children[] = MenuModel::newMenuItems('', 'Panel List', '/test/testing/index-project-lists');
                                 $menuTesting->children[] = MenuModel::newMenuItems('', 'Test Template', '/test/test-template/index');
                                 $mainMenuProduction[] = $menuTesting;
                             }
 
-                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin, AuthItem::ROLE_PrdnElec_Executive, AuthItem::ROLE_PrdnFab_Executive, AuthItem::ROLE_PrdnElec_Wkr, AuthItem::ROLE_PrdnFab_Wkr])) {
+                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_ProjCoordinator, AuthItem::ROLE_SystemAdmin, AuthItem::ROLE_PrdnElec_Executive, AuthItem::ROLE_PrdnFab_Executive, AuthItem::ROLE_PrdnElec_Wkr, AuthItem::ROLE_PrdnFab_Wkr, AuthItem::ROLE_InventoryCtrl])) {
                                 ?>
                                 <li class="dropdown">
                                     <a class="dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -252,7 +268,9 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                         $menuReportCorrectiveWorkOrder->children[] = MenuModel::newMenuItems('', 'Head of Maintenance', '/cmms/cmms-corrective-work-order-master/view-superior');
                                     }
                                 }
+                                $service = new \common\services\CmmsPreventiveMaintenanceService();
 
+                                $service->reconcileSchedules();
                                 if (MyCommonFunction::checkRoles([AuthItem::ROLE_CMMS_Normal, AuthItem::ROLE_CMMS_Superior])) {
                                     $menuReportPreventiveMaintenance = MenuModel::newMenuItems('<i class="fas fa-calendar-check"></i>', 'Preventive Maintenance', '#');
                                     if (MyCommonFunction::checkRoles([AuthItem::ROLE_CMMS_Normal, AuthItem::ROLE_CMMS_Normal])) {
@@ -311,6 +329,69 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                             <?php } ?>
 
                             <?php
+                            $currentUserId = Yii::$app->user->id;
+
+                            // count total notifications
+                            $totalMeetingNotifications = frontend\models\executive_task_assignments\MeetingDetails::find()
+                                    ->alias('md')
+                                    ->distinct()
+                                    ->leftJoin(
+                                            'meeting_attendees_details mad',
+                                            'mad.meeting_details_id = md.id'
+                                    )
+                                    ->where([
+                                        'md.active_sts' => 1,
+                                        'md.is_concluded' => 0
+                                    ])
+                                    ->andWhere([
+                                        'or',
+                                        ['md.chairperson_id' => $currentUserId],
+                                        ['md.minute_taker_id' => $currentUserId],
+                                        ['md.created_by' => $currentUserId],
+                                        ['mad.staff_id' => $currentUserId]
+                                    ])
+                                    ->count();
+                            $mainMenuMeeting = [];
+
+                            $groups = frontend\models\executive_task_assignments\MeetingGroup::find()
+                                    ->where(['active_sts' => 1])
+                                    ->all();
+
+                            foreach ($groups as $group) {
+                                $notificationCount = frontend\models\executive_task_assignments\MeetingDetails::find()
+                                        ->alias('md')
+                                        ->distinct()
+                                        ->leftJoin(
+                                                'meeting_attendees_details mad',
+                                                'mad.meeting_details_id = md.id',
+                                        )
+                                        ->where([
+                                            'md.meeting_group_id' => $group->id,
+                                            'md.active_sts' => 1,
+                                            'md.is_concluded' => 0
+                                        ])
+                                        ->andWhere([
+                                            'or',
+                                            ['md.chairperson_id' => $currentUserId],
+                                            ['md.minute_taker_id' => $currentUserId],
+                                            ['md.created_by' => $currentUserId],
+                                            ['mad.staff_id' => $currentUserId]
+                                        ])
+                                        ->count();
+
+                                $title = $group->name;
+
+                                if ($notificationCount > 0) {
+                                    $title .= ' <span class="badge badge-danger rounded-pill ml-2">'
+                                            . $notificationCount .
+                                            '</span>';
+                                }
+
+                                $mainMenuMeeting[] = MenuModel::newMenuItems('', $title, '/executive_task_assignments/meeting-group/meetings-index?group_id=' . $group->id);
+                            }
+                            ?>
+
+                            <?php
                             /**
                              * Menu dropdown 2
                              */
@@ -351,6 +432,14 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                 $menuAppraisal->children[] = MenuModel::newMenuItems('', 'HR Appraisal', '/appraisal/index');
                             }
                             $mainMenuItems2[] = $menuAppraisal;
+
+//                            if (MyCommonFunction::checkRoles([AuthItem::ROLE_PC_Normal, AuthItem::ROLE_Director, AuthItem::ROLE_PC_Finance])) {
+//                            $menuEntryExit = MenuModel::newMenuItems('<i class="fas fa-clock"></i>', 'Entry & Exit System', '#');
+//                            $menuEntryExit->children[] = MenuModel::newMenuItems('', 'Shift & Overtime Management', '/entryExitRecord/entry-exit-record/index-reference-staff-shift-type');
+//                            $menuEntryExit->children[] = MenuModel::newMenuItems('', 'Attendance & Reports', '/entryExitRecord/entry-exit-record/entry-exit-daily-record');
+
+//                            $mainMenuItems2[] = $menuEntryExit;
+//                            }
 
                             if (MyCommonFunction::checkRoles([AuthItem::ROLE_Director, AuthItem::ROLE_HR_Senior, AuthItem::ROLE_SystemAdmin, AuthItem::Module_attendance])) {
                                 $menuAttendance = MenuModel::newMenuItems('<i class="fas fa-list-ul"></i>', 'Staff Attendance', '/attendance');
@@ -463,6 +552,21 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                 }
                                 $mainMenuItems2[] = $menuEh;
                             }
+
+                            $scheduleMeeting = new \common\services\ExecMeetingDetailsService();
+                            $scheduleMeeting->reconcileSchedules();
+                            // Parent Executive Meetings menu
+                            $menuExecutiveMeetings = MenuModel::newMenuItems(
+                                    '<i class="fas fa-users me-2 summary-icon"></i>',
+                                    'Meetings',
+                                    '/executive_task_assignments/meeting-group/view-meeting-groups'
+                            );
+                            // Add all meeting groups as children
+//                            foreach ($mainMenuMeeting as $meetingMenu) {
+//                                $menuExecutiveMeetings->children[] = $meetingMenu;
+//                            }
+
+                            $mainMenuItems2[] = $menuExecutiveMeetings;
                             ?>
                             <li class="dropdown">
                                 <a class="dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -472,17 +576,36 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                     <?php
                                     foreach ($mainMenuItems2 as $key => $menu) {
                                         echo ' <li class="dropdown dropright pl-0">';
+//                                        $liClass = 'dropdown dropright pl-0';
+//
+//                                        if (strpos(strip_tags($menu->title), 'Executive Meetings') !== false) {
+//                                            $liClass .= ' executive-meeting-parent';
+//                                        }
+//
+//                                        echo '<li class="' . $liClass . '">';
                                         if (empty($menu->children)) {
                                             echo Html::a($menu->icon . "&nbsp;&nbsp;&nbsp;" . $menu->title, $menu->link, ['class' => 'pl-4']);
                                         } else {
                                             echo '<a class="dropdown-toggle pl-4" href="javascript:void(0)" id="navbarDropdown" role="button" data-toggle="dropdown" style="min-width:250px">';
                                             echo (empty($menu->icon) ? "" : ($menu->icon . "&nbsp;&nbsp;&nbsp;"));
                                             echo $menu->title ?? "";
-                                            echo '</a><ul class="dropdown-menu" aria-labelledby="navbarDropdown">';
+//                                            echo '</a><ul class="dropdown-menu" aria-labelledby="navbarDropdown">';
+                                            $dropdownClass = 'dropdown-menu';
+
+                                            if (strpos(strip_tags($menu->title), 'Staff Meetings') !== false) {
+                                                $dropdownClass .= 'executive-meeting-scroll executive-meeting-upward';
+                                            }
+
+                                            // Make Executive Meetings submenu scrollable
+                                            if (strip_tags($menu->title) && strpos(strip_tags($menu->title), 'Executive Meetings') !== false) {
+                                                $dropdownClass .= ' executive-meeting-scroll';
+                                            }
+
+                                            echo '</a><ul class="' . $dropdownClass . '" aria-labelledby="navbarDropdown">';
                                             foreach ($menu->children as $childrenKey => $childrenMenu) {
                                                 echo "<li>";
                                                 if (empty($childrenMenu->children)) {
-                                                    echo Html::a((empty($childrenMenu->icon) ? "" : ($childrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($childrenMenu->title ?? ""), $childrenMenu->link);
+                                                    echo Html::a((empty($childrenMenu->icon) ? "" : ($childrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($childrenMenu->title ?? ""), $childrenMenu->link, ['class' => 'dropdown-item']);
                                                 } else {
                                                     echo Html::a((empty($childrenMenu->icon) ? "" : ($childrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($childrenMenu->title ?? ""),
                                                             "javascript:void(0)",
@@ -493,17 +616,114 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                                         echo "<li>";
 
                                                         if (empty($grandChildrenMenu->children)) {
-                                                            echo Html::a((empty($grandChildrenMenu->icon) ? "" : ($grandChildrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($grandChildrenMenu->title ?? ""), $grandChildrenMenu->link);
+                                                            echo Html::a((empty($grandChildrenMenu->icon) ? "" : ($grandChildrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($grandChildrenMenu->title ?? ""), $grandChildrenMenu->link, ['class' => 'dropdown-item']);
                                                         }
                                                         echo "</li>";
                                                     }echo "</ul>";
                                                 }echo "</li>";
-                                            }echo "</ul>";
+                                            }
+                                            if (strpos(strip_tags($menu->title), 'Executive Meetings') !== false) {
+
+                                                echo '<li>';
+
+                                                echo Html::a(
+                                                        '<i class="fas fa-cog"></i>&nbsp;&nbsp;Manage Groups',
+                                                        'javascript:void(0)',
+                                                        [
+                                                            'class' => 'modalButtonSingle dropdown-item',
+                                                            'id' => 'manageGroupsBtn',
+                                                            'data-url' => \yii\helpers\Url::to([
+                                                                'executive_task_assignments/meeting-group/manage',
+                                                            ]),
+                                                            'data-modaltitle' => 'Manage Groups',
+                                                        ]
+                                                );
+
+                                                echo '</li>';
+                                            }
+                                            echo "</ul>";
                                         }echo "</li>";
                                     }
                                     ?>
                                 </ul>
                             </li>
+
+
+
+
+
+
+
+
+
+
+
+                            <!--                            <li class="dropdown">
+                                                            <a class="dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                                <i class="fas fa-clipboard-list"></i>&nbsp;&nbsp;&nbsp;Quotation
+                                                                <i class="fas fa-users me-2 summary-icon"></i>&nbsp;&nbsp;&nbsp;Executive Meetings
+                                                                <php if ($totalMeetingNotifications > 0): ?>
+                                                                    <span class="badge badge-danger rounded-pill ml-2">
+                                                                        <? $totalMeetingNotifications ?>
+                                                                    </span>
+                                                                <php endif; ?>
+                                                            </a>
+                                                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                                        <php
+                                                                foreach ($mainMenuMeeting as $key => $menu) {
+                                                                    echo ' <li class="dropdown dropright pl-0">';
+                                                                    if (empty($menu->children)) {
+                                                                        echo Html::a($menu->icon . "&nbsp;&nbsp;&nbsp;" . $menu->title, 
+                                                                                     $menu->link, 
+                                                                                     [
+                                                                                         'class' => 'pl-4',
+                                                                                         'encode' => false,
+                                                                                         'encodeLabels' => false
+                                                                                     ]);
+                                                                    } else {
+                                                                        echo '<a class="dropdown-toggle pl-4" href="javascript:void(0)" id="navbarDropdown" role="button" data-toggle="dropdown" style="min-width:250px">';
+                                                                        echo (empty($menu->icon) ? "" : ($menu->icon . "&nbsp;&nbsp;&nbsp;"));
+                                                                        echo $menu->title ?? "";
+                                                                        echo '</a><ul class="dropdown-menu" aria-labelledby="navbarDropdown">';
+                                                                        foreach ($menu->children as $childrenKey => $childrenMenu) {
+                                                                            echo "<li>";
+                                                                            if (empty($childrenMenu->children)) {
+                                                                                echo Html::a((empty($childrenMenu->icon) ? "" : ($childrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($childrenMenu->title ?? ""), $childrenMenu->link);
+                                                                            } else {
+                                                                                echo Html::a((empty($childrenMenu->icon) ? "" : ($childrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($childrenMenu->title ?? ""),
+                                                                                        "javascript:void(0)",
+                                                                                        ["class" => "dropdown-toggle", "id" => "navbarDropdown_$childrenKey", "role" => "button", "data-toggle" => "dropdown", "style" => "min-width:250px"]);
+                            
+                                                                                echo '<ul class="dropdown-menu" aria-labelledby="navbarDropdown_$childrenKey' . $childrenKey . '">';
+                                                                                foreach ($childrenMenu->children as $grandChildrenMenu) {
+                                                                                    echo "<li>";
+                            
+                                                                                    if (empty($grandChildrenMenu->children)) {
+                                                                                        echo Html::a((empty($grandChildrenMenu->icon) ? "" : ($grandChildrenMenu->icon . "&nbsp;&nbsp;&nbsp;")) . ($grandChildrenMenu->title ?? ""), $grandChildrenMenu->link);
+                                                                                    }
+                                                                                    echo "</li>";
+                                                                                }echo "</ul>";
+                                                                            }echo "</li>";
+                                                                        }echo "</ul>";
+                                                                    }echo "</li>";
+                                                                }
+                                                                echo '<div class="dropdown-divider"></div>';
+                            
+                                                                echo Html::a(
+                                                                    '<i class="fas fa-cog"></i>&nbsp;&nbsp;Manage Groups',
+                                                                    'javascript:void(0)',
+                                                                    [
+                                                                        'class' => 'modalButtonSingle dropdown-item',
+                                                                        'id' => 'manageGroupsBtn',
+                                                                        'data-url' => \yii\helpers\Url::to([
+                                                                            'executive_task_assignments/meeting-group/manage',
+                                                                        ]),
+                                                                        'data-modaltitle' => 'Manage Groups',
+                                                                    ]
+                                                                );
+                                                                ?>
+                                                            </ul>
+                                                        </li>-->
 
                             <?php
                             /**
@@ -581,8 +801,30 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                                             $menuInventory5Cmms = MenuModel::newMenuItems('', 'Head of Maintenance', '/inventory/inventory/po?type=maintenanceHeadPendingReceiving');
                                             $menuInventory5->children[] = $menuInventory5Cmms;
                                         }
+                                        $mainMenuItems[] = $menuInventory5;
                                     }
-                                    $mainMenuItems[] = $menuInventory5;
+                                }
+//
+                                //d.o
+                                if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_ProjCoor, AuthItem::ROLE_INVENTORY_Finance])) {
+                                    $menuInventoryDo = MenuModel::newMenuItems('<i class="fas fa-clipboard-check"></i>', 'Delivery Orders', '#');
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Executive])) {
+                                        $menuInventoryDoExec = MenuModel::newMenuItems('', 'Executive', '/inventory/delivery-order/do-panel-list?type=execPendingDo');
+                                        $menuInventoryDo->children[] = $menuInventoryDoExec;
+                                    }
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Assistant])) {
+                                        $menuInventoryDoAsist = MenuModel::newMenuItems('', 'Assistant', '/inventory/delivery-order/do-panel-list?type=assistPendingDo');
+                                        $menuInventoryDo->children[] = $menuInventoryDoAsist;
+                                    }
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_Finance])) {
+                                        $menuInventoryDoFinance = MenuModel::newMenuItems('', 'Finance', '/inventory/delivery-order/do-list?type=financeDo');
+                                        $menuInventoryDo->children[] = $menuInventoryDoFinance;
+                                    }
+                                    if (MyCommonFunction::checkRoles([AuthItem::ROLE_INVENTORY_ProjCoor])) {
+                                        $menuInventoryDoProjcoor = MenuModel::newMenuItems('', 'Project Coordinator', '/inventory/delivery-order/do-list?type=projcoorDo');
+                                        $menuInventoryDo->children[] = $menuInventoryDoProjcoor;
+                                    }
+                                    $mainMenuItems[] = $menuInventoryDo;
                                 }
 
                                 if (MyCommonFunction::checkRoles([AuthItem::ROLE_Stock_Ob_Super, AuthItem::ROLE_Stock_Ob_Normal, AuthItem::ROLE_Stock_Ob_View, AuthItem::ROLE_INVENTORY_Executive, AuthItem::ROLE_INVENTORY_Assistant, AuthItem::ROLE_INVENTORY_MaintenanceHead])) {
@@ -826,6 +1068,7 @@ $this->registerJsFile('@web/js/vue.global.js', ['position' => \yii\web\View::POS
                 Modal::end();
                 ?>
 
+
                 <div class="modal fade" tabindex="-1" role="dialog" id="spinnerModal">
                     <div class="modal-dialog modal-dialog-centered text-center" role="document">
                         <span class="fa fa-spinner fa-spin fa-3x w-100"></span>
@@ -913,3 +1156,17 @@ function checkAuthToDisplay($authsList, $specialAuthList) {
     return false;
 }
 ?>
+<script>
+    $(document).on('click', 'a.modalButtonSingle', function (e) {
+        e.preventDefault();
+
+        const url = $(this).attr('data-url');
+        const title = $(this).data('modaltitle');
+
+        $('#myModal').modal('show')             // <-- point to existing modal
+                .find('#myModalContent')
+                .load(url);
+
+//        $('#myModal .modal-title').html(title); // <-- update title
+    });
+</script>

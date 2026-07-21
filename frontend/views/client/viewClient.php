@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="clients-view">
 
     <h1><?= Html::encode($this->title) ?></h1>
-    
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div>
             <?= Html::a('Update <i class="far fa-edit"></i>', ['update-client', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
@@ -34,9 +34,8 @@ $this->params['breadcrumbs'][] = $this->title;
             ?>
         </div>
 
-        <div>       
-            <?php 
-            if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) { ?>
+        <div>
+            <?php if (MyCommonFunction::checkRoles([AuthItem::ROLE_Client_Module_Director, AuthItem::ROLE_Client_Module_Finance])) { ?>
                 <?=
                 Html::a('Send Debt Reminder Letter <i class="far fa-envelope"></i>', ['create-reminder-letter-emails', 'client_id' => $model->id], ['class' => 'btn btn-success'])
                 ?>
@@ -172,7 +171,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <!-- client contacts -->
     <div id="contact" class="tab-content">
-        <legend class="w-auto px-2 m-0">For Quotation:</legend>
+        <legend class="w-auto px-2 m-0">For Engineering/Project Coordination:</legend>
 
         <table class="table table-sm mt-2">
 
@@ -200,7 +199,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
         </table>
 
-        <legend class="w-auto px-2 m-0">Receiver:</legend>
+        <legend class="w-auto px-2 m-0">For Inventory Control:</legend>
         <table class="table table-sm mt-2" width="100%">
             <thead class="table-dark">
                 <tr>
@@ -225,7 +224,7 @@ $this->params['breadcrumbs'][] = $this->title;
             </tbody>
         </table>
 
-        <legend class="w-auto px-2 m-0">Account:</legend>
+        <legend class="w-auto px-2 m-0">For Finance:</legend>
         <table class="table table-sm mt-2" width="100%">
             <thead class="table-dark">
                 <tr>

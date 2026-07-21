@@ -13,7 +13,7 @@ $this->params['breadcrumbs'][] = ['label' => $model->client->company_name, 'url'
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="email-form">
-    <h2 class="mb-3"> Confirmation Page </h2>
+    <h2 class="mb-3"> Confirmation </h2>
     <?php $form = ActiveForm::begin(['action' => ['create-reminder-letter-emails', 'client_id' => $model->client_id, 'id' => $model->id,], 'method' => 'post']); ?>
     <fieldset class="form-group border p-3">
         <legend class="w-auto px-2 m-0">Email Detail:</legend>

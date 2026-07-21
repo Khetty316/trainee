@@ -161,7 +161,7 @@ if ($model->country) {
             ?>
         </div>
     </div>
-    <legend class="w-auto px-2 m-0">Contact (For Quotation):</legend>
+    <legend class="w-auto px-2 m-0">Contact (For Engineering/Project Coordination):</legend>
     <table class="table table-sm table-borderless" width="100%">
         <!--<div class="form-row">-->
         <thead class="table-dark">
@@ -206,7 +206,7 @@ if ($model->country) {
         </tfoot>
     </table>
 
-    <legend class="w-auto px-2 m-0">Contact (Receiver):</legend>
+    <legend class="w-auto px-2 m-0">Contact (For Inventory Control):</legend>
     <table class="table table-sm table-borderless" width="100%">
         <!--<div class="form-row">-->
         <thead class="table-dark">
@@ -251,7 +251,7 @@ if ($model->country) {
         </tfoot>
     </table>
 
-    <legend class="w-auto px-2 m-0">Contact (Account):</legend>
+    <legend class="w-auto px-2 m-0">Contact (For Finance):</legend>
     <table class="table table-sm table-borderless" width="100%">
         <!--<div class="form-row">-->
         <thead class="table-dark">
@@ -296,7 +296,7 @@ if ($model->country) {
         </tfoot>
     </table>
     <div class="form-group">
-        <?= Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success float-right mb-2']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

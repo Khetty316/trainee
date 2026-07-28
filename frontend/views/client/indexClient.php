@@ -14,13 +14,13 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
 <?php
-$this->registerCss("
-.table td,
-.table th {
-    padding: 18px !important;
-    font-size: 17px !important;
-}
-");
+//$this->registerCss("
+//.table td,
+//.table th {
+//    padding: 18px !important;
+//    font-size: 17px !important;
+//}
+//");
 ?>
 <div class="clients-index">
     <?= $this->render('_navbarClient', ['pageKey' => '1']) ?>

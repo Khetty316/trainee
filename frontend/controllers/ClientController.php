@@ -275,7 +275,7 @@ class ClientController extends Controller {
      * @return mixed
      * @throws NotFoundHttpException if the model cannot be found
      */
-    //updated by khetty, 15/11/2025
+    //updated by khetty, 25/7/2026
     public function actionUpdateClient($id) {
         $model = $this->findModel($id);
         $existingContacts = \frontend\models\client\ClientContact::find()
@@ -358,8 +358,6 @@ class ClientController extends Controller {
             $postedIDsReceiver = array_filter(\yii\helpers\ArrayHelper::getColumn($receivers, 'id'));
             $deletedIDsReceiver = array_diff($oldIDsReceiver, $postedIDsReceiver);
 
-            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($receivers);
-
             //account
             $validationErrorsAccount = [];
             foreach ($accounts as $index => $account) {
@@ -383,7 +381,7 @@ class ClientController extends Controller {
             $postedIDsAccount = array_filter(\yii\helpers\ArrayHelper::getColumn($accounts, 'id'));
             $deletedIDsAccount = array_diff($oldIDsAccount, $postedIDsAccount);
 
-            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($accounts);
+            $valid = $model->validate() && \yii\base\Model::validateMultiple($contacts) && \yii\base\Model::validateMultiple($receivers) && \yii\base\Model::validateMultiple($accounts);
 
             if ($valid) {
                 $transaction = Yii::$app->db->beginTransaction();
@@ -418,7 +416,7 @@ class ClientController extends Controller {
                             }
                         }
                         $transaction->commit();
-                        FlashHandler::success("Client and contacts updated successfully.");
+                        FlashHandler::success("Client detail updated successfully.");
                         return $this->redirect(['view-client', 'id' => $model->id]);
                     }
                 } catch (\Exception $e) {
@@ -427,7 +425,53 @@ class ClientController extends Controller {
                     return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => true]);
                 }
             } else {
-                FlashHandler::err("Validation failed.");
+                $errorMessages = [];
+
+                // model-level errors
+                foreach ($model->getErrors() as $attribute => $errors) {
+                    foreach ($errors as $error) {
+                        $errorMessages[] = "Client ({$attribute}): {$error}";
+                    }
+                }
+
+                // contact errors
+                foreach ($contacts as $index => $contact) {
+                    foreach ($contact->getErrors() as $attribute => $errors) {
+                        foreach ($errors as $error) {
+                            $errorMessages[] = "Contact " . ($contact->name ?: ($index + 1)) . " ({$attribute}): {$error}";
+                        }
+                    }
+                }
+
+                // receiver errors
+                foreach ($receivers as $index => $receiver) {
+                    foreach ($receiver->getErrors() as $attribute => $errors) {
+                        foreach ($errors as $error) {
+                            $errorMessages[] = "Receiver " . ($receiver->name ?: ($index + 1)) . " ({$attribute}): {$error}";
+                        }
+                    }
+                }
+
+                // account errors
+                foreach ($accounts as $index => $account) {
+                    foreach ($account->getErrors() as $attribute => $errors) {
+                        foreach ($errors as $error) {
+                            $errorMessages[] = "Account " . ($account->name ?: ($index + 1)) . " ({$attribute}): {$error}";
+                        }
+                    }
+                }
+
+                \common\models\myTools\Mydebug::dumpFileW($errorMessages);
+
+                if (!empty($errorMessages)) {
+                    foreach ($errorMessages as $msg) {
+                        FlashHandler::err($msg);
+                    }
+                } else {
+                    FlashHandler::err("Validation failed.");
+                }
+
+                return $this->render('updateClient', ['model' => $model, 'contactModels' => $contacts, 'receiverModels' => $receivers, 'accountModels' => $accounts, 'isUpdate' => true]);
             }
         }
         $contacts = $existingContacts ?: [new \frontend\models\client\ClientContact()];
@@ -445,15 +489,54 @@ class ClientController extends Controller {
      */
     public function actionDeleteClient($id) {
         $model = Clients::findOne($id);
+
+        if ($model === null) {
+            throw new \yii\web\NotFoundHttpException("The requested client does not exist.");
+        }
+
         $clientName = $model->company_name;
-        \frontend\models\client\ClientContact::deleteAll(['client_id' => $id]);
-        \frontend\models\client\ClientContactReceiver::deleteAll(['client_id' => $id]);
-        \frontend\models\client\ClientContactAccount::deleteAll(['client_id' => $id]);
-        ClientDebt::deleteAll(['client_id' => $id]);
-//        \frontend\models\client\ClientEmails::deleteAll(['client_id' => $id]);
-        \frontend\models\projectquotation\ProjectQClients::deleteAll(['client_id' => $id]);
-        $this->findModel($id)->delete();
-        FlashHandler::success("Client '{$clientName}' has been deleted successfully.");
+
+        // Check dependent records BEFORE attempting any deletion.
+        // If any of these exist, block the delete with a specific reason.
+
+        if (\frontend\models\inventory\InventoryDeliveryOrder::find()->where(['client_id' => $id])->exists()) {
+            FlashHandler::err("Client '{$clientName}' cannot be deleted because it has delivery order records.");
+            return $this->redirect(['index']);
+        }
+
+        if (ClientDebt::find()->where(['client_id' => $id])->exists()) {
+            FlashHandler::err("Client '{$clientName}' cannot be deleted because it has debt records.");
+            return $this->redirect(['index']);
+        }
+
+        if (ClientReminderLetterEmails::find()->where(['client_id' => $id])->exists()) {
+            FlashHandler::err("Client '{$clientName}' cannot be deleted because it has reminder letter email records.");
+            return $this->redirect(['index']);
+        }
+
+        if (\frontend\models\projectquotation\ProjectQClients::find()->where(['client_id' => $id])->exists()) {
+            FlashHandler::err("Client '{$clientName}' cannot be deleted because it is linked to project quotations.");
+            return $this->redirect(['index']);
+        }
+
+        // Safe to delete: only contact-related info is cleaned up automatically,
+        // since those are considered non-critical metadata about the client.
+        $transaction = \Yii::$app->db->beginTransaction();
+
+        try {
+            \frontend\models\client\ClientContact::deleteAll(['client_id' => $id]);
+            \frontend\models\client\ClientContactReceiver::deleteAll(['client_id' => $id]);
+            \frontend\models\client\ClientContactAccount::deleteAll(['client_id' => $id]);
+
+            $model->delete();
+
+            $transaction->commit();
+
+            FlashHandler::success("Client '{$clientName}' has been deleted successfully.");
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            FlashHandler::err("Failed to delete client '{$clientName}': " . $e->getMessage());
+        }
 
         return $this->redirect(['index']);
     }
@@ -1571,14 +1654,20 @@ class ClientController extends Controller {
 
         $file = Yii::$app->request->post('file');
         $client_id = Yii::$app->request->post('client_id');
+
         $session = Yii::$app->session;
+
         $keyPdf = 'temp_pdf_' . $client_id;
         $keyFiles = 'uploaded_files_' . $client_id;
+
         $pdfFiles = $session->get($keyPdf, []);
         $files = $session->get($keyFiles, []);
+
         $path = Yii::getAlias('@frontend/web/uploads/client-reminder-letter-attachment/');
         $filePath = $path . $file;
+
         $isPdf = false;
+
         $pdfFiles = array_values(array_filter($pdfFiles, function ($pdf) use ($file, &$isPdf) {
 
                     if (($pdf['file_name'] ?? '') === $file) {

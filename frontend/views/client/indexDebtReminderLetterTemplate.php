@@ -27,9 +27,9 @@ $this->params['breadcrumbs'][] = [
     </p>
 </div>
 
-    <?=
-    GridView::widget([
-        'layout' => "
+<?=
+GridView::widget([
+    'layout' => "
     {summary}
     {pager}
     <div class='table-scroll'>
@@ -37,34 +37,34 @@ $this->params['breadcrumbs'][] = [
     </div>
     {pager}
 ",
-        'dataProvider' => $dataProvider,
-        'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
-        'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
-        'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
-        'columns' => [
-            ['class' => 'yii\grid\SerialColumn'],
+    'dataProvider' => $dataProvider,
+    'filterModel' => $searchModel,
+    'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+    'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
+    'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
+    'columns' => [
+        ['class' => 'yii\grid\SerialColumn'],
 //            'id',
 //            'letter_name',
-            [
-                'attribute' => 'letter_name',
-                'format' => 'raw',
-                'value' => function ($model) {
-                    return Html::a($model->letter_name, ['view-client-reminder-letter-template', 'id' => $model->id]);
-                }
-            ],
-            [
-                'attribute' => 'content',
-                'format' => 'raw',
-                'value' => function ($model) {
+        [
+            'attribute' => 'letter_name',
+            'format' => 'raw',
+            'value' => function ($model) {
+                return Html::a($model->letter_name, ['view-client-reminder-letter-template', 'id' => $model->id]);
+            }
+        ],
+        [
+            'attribute' => 'content',
+            'format' => 'raw',
+            'value' => function ($model) {
 
-                    return \yii\helpers\StringHelper::truncateWords(
-                            strip_tags($model->content),
-                            20
-                    );
-                },
-                'contentOptions' => [
-                    'style' => '
+                return \yii\helpers\StringHelper::truncateWords(
+                        strip_tags($model->content),
+                        20
+                );
+            },
+            'contentOptions' => [
+                'style' => '
         max-width:400px;
         font-size:12px;
         line-height:1.6;
@@ -73,103 +73,103 @@ $this->params['breadcrumbs'][] = [
         min-height:100px;
         white-space:normal;
     '
-                ],
-            ],
-            [
-                'attribute' => 'active_sts',
-                'filter' => \yii\helpers\Html::activeDropDownList(
-                        $searchModel,
-                        'active_sts',
-                        [
-                            1 => 'No',
-                            0 => 'Yes',
-                        ],
-                        [
-                            'class' => 'form-control',
-                            'prompt' => 'All',
-                        ]
-                ),
-                'value' => function ($model) {
-                    return $model->active_sts == 0 ? 'Yes' : 'No';
-                },
-            ],
-            [
-                'attribute' => 'creator_name',
-                'label' => 'Created By',
-                'value' => 'creator.fullname',
-            ],
-            [
-                'attribute' => 'created_at',
-                'headerOptions' => [
-                    'style' => 'width:140px;',
-                ],
-                'value' => function ($model) {
-                    return $model->created_at ? MyFormatter::asDateTime_ReaddmYHi($model->created_at) : '-';
-                },
-                'filter' => DatePicker::widget([
-                    'model' => $searchModel,
-                    'attribute' => 'created_at',
-                    'clientOptions' => [
-                        'dateFormat' => 'yy-mm-dd',
-                        'changeMonth' => true,
-                        'changeYear' => true,
-                        'beforeShow' => new \yii\web\JsExpression("
-                function(input, inst) {
-                    setTimeout(function(){
-                        inst.dpDiv.css({zIndex: 99999});
-                    },0);
-                }
-            ")
-                    ],
-                    'options' => [
-                        'class' => 'form-control',
-                        'style' => 'width:120px;',
-                        'autocomplete' => 'off'
-                    ]
-                ])
-            ],
-            [
-                'attribute' => 'updater_name',
-                'label' => 'Updated By',
-                'value' => 'updater.fullname',
-            ],
-            [
-                'attribute' => 'updated_at',
-                'headerOptions' => [
-                    'style' => 'width:140px;',
-                ],
-                'value' => function ($model) {
-                    return $model->updated_at ? MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : '-';
-                },
-                'filter' => DatePicker::widget([
-                    'model' => $searchModel,
-                    'attribute' => 'updated_at',
-                    'clientOptions' => [
-                        'dateFormat' => 'yy-mm-dd',
-                        'changeMonth' => true,
-                        'changeYear' => true,
-                        'beforeShow' => new \yii\web\JsExpression("
-                function(input, inst) {
-                    setTimeout(function(){
-                        inst.dpDiv.css({zIndex: 99999});
-                    },0);
-                }
-            ")
-                    ],
-                    'options' => [
-                        'class' => 'form-control',
-                        'style' => 'width:120px;',
-                        'autocomplete' => 'off'
-                    ]
-                ])
             ],
         ],
-    ]);
-    ?>
+        [
+            'attribute' => 'active_sts',
+            'filter' => \yii\helpers\Html::activeDropDownList(
+                    $searchModel,
+                    'active_sts',
+                    [
+                        1 => 'No',
+                        0 => 'Yes',
+                    ],
+                    [
+                        'class' => 'form-control',
+                        'prompt' => 'All',
+                    ]
+            ),
+            'value' => function ($model) {
+                return $model->active_sts == 0 ? 'Yes' : 'No';
+            },
+        ],
+        [
+            'attribute' => 'creator_name',
+            'label' => 'Created By',
+            'value' => 'creator.fullname',
+        ],
+        [
+            'attribute' => 'created_at',
+            'headerOptions' => [
+                'style' => 'width:140px;',
+            ],
+            'value' => function ($model) {
+                return $model->created_at ? MyFormatter::asDateTime_ReaddmYHi($model->created_at) : '-';
+            },
+            'filter' => DatePicker::widget([
+                'model' => $searchModel,
+                'attribute' => 'created_at',
+                'clientOptions' => [
+                    'dateFormat' => 'yy-mm-dd',
+                    'changeMonth' => true,
+                    'changeYear' => true,
+                    'beforeShow' => new \yii\web\JsExpression("
+                function(input, inst) {
+                    setTimeout(function(){
+                        inst.dpDiv.css({zIndex: 99999});
+                    },0);
+                }
+            ")
+                ],
+                'options' => [
+                    'class' => 'form-control',
+                    'style' => 'width:120px;',
+                    'autocomplete' => 'off'
+                ]
+            ])
+        ],
+        [
+            'attribute' => 'updater_name',
+            'label' => 'Updated By',
+            'value' => 'updater.fullname',
+        ],
+        [
+            'attribute' => 'updated_at',
+            'headerOptions' => [
+                'style' => 'width:140px;',
+            ],
+            'value' => function ($model) {
+                return $model->updated_at ? MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : '-';
+            },
+            'filter' => DatePicker::widget([
+                'model' => $searchModel,
+                'attribute' => 'updated_at',
+                'clientOptions' => [
+                    'dateFormat' => 'yy-mm-dd',
+                    'changeMonth' => true,
+                    'changeYear' => true,
+                    'beforeShow' => new \yii\web\JsExpression("
+                function(input, inst) {
+                    setTimeout(function(){
+                        inst.dpDiv.css({zIndex: 99999});
+                    },0);
+                }
+            ")
+                ],
+                'options' => [
+                    'class' => 'form-control',
+                    'style' => 'width:120px;',
+                    'autocomplete' => 'off'
+                ]
+            ])
+        ],
+    ],
+]);
+?>
 
 <style>
-.table-scroll table {
-    width: 100%;
-    min-width: 1200px;
-}
+    .table-scroll table {
+        width: 100%;
+        min-width: 1200px;
+    }
 </style>

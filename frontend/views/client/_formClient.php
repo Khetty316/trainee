@@ -175,7 +175,7 @@ if ($model->country) {
         </thead>
 <!--<tr>-->
         <tbody id="contactTBody">
-            <?php if (!empty($contactModels)) : ?>
+            <?php // if (!empty($contactModels)) : ?>
                 <?php foreach ($contactModels as $i => $contactModel) : ?>
                     <?=
                     $this->render('_formClient_row', [
@@ -185,16 +185,17 @@ if ($model->country) {
                     ])
                     ?>
                 <?php endforeach; ?>
-            <?php else : ?>
-                <?=
-                $this->render('_formClient_row', [
-                    'contacts' => $contacts,
-                    'contactModels' => $contacts,
-                    'index' => 0,
-                    'isUpdate' => $isUpdate
-                ])
+            <?php // else : ?>
+                <?php
+//                =
+//                $this->render('_formClient_row', [
+//                    'contact' => $contactModel,
+////                    'contactModels' => $contactModel,
+//                    'index' => 0,
+//                    'isUpdate' => $isUpdate
+//                ])
                 ?>
-            <?php endif; ?>
+            <?php // endif; ?>
         </tbody>
         <tfoot>
             <tr>
@@ -220,7 +221,7 @@ if ($model->country) {
         </thead>
 <!--<tr>-->
         <tbody id="receiverTBody">
-            <?php if (!empty($receiverModels)) : ?>
+            <?php //if (!empty($receiverModels)) : ?>
                 <?php foreach ($receiverModels as $i => $receiverModel) : ?>
                     <?=
                     $this->render('_formClientReceiver_row', [
@@ -230,16 +231,17 @@ if ($model->country) {
                     ])
                     ?>
                 <?php endforeach; ?>
-            <?php else : ?>
-                <?=
-                $this->render('_formClientReceiver_row', [
-                    'contacts' => $receivers,
-                    'contactModels' => $receivers,
-                    'index' => 0,
-                    'isUpdate' => $isUpdate
-                ])
+            <?php // else : ?>
+                <?php
+//                =
+//                $this->render('_formClientReceiver_row', [
+//                    'contact' => $receiverModels,
+////                    'contactModels' => $receiverModels,
+//                    'index' => 0,
+//                    'isUpdate' => $isUpdate
+//                ])
                 ?>
-            <?php endif; ?>
+            <?php // endif; ?>
         </tbody>
         <tfoot>
             <tr>
@@ -265,7 +267,7 @@ if ($model->country) {
         </thead>
 <!--<tr>-->
         <tbody id="accountTBody">
-            <?php if (!empty($accountModels)) : ?>
+            <?php // if (!empty($accountModels)) : ?>
                 <?php foreach ($accountModels as $i => $accountModel) : ?>
                     <?=
                     $this->render('_formClientAccount_row', [
@@ -275,16 +277,17 @@ if ($model->country) {
                     ])
                     ?>
                 <?php endforeach; ?>
-            <?php else : ?>
-                <?=
-                $this->render('_formClientAccount_row', [
-                    'contacts' => $accounts,
-                    'contactModels' => $accounts,
-                    'index' => 0,
-                    'isUpdate' => $isUpdate
-                ])
+            <?php // else : ?>
+                <?php
+//                =
+//                $this->render('_formClientAccount_row', [
+//                    'contact' => $accountModel,
+////                    'contactModels' => $accountModel,
+//                    'index' => 0,
+//                    'isUpdate' => $isUpdate
+//                ])
                 ?>
-            <?php endif; ?>
+            <?php // endif; ?>
         </tbody>
         <tfoot>
             <tr>

@@ -30,7 +30,7 @@ document.addEventListener('click', function (e) {
         'layout' => "
     {summary}
     {pager}
-    <div class='table-scroll table-responsive'>
+    <div class='table-scroll table-responsive mb-2'>
         {items}
     </div>
     {pager}
@@ -182,8 +182,7 @@ document.addEventListener('click', function (e) {
                                     'id' => $model->id
                                 ],
                                 [
-                                    'class' => 'btn btn-info',
-                                    'style' => 'padding:2px 8px; font-size:12px;',
+                                    'class' => 'btn btn-info btn-sm',
                                     'title' => 'View'
                                 ]
                         );

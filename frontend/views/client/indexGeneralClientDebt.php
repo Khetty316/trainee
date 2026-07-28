@@ -220,6 +220,9 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
                 [
                     'header' => 'Action',
                     'format' => 'raw',
+                    'headerOptions' => [
+                    'style' => 'width:85px; text-align:center;',
+                ],
                     'contentOptions' => [
                         'style' => 'min-width:180px; text-align:center; white-space:nowrap;',
                     ],
@@ -233,7 +236,7 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
                                                     ['update-debt', 'id' => $model->id],
                                                     Yii::$app->request->queryParams
                                             )),
-                                    "class" => "modalButton btn btn-sm btn-primary mx-1",
+                                    "class" => "modalButton btn btn-sm btn-primary",
                                     'data-modaltitle' => "Update Debt Summary"
                                 ]
                         );
@@ -244,7 +247,7 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
                                         Yii::$app->request->queryParams
                                 ),
                                 [
-                                    'class' => 'btn btn-sm btn-danger mx-1',
+                                    'class' => 'btn btn-sm btn-danger',
                                     'data' => [
                                         'confirm' => 'Are you sure you want to delete this record?',
                                         'method' => 'post',

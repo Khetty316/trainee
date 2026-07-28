@@ -94,7 +94,7 @@ class Clients extends \yii\db\ActiveRecord {
             [['country'], 'exist', 'skipOnError' => true, 'targetClass' => RefCountries::className(), 'targetAttribute' => ['country' => 'country_code']],
             [['created_by'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['created_by' => 'id']],
             [['state'], 'exist', 'skipOnError' => true, 'targetClass' => RefState::className(), 'targetAttribute' => ['state' => 'state_id']],
-            [['tk_balance', 'tke_balance', 'tkm_balance'], 'string', 'max' => 50],
+//            [['tk_balance', 'tke_balance', 'tkm_balance'], 'string', 'max' => 50],
 //            [['emails'], 'each', 'rule' => ['email']],
 //            [['emails'], 'safe'],
 //            [['emails'], 'validateEmails']

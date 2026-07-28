@@ -24,26 +24,26 @@
 .table td,
 .table th{
     padding:4px !important;
-    font-size:13px;
-    line-height:1.2;
-    vertical-align:middle;
+    /*font-size:13px;*/
+    /*line-height:1.2;*/
+    /*vertical-align:middle;*/
 }
 
 .filters input,
 .filters select{
     height:30px !important;
-    font-size:12px;
+    /*font-size:12px;*/
     padding:4px 6px;
 }
 
 .pagination>li>a,
 .pagination>li>span{
     padding:4px 10px;
-    font-size:12px;
+    /*font-size:12px;*/
 }
 
 .table-scroll {
-    max-height: 500px;
+    /*max-height: auto;*/
     overflow: auto;
 }
 

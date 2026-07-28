@@ -10,13 +10,10 @@ $this->params['breadcrumbs'][] = [
     'url' => ['index']
 ];
 ?>
-
+<link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
 <div class="client-debt-reminder-letter-template-index">
-
     <h3><?= Html::encode($this->title) ?></h3>
-
     <?= $this->render('_navbarClient', ['pageKey' => '4']) ?>
-
     <p>
         <?= Html::a('Create New Template <i class="fas fa-plus"></i>', ['create-reminder-letter-template'], ['class' => 'btn btn-success']) ?>
         <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
@@ -28,14 +25,18 @@ $this->params['breadcrumbs'][] = [
         )
         ?>
     </p>
-
 </div>
-
-<div class="table-responsive">
 
     <?=
     GridView::widget([
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+    {summary}
+    {pager}
+    <div class='table-scroll'>
+        {items}
+    </div>
+    {pager}
+",
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'pager' => ['class' => yii\bootstrap4\LinkPager::class],
@@ -165,4 +166,10 @@ $this->params['breadcrumbs'][] = [
         ],
     ]);
     ?>
-</div>
+
+<style>
+.table-scroll table {
+    width: 100%;
+    min-width: 1200px;
+}
+</style>

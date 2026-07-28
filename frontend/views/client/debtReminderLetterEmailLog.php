@@ -4,8 +4,8 @@ use yii\grid\GridView;
 use yii\helpers\Html;
 use yii\jui\DatePicker;
 ?>
-
-<div id="emailLog" class="table-responsive">
+<link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
+<div id="emailLog">
     <?=
     Html::a('Reset Filter <i class="fas fa-search-minus"></i>',
             ['view-client', 'id' => Yii::$app->request->get('id'), '#' => 'emailLog'],
@@ -27,7 +27,14 @@ document.addEventListener('click', function (e) {
     ?>
     <?=
     GridView::widget([
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+    {summary}
+    {pager}
+    <div class='table-scroll table-responsive'>
+        {items}
+    </div>
+    {pager}
+",
         'dataProvider' => $emailLogDataProvider,
         'filterModel' => $emailLogSearchModel,
         'pager' => [
@@ -38,7 +45,9 @@ document.addEventListener('click', function (e) {
             ],
         ],
         'summary' => 'Showing <b>{begin}-{end}</b> of <b>{totalCount}</b> items.',
-        'tableOptions' => ['class' => 'table table-bordered table-striped'],
+        'tableOptions' => [
+            'class' => 'table table-bordered table-striped mb-0',
+        ],
         'columns' => [
             [
                 'class' => 'yii\grid\SerialColumn',
@@ -156,13 +165,16 @@ document.addEventListener('click', function (e) {
             ],
             [
                 'class' => 'yii\grid\ActionColumn',
+                'header' => 'Action',
                 'template' => '{view}',
+                'headerOptions' => [
+                    'style' => 'width:90px; min-width:90px; max-width:90px; text-align:center;',
+                ],
                 'contentOptions' => [
-                    'style' => 'text-align:center; vertical-align:middle; width:90px;',
+                    'style' => 'width:90px; min-width:90px; max-width:90px; text-align:center; vertical-align:middle;',
                 ],
                 'buttons' => [
                     'view' => function ($url, $model) {
-
                         return Html::a(
                                 'View <i class="fas fa-eye"></i>',
                                 [
@@ -184,24 +196,17 @@ document.addEventListener('click', function (e) {
 </div>
 
 <style>
-    .table td,
-    .table th {
-        padding: 4px !important;
-        font-size: 13px;
-        line-height: 1.2 !important;
-        vertical-align: middle;
+    .table-scroll table {
+        width: max-content;
+        min-width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
     }
 
-    .filters input,
-    .filters select {
-        height: 30px !important;
-        font-size: 12px;
-        padding: 4px 6px;
-    }
-
-    .pagination > li > a,
-    .pagination > li > span {
-        padding: 4px 10px;
-        font-size: 12px;
+    #emailLog .table-scroll th:last-child,
+    #emailLog .table-scroll td:last-child {
+        position: sticky;
+        right: 0;
+        background: #fff;
     }
 </style>

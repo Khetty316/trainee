@@ -18,7 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Update', ['update-client-reminder-letter-template', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+        <?= Html::a('Update <i class="far fa-edit"></i>', ['update-client-reminder-letter-template', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
         <?php
 //        = Html::a('Delete', ['delete', 'id' => $model->id], [
 //            'class' => 'btn btn-danger',

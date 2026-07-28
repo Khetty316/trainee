@@ -681,9 +681,10 @@ class ClientController extends Controller {
         $month = Yii::$app->session->get('month');
         $year = Yii::$app->session->get('year');
 
-        if (empty($existDataChunk)) {
-            return ['success' => true, 'done' => true, 'next' => $start];
-        }
+//        if (empty($existDataChunk)) {
+//            return ['success' => true, 'done' => true, 'next' => $start];
+//            return ['success' => true, 'done' => true];
+//        }
 
         $transaction = Yii::$app->db->beginTransaction();
 

@@ -8,64 +8,54 @@ use common\models\myTools\MyFormatter;
 
 $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
 ?>
-
-<?php
-$this->registerCss("
-.table-responsive {
-    overflow-x: auto;
-}
-
-.grid-view table {
-    min-width: 1400px;
-    border-collapse: collapse;
-}
-
-/* Sticky Action Column */
-.grid-view th:last-child,
-.grid-view td:last-child {
-    position: sticky;
-    right: 0;
-    background: #fff;
-    z-index: 1;
-    min-width: 160px;
-    white-space: nowrap;
-}
-
-.grid-view .btn {
-    white-space: nowrap;
-}
-");
-?>
-
+<link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
 <div class="client-general-debt-index">
-
-    <h3><?= Html::encode($this->title) ?></h3>
     <?= $this->render('_navbarClient', ['pageKey' => '2']) ?>
-    <p>
-        <?php
-        $newEntryBtn = Html::a(
-                'New Entry <i class="fas fa-plus"></i>',
-                "javascript:",
-                [
-                    "onclick" => "event.preventDefault();",
-                    "value" => \yii\helpers\Url::to(['create-new-entry']),
-                    "class" => "modalButton btn btn-success",
-                    'data-modaltitle' => "New Debt Entry"
-                ]
-        );
-        ?>
-
-        <?= $newEntryBtn ?>
-        <?= Html::a('Import Outstanding Balance <i class="fas fa-download"></i>', ['add-by-template-clients'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?>
-        <?=
-        Html::a(
-                'User Manual <i class="fas fa-book"></i>',
-                ['user-manual'],
-                ['class' => 'btn btn-warning float-right', 'title' => 'View User Manual', 'target' => '_blank']
-        )
-        ?>
-    </p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="grid-table-wrapper">
+            <table>
+                <?=
+                Html::a(
+                        'New Entry <i class="fas fa-plus"></i>',
+                        "javascript:",
+                        [
+                            "onclick" => "event.preventDefault();",
+                            "value" => \yii\helpers\Url::to(['create-new-entry']),
+                            "class" => "modalButton btn btn-success",
+                            'data-modaltitle' => "New Debt Entry"
+                        ]
+                )
+                ?>
+                <?=
+                Html::a(
+                        'Import Outstanding Balance <i class="fas fa-download"></i>',
+                        ['add-by-template-clients'],
+                        ['class' => 'btn btn-success ml-1']
+                )
+                ?>
+                <?=
+                Html::a(
+                        'Reset Filter <i class="fas fa-search-minus"></i>',
+                        '?',
+                        ['class' => 'btn btn-primary ml-1']
+                )
+                ?>
+            </table>
+        </div>
+        <div>
+            <?=
+            Html::a(
+                    'User Manual <i class="fas fa-book"></i>',
+                    ['user-manual'],
+                    [
+                        'class' => 'btn btn-warning',
+                        'target' => '_blank',
+                        'title' => 'View User Manual'
+                    ]
+            )
+            ?>
+        </div>
+    </div>
 
     <?php
     $months = [
@@ -83,11 +73,17 @@ $this->registerCss("
         12 => 'December',
     ];
     ?>
-
-    <!--<div class="table-responsive">-->
+    <div class="grid-table-wrapper">
         <?=
         GridView::widget([
-            'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+            'layout' => "
+    {summary}
+    {pager}
+    <div class='table-scroll'>
+        {items}
+    </div>
+    {pager}
+",
             'dataProvider' => $dataProvider,
             'filterModel' => $searchModel,
             'pager' => [
@@ -98,7 +94,7 @@ $this->registerCss("
                 'nullDisplay' => ' - '
             ],
             'tableOptions' => [
-                'class' => 'table table-striped table-bordered table-sm'
+                'class' => 'table-striped table-bordered table-sm',
             ],
             'columns' => [
                 ['class' => 'yii\grid\SerialColumn'],
@@ -172,14 +168,11 @@ $this->registerCss("
                     'attribute' => 'created_at',
                     'format' => 'raw',
                     'value' => function ($model) {
-
                         if (!$model->created_at && !$model->createdBy) {
                             return '-';
                         }
-
                         $createdBy = $model->createdBy ? $model->createdBy->fullname : '-';
                         $createdAt = $model->created_at ? MyFormatter::asDateTime_ReaddmYHi($model->created_at) : '-';
-
                         return $createdBy . ' @ ' . $createdAt;
                     },
                     'filter' => DatePicker::widget([
@@ -202,14 +195,11 @@ $this->registerCss("
                     'attribute' => 'updated_at',
                     'format' => 'raw',
                     'value' => function ($model) {
-
                         if (!$model->updated_at && !$model->updatedBy) {
                             return '-';
                         }
-
                         $updatedBy = $model->updatedBy ? $model->updatedBy->fullname : '-';
                         $updatedAt = $model->updated_at ? MyFormatter::asDateTime_ReaddmYHi($model->updated_at) : '-';
-
                         return $updatedBy . ' @ ' . $updatedAt;
                     },
                     'filter' => DatePicker::widget([
@@ -231,10 +221,9 @@ $this->registerCss("
                     'header' => 'Action',
                     'format' => 'raw',
                     'contentOptions' => [
-                        'style' => 'width:140px; text-align:center;',
+                        'style' => 'min-width:180px; text-align:center; white-space:nowrap;',
                     ],
                     'value' => function ($model) {
-
                         $updateBtn = Html::a(
                                 'Update <i class="far fa-edit"></i>',
                                 "javascript:",
@@ -262,12 +251,63 @@ $this->registerCss("
                                     ],
                                 ]
                         );
-
                         return $updateBtn . ' ' . $deleteBtn;
                     },
                 ],
             ],
         ]);
         ?>
-
-    <!--</div>-->
+    </div>
+    <style>
+        .table-scroll {
+            width: 100%;
+            max-height: 600px;
+            overflow: auto;
+        }
+        .table-scroll table{
+            min-width: 1400px;
+        }
+        .table-scroll thead th {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 3;
+        }
+        .button-bar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:15px;
+        }
+        .grid-view {
+            overflow: visible;
+        }
+        .grid-table-wrapper {
+            overflow: visible;
+        }
+        .grid-view table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .grid-view th:last-child,
+        .grid-view td:last-child {
+            position: sticky;
+            right: 0;
+            background: #fff;
+            z-index: 2;
+            white-space: nowrap;
+        }
+        .grid-view th:last-child {
+            z-index: 3;
+        }
+        .grid-view th:last-child,
+        .grid-view td:last-child {
+            position: sticky;
+            right: 0;
+            background: #fff;
+            z-index: 6;
+        }
+        .grid-view th:last-child {
+            z-index: 7;
+        }
+    </style>

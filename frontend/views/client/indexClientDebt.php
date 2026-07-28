@@ -1,13 +1,12 @@
 <?php
 
-//debug
 use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\Pjax;
 use yii\jui\DatePicker;
 use common\models\myTools\MyFormatter;
 ?>
-
+<link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
 <?php
 $this->registerCss("
     /* Fix datepicker overlapping issue inside GridView */
@@ -20,7 +19,6 @@ $this->registerCss("
 ");
 ?>
 <div class="client-debt-index">
-
     <?php
     Pjax::begin([
         'enablePushState' => false,
@@ -33,7 +31,6 @@ $this->registerCss("
         'scrollTo' => false,
     ]);
     ?>
-
     <?php
     $months = [
         1 => 'January',
@@ -50,28 +47,30 @@ $this->registerCss("
         12 => 'December',
     ];
     ?>
-
-    <div class="table-responsive">
+    <div id="debt">
         <button type="button" class="btn btn-primary mb-1" onclick="resetDebtFilters()">
             Reset Filter <i class="fas fa-search-minus"></i>
         </button>
-
         <?php
         $this->registerJs("
     document.addEventListener('click', function (e) {
-
         let link = e.target.closest('#client-debt-grid table thead a');
-
         if (link && !link.href.includes('#debt')) {
             link.href += '#debt';
         }
-
     });
 ");
         ?>
         <?=
         GridView::widget([
-            'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+            'layout' => "
+    {summary}
+    {pager}
+    <div class='table-scroll'>
+        {items}
+    </div>
+    {pager}
+",
             'dataProvider' => $dataProvider,
             'filterModel' => $searchModel,
             'pager' => [
@@ -121,9 +120,11 @@ $this->registerCss("
                 [
                     'attribute' => 'balance',
                     'label' => 'Balance (MYR)',
-                    'format' => 'raw',
+                    'headerOptions' => [
+                        'style' => 'width:140px;',
+                    ],
                     'contentOptions' => [
-                        'style' => 'text-align:right;',
+                        'style' => 'width:140px; text-align:right;',
                     ],
                     'filterInputOptions' => [
                         'class' => 'form-control',
@@ -218,10 +219,16 @@ $this->registerCss("
                 ],
                 [
                     'label' => 'Updated By',
-                    'enableSorting' => true,
                     'attribute' => 'updated_by_name',
-                    'contentOptions' => ['style' => 'text-align:center;'],
-                    'filterOptions' => ['style' => 'text-align:center;'],
+                    'headerOptions' => [
+                        'class' => 'text-center',
+                    ],
+                    'contentOptions' => [
+                        'class' => 'text-center',
+                    ],
+                    'filterOptions' => [
+                        'class' => 'text-center',
+                    ],
                     'filterInputOptions' => [
                         'class' => 'form-control',
                         'autocomplete' => 'off',
@@ -236,7 +243,6 @@ $this->registerCss("
     </div>
     <?php Pjax::end(); ?>
 </div>
-
 <style>
     .pagination {
         display: flex;
@@ -247,11 +253,9 @@ $this->registerCss("
         margin: 10px 0 15px;
         gap: 0;
     }
-
     .pagination li {
         margin: 0;
     }
-
     .pagination li a,
     .pagination li span {
         min-width: 34px;
@@ -265,30 +269,31 @@ $this->registerCss("
         background: #fff;
         color: #007bff;
     }
-
     .pagination li:first-child a,
     .pagination li:first-child span {
         border-radius: 4px 0 0 4px;
     }
-
     .pagination li:last-child a,
     .pagination li:last-child span {
         border-radius: 0 4px 4px 0;
     }
-
     .pagination li.active a,
     .pagination li.active span {
         background-color: #007bff;
         color: white !important;
         border-color: #007bff;
     }
-
     .grid-view .pagination {
         justify-content: flex-start;
     }
-
+    .table-scroll table {
+        min-width: 100%;
+    }
+    .table-scroll th:nth-child(9),
+    .table-scroll td:nth-child(9) {
+        min-width: 140px;
+    }
 </style>
-
 <script>
     function resetDebtFilters() {
         window.location.href =

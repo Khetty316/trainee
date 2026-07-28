@@ -12,6 +12,8 @@ class ProjectQMastersSearch extends VProjectQuotationMaster {
 
     public $total_amount;
     public $currency_sign;
+    public $created_at_from;
+    public $created_at_to;
 
     /**
      * {@inheritdoc}
@@ -21,7 +23,7 @@ class ProjectQMastersSearch extends VProjectQuotationMaster {
             [['id', 'project_coordinator', 'active', 'created_by', 'updated_by'], 'integer'],
             [['amount', 'is_finalized'], 'number'],
             [['remark', 'clients'], 'string'],
-            [['created_at', 'updated_at'], 'safe'],
+            [['created_at', 'updated_at', 'created_at_from', 'created_at_to'], 'safe'],
             [['quotation_no', 'quotation_display_no', 'project_code', 'project_name', 'project_coordinator_fullname'], 'string', 'max' => 255],
             [['company_group_code', 'status'], 'string', 'max' => 10],
             [['total_amount'], 'number'],
@@ -79,7 +81,7 @@ class ProjectQMastersSearch extends VProjectQuotationMaster {
         $query->andFilterWhere([
             'id' => $this->id,
 //            'amount' => $this->amount,
-            'created_at' => $this->created_at,
+//            'created_at' => $this->created_at,
             'created_by' => $this->created_by,
         ]);
 
@@ -89,12 +91,35 @@ class ProjectQMastersSearch extends VProjectQuotationMaster {
                 ->andFilterWhere(['like', 'project_coordinator_fullname', $this->project_coordinator_fullname])
                 ->andFilterWhere(['like', 'project_name', $this->project_name])
                 ->andFilterWhere(['like', 'clients', $this->clients])
-                ->andFilterWhere(['like', 'status', $this->status])
+                ->andFilterWhere(['like', 'p.status', $this->status])
                 ->andFilterWhere(['like', 'remark', $this->remark]);
 
         $query->andFilterHaving(['=', 'total_amount', $this->total_amount]);
 
         $query->andWhere(['p.active' => true]);
+
+        if (!empty($this->created_at_from) && !empty($this->created_at_to)) {
+
+            $startDate = date('Y-m-d 00:00:00', strtotime(str_replace('/', '-', $this->created_at_from)));
+            $endDate = date('Y-m-d 23:59:59', strtotime(str_replace('/', '-', $this->created_at_to)));
+
+            $query->andWhere(['between', 'p.created_at', $startDate, $endDate]);
+        } else {
+
+            if (!empty($this->created_at_from)) {
+
+                $startDate = date('Y-m-d 00:00:00', strtotime(str_replace('/', '-', $this->created_at_from)));
+
+                $query->andWhere(['>=', 'p.created_at', $startDate]);
+            }
+
+            if (!empty($this->created_at_to)) {
+
+                $endDate = date('Y-m-d 23:59:59', strtotime(str_replace('/', '-', $this->created_at_to)));
+
+                $query->andWhere(['<=', 'p.created_at', $endDate]);
+            }
+        }
 
         $dataProvider->sort->attributes['total_amount'] = [
             'asc' => ['total_amount' => SORT_ASC],

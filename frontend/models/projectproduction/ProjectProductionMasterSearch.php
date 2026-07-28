@@ -330,7 +330,9 @@ class ProjectProductionMasterSearch extends ProjectProductionMaster {
                     ))->addParams([':today' => $todayStr])
                     ->andWhere(['!=', 'project_production_master.fab_complete_percent', 100])
                     ->andWhere(['!=', 'project_production_master.elec_complete_percent', 100])
-                    ->andWhere(['project_production_master.created_by' => \Yii::$app->user->identity->id]);
+                    ->andWhere(['project_production_master.created_by' => \Yii::$app->user->identity->id])
+                    ->andWhere(['!=', 'project_production_master.delivery_status', 3])
+                    ->andWhere(['project_production_master.delivered_at' => null]);
         }
 
         if ($type === 'neardue') {
@@ -339,7 +341,9 @@ class ProjectProductionMasterSearch extends ProjectProductionMaster {
                     ))->addParams([':today' => $todayStr])
                     ->andWhere(['!=', 'project_production_master.fab_complete_percent', 100])
                     ->andWhere(['!=', 'project_production_master.elec_complete_percent', 100])
-                    ->andWhere(['project_production_master.created_by' => \Yii::$app->user->identity->id]);
+                    ->andWhere(['project_production_master.created_by' => \Yii::$app->user->identity->id])
+                    ->andWhere(['!=', 'project_production_master.delivery_status', 3])
+                    ->andWhere(['project_production_master.delivered_at' => null]);
         }
 
         $dataProvider->setSort([

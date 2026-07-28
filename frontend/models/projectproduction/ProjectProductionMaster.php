@@ -10,6 +10,7 @@ use common\models\User;
 use frontend\models\client\Clients;
 use frontend\models\ProjectProduction\ProjectProductionPanels;
 use frontend\models\projectquotation\ProjectQPanels;
+use common\models\myTools\FlashHandler;
 
 /**
  * This is the model class for table "project_production_master".
@@ -55,7 +56,8 @@ class ProjectProductionMaster extends \yii\db\ActiveRecord {
     CONST Prefix = "P";
     CONST runningNoLength = 5;
     CONST Prefix_Internalproject = "I";
-    CONST TKGROUP = ['client_code' => ['T030', 'T031', 'T032']];
+    CONST TKGROUP = ['client_code' => ['T056', 'T064', 'T071']];
+    //CONST TKGROUP = ['client_code' => ['T06', 'T031', 'T032']];
 
     public $remark_update_target_date;
     public $new_target_date;
@@ -211,7 +213,7 @@ class ProjectProductionMaster extends \yii\db\ActiveRecord {
 //        }
 //        return parent::beforeSave($insert);
 //    }
-    
+
     public function beforeSave($insert) {
         if (parent::beforeSave($insert)) {
             $isWeb = Yii::$app instanceof \yii\web\Application;
@@ -287,10 +289,52 @@ class ProjectProductionMaster extends \yii\db\ActiveRecord {
      *
      * @param an array of panel IDs
      */
-    public function createProductionPanels($panelIds) {
+//    public function createProductionPanels($panelIds) {
+//        foreach ($panelIds as $panelId) {
+//            $panel = ProjectQPanels::findOne($panelId);
+//            if ($panel) {
+//                $projProdPanel = new ProjectProductionPanels();
+//                $projProdPanel->proj_prod_master = $this->id;
+//                $projProdPanel->panel_id = $panel->id;
+//                $projProdPanel->project_production_panel_code = $projProdPanel->generatePanelCode();
+//                $projProdPanel->panel_description = $panel->panel_description;
+//                $projProdPanel->panel_type = $panel->panel_type;
+//                $projProdPanel->remark = $panel->remark;
+////                $projProdPanel->amount = $panel->amount;
+//                $projProdPanel->amount = $this->calculateConvertedPanelAmount($panel->amount);
+//                $projProdPanel->quantity = $panel->quantity;
+//                $projProdPanel->unit_code = $panel->unit_code;
+//
+//                // Get the latest sort value
+//                $latestSortNum = ProjectProductionPanels::find()
+//                        ->select('MAX(sort)')
+//                        ->scalar();
+//
+//                // Increment the latestSortNum by 1
+//                $sortNum = $latestSortNum + 1;
+//                $projProdPanel->sort = $sortNum;
+//
+//                $projProdPanel->save();
+//            }
+//        }
+//    }
+    //for PLC
+    public function createProductionPanels($panelIds, $activeRevision) {
         foreach ($panelIds as $panelId) {
             $panel = ProjectQPanels::findOne($panelId);
             if ($panel) {
+                $panel->enquiry_date = $activeRevision->projectQType->project->enquiry_date;
+                $panel->enquiry_by = $activeRevision->projectQType->project->created_by;
+                $panel->quotation_by = $activeRevision->quotation_by;
+                $panel->quotation_date = $activeRevision->quotation_date;
+                $panel->confirmed_by = $activeRevision->confirmed_by;
+                $panel->confirmed_date = $activeRevision->confirmed_date;
+                $panel->shop_drawings_submitted_by = $activeRevision->shop_drawings_submitted_by;
+                $panel->shop_drawings_submission_date = $activeRevision->shop_drawings_submission_date;
+                $panel->pushed_by = Yii::$app->user->identity->id;
+                $panel->pushed_date = new \yii\db\Expression('NOW()');
+                $panel->save(false);
+
                 $projProdPanel = new ProjectProductionPanels();
                 $projProdPanel->proj_prod_master = $this->id;
                 $projProdPanel->panel_id = $panel->id;
@@ -302,6 +346,16 @@ class ProjectProductionMaster extends \yii\db\ActiveRecord {
                 $projProdPanel->amount = $this->calculateConvertedPanelAmount($panel->amount);
                 $projProdPanel->quantity = $panel->quantity;
                 $projProdPanel->unit_code = $panel->unit_code;
+                $projProdPanel->enquiry_date = $panel->enquiry_date;
+                $projProdPanel->enquiry_by = $panel->enquiry_by;
+                $projProdPanel->quotation_by = $panel->quotation_by;
+                $projProdPanel->quotation_date = $panel->quotation_date;
+                $projProdPanel->confirmed_by = $panel->confirmed_by;
+                $projProdPanel->confirmed_date = $panel->confirmed_date;
+                $projProdPanel->shop_drawings_submitted_by = $panel->shop_drawings_submitted_by;
+                $projProdPanel->shop_drawings_submission_date = $panel->shop_drawings_submission_date;
+                $projProdPanel->pushed_by = $panel->pushed_by;
+                $projProdPanel->pushed_date = $panel->pushed_date;
 
                 // Get the latest sort value
                 $latestSortNum = ProjectProductionPanels::find()
@@ -508,5 +562,452 @@ class ProjectProductionMaster extends \yii\db\ActiveRecord {
         FlashHandler::success("Progress claim saved!");
 
         return $status;
+    }
+
+    public function updateProjectDeliveryStatus() {
+        // Count panels by delivery status
+        $totalPanels = ProjectProductionPanels::find()->where(['proj_prod_master' => $this->id])->count();
+        $nonDeliveredCount = ProjectProductionPanels::find()->where(['proj_prod_master' => $this->id, 'delivery_status' => 1])->count();
+        $partialDeliveredCount = ProjectProductionPanels::find()->where(['proj_prod_master' => $this->id, 'delivery_status' => 2])->count();
+        $fullyDeliveredCount = ProjectProductionPanels::find()->where(['proj_prod_master' => $this->id, 'delivery_status' => 3])->count();
+        $latestDeliveredDate = ProjectProductionPanels::find()->where(['proj_prod_master' => $this->id, 'delivery_status' => 3])->max('delivered_at');
+
+        // Determine project delivery status
+        if ($fullyDeliveredCount == $totalPanels && $totalPanels > 0) {
+            // All panels are fully delivered
+            $this->delivery_status = 3;
+            $this->delivered_at = $latestDeliveredDate;
+            // Keep the delivered_at date
+        } else if ($nonDeliveredCount == $totalPanels) {
+            // All panels have no delivery
+            $this->delivery_status = 1;
+            $this->delivered_at = null;
+        } else {
+            // Some panels are delivered (partially or fully), but not all are fully delivered
+            $this->delivery_status = 2;
+            $this->delivered_at = null;
+        }
+
+        return $this->save(false);
+    }
+
+    /*     * ************************************** TASK ASSIGNMENT ******************************************************* */
+
+    // FOR FUTURE USE - RELATED TO PLC
+    public static function getAssignableQty($department, $panelId, $currentTaskCode) {
+        // Special handling for electrical parallel tasks
+        if ($department === 'elec') {
+            return self::getElecAssignableQty($panelId, $currentTaskCode);
+        }
+
+        // Original logic for fabrication
+        $sequence = self::getActiveTaskSequence($department, $panelId);
+        $currentPosition = array_search($currentTaskCode, $sequence);
+        if ($currentPosition === false) {
+            return 0;
+        }
+
+        $assignedQty = self::getAssignedQtyByTask($department, $panelId, $currentTaskCode);
+        $panel = self::findOne($panelId);
+        $totalQty = $panel->total_qty ?? 0;
+
+        if ($currentPosition === 0) {
+            $inputQty = $totalQty;
+        } else {
+            $previousTask = $sequence[$currentPosition - 1];
+            $inputQty = self::getCompletedQtyByTask($department, $panelId, $previousTask);
+        }
+
+        return max(0, $inputQty - $assignedQty);
+    }
+
+// New method specifically for electrical task assignable quantity
+    private static function getElecAssignableQty($panelId, $currentTaskCode) {
+        $assignedQty = self::getAssignedQtyByTask('elec', $panelId, $currentTaskCode);
+
+        // Get fabrication completion quantity (either assembly or last completed)
+        $fabCompletionQty = self::getFabCompletionForElec($panelId);
+
+        // Check which tasks exist in this panel
+        $hasMountTask = self::taskExistsInPanel('elec', $panelId, 'mount');
+        $hasBusbarTask = self::taskExistsInPanel('elec', $panelId, 'busbar');
+        $hasWireTask = self::taskExistsInPanel('elec', $panelId, 'wire');
+
+        switch ($currentTaskCode) {
+            case 'busbar':
+                // Busbar depends on fabrication completion
+                return max(0, $fabCompletionQty - $assignedQty);
+
+            case 'mount':
+                // Mount depends on fabrication completion
+                return max(0, $fabCompletionQty - $assignedQty);
+
+            case 'wire':
+                // Wire depends on mount if mount exists, otherwise depends on fabrication
+                if ($hasMountTask) {
+                    $mountCompleted = self::getCompletedQtyByTask('elec', $panelId, 'mount');
+                    return max(0, $mountCompleted - $assignedQty);
+                } else {
+                    // No mount task, wire depends on fabrication completion
+                    return max(0, $fabCompletionQty - $assignedQty);
+                }
+
+            case 'test':
+                // Test depends on wire completion
+                if ($hasWireTask) {
+                    $wireCompleted = self::getCompletedQtyByTask('elec', $panelId, 'wire');
+                    return max(0, $wireCompleted - $assignedQty);
+                } else {
+                    // No wire task (unlikely), but fallback to mount or fabrication
+                    if ($hasMountTask) {
+                        $mountCompleted = self::getCompletedQtyByTask('elec', $panelId, 'mount');
+                        return max(0, $mountCompleted - $assignedQty);
+                    } else {
+                        return max(0, $fabCompletionQty - $assignedQty);
+                    }
+                }
+
+            default:
+                return 0;
+        }
+    }
+
+// Helper to get fabrication completion quantity for electrical tasks
+    public static function getFabCompletionForElec($panelId) {
+        // Check if assemble task exists
+        $hasAssembleTask = self::taskExistsInPanel('fab', $panelId, 'assemble');
+
+        if ($hasAssembleTask) {
+            // Use assembly completion
+            return self::getCompletedQtyByTask('fab', $panelId, 'assemble');
+        } else {
+            // Use last completed fabrication task
+            return self::getLastCompletedTaskQty('fab', $panelId);
+        }
+    }
+
+// Helper method to check if a task exists
+    public static function taskExistsInPanel($department, $panelId, $taskCode) {
+        $taskTable = 'production_' . $department . '_tasks';
+        $taskCodeField = $department . '_task_code';
+
+        return (new \yii\db\Query())
+                        ->from($taskTable)
+                        ->where([
+                            'proj_prod_panel_id' => $panelId,
+                            $taskCodeField => $taskCode,
+                        ])
+                        ->exists();
+    }
+
+    public static function getActiveTaskSequence($department, $panelId) {
+        $master = [
+            'fab' => ['cutnpunch', 'bend', 'weld', 'grind', 'powcoat', 'assemble'],
+            'elec' => [
+                'stage1' => ['busbar', 'mount'], // Parallel tasks
+                'stage2' => ['wire'],
+                'stage3' => ['test'],
+            ],
+        ];
+
+        if ($department === 'fab') {
+            $sequence = $master['fab'];
+            $dbTasks = fabrication\ProductionFabTasks::find()
+                    ->select('fab_task_code')
+                    ->where(['proj_prod_panel_id' => $panelId])
+                    ->column();
+            return array_values(array_intersect($sequence, $dbTasks));
+        } else {
+            // For electrical, we need a flat sequence but handle dependencies differently
+            $allElecTasks = electrical\ProductionElecTasks::find()
+                    ->select('elec_task_code')
+                    ->where(['proj_prod_panel_id' => $panelId])
+                    ->column();
+
+            // Return in logical order but busbar/mount are considered stage1
+            $orderedTasks = [];
+            if (in_array('busbar', $allElecTasks))
+                $orderedTasks[] = 'busbar';
+            if (in_array('mount', $allElecTasks))
+                $orderedTasks[] = 'mount';
+            if (in_array('wire', $allElecTasks))
+                $orderedTasks[] = 'wire';
+            if (in_array('test', $allElecTasks))
+                $orderedTasks[] = 'test';
+
+            return $orderedTasks;
+        }
+    }
+
+    public static function getLastCompletedTaskQty($department, $panelId) {
+        $taskSequences = [
+            'fab' => [
+                'assemble',
+                'powcoat',
+                'grind',
+                'weld',
+                'bend',
+                'cutnpunch',
+            ],
+            'elec' => [
+                'test',
+                'wire',
+                'mount',
+                'busbar',
+            ],
+        ];
+
+        $sequence = $taskSequences[$department] ?? [];
+
+        // Look through tasks from last to first
+        foreach ($sequence as $taskCode) {
+            $completedQty = self::getCompletedQtyByTask($department, $panelId, $taskCode);
+            if ($completedQty > 0) {
+                return $completedQty;
+            }
+        }
+
+        return 0;
+    }
+
+    public static function getCompletedQtyByTask($department, $panelId, $taskCode) {
+        $taskTable = 'production_' . $department . '_tasks';
+        $taskCodeField = $department . '_task_code';
+
+        $completedQty = (new \yii\db\Query())
+                ->select(['SUM(qty_completed)'])
+                ->from($taskTable)
+                ->where([
+                    'proj_prod_panel_id' => $panelId,
+                    $taskCodeField => $taskCode,
+                ])
+                ->scalar();
+
+        return (int) $completedQty;
+    }
+
+    public static function getAssignedQtyByTask($department, $panelId, $taskCode) {
+        $taskTable = 'production_' . $department . '_tasks';
+        $taskCodeField = $department . '_task_code';
+
+        $assignedQty = (new \yii\db\Query())
+                ->select(['SUM(qty_assigned)'])
+                ->from($taskTable)
+                ->where([
+                    'proj_prod_panel_id' => $panelId,
+                    $taskCodeField => $taskCode,
+                ])
+                ->scalar();
+
+        return (int) $assignedQty;
+    }
+
+    /*     * ************************************** TASK COMPLETION ******************************************************* */
+
+    public static function getCompletableQty($department, $panelId, $currentTaskCode) {
+        if ($department === 'elec') {
+            return self::getElecCompletableQty($panelId, $currentTaskCode);
+        }
+
+        // For fabrication
+        $sequence = self::getActiveTaskSequence($department, $panelId);
+        $currentPosition = array_search($currentTaskCode, $sequence);
+        if ($currentPosition === false) {
+            return 0;
+        }
+
+        $completedQty = self::getCompletedQtyByTask($department, $panelId, $currentTaskCode);
+        $panel = ProjectProductionPanels::findOne($panelId);
+        $totalQty = $panel->total_qty ?? 0;
+
+        // FIRST TASK
+        if ($currentPosition === 0) {
+            $inputQty = $totalQty;
+        } else {
+            $previousTask = $sequence[$currentPosition - 1];
+            $inputQty = self::getCompletedQtyByTask($department, $panelId, $previousTask);
+        }
+
+        // For completion: available = what's available from input - what's already completed
+        return max(0, $inputQty - $completedQty);
+    }
+
+// For electrical with parallel tasks
+    private static function getElecCompletableQty($panelId, $currentTaskCode) {
+        $completedQty = self::getCompletedQtyByTask('elec', $panelId, $currentTaskCode);
+        $fabCompletionQty = self::getFabCompletionForElec($panelId);
+
+        $hasMountTask = self::taskExistsInPanel('elec', $panelId, 'mount');
+        $hasWireTask = self::taskExistsInPanel('elec', $panelId, 'wire');
+
+        switch ($currentTaskCode) {
+            case 'busbar':
+                // Can complete up to what fabrication has completed
+                return max(0, $fabCompletionQty - $completedQty);
+
+            case 'mount':
+                // Can complete up to what fabrication has completed
+                return max(0, $fabCompletionQty - $completedQty);
+
+            case 'wire':
+                if ($hasMountTask) {
+                    $mountCompleted = self::getCompletedQtyByTask('elec', $panelId, 'mount');
+                    return max(0, $mountCompleted - $completedQty);
+                } else {
+                    return max(0, $fabCompletionQty - $completedQty);
+                }
+
+            case 'test':
+                if ($hasWireTask) {
+                    $wireCompleted = self::getCompletedQtyByTask('elec', $panelId, 'wire');
+                    return max(0, $wireCompleted - $completedQty);
+                } else if ($hasMountTask) {
+                    $mountCompleted = self::getCompletedQtyByTask('elec', $panelId, 'mount');
+                    return max(0, $mountCompleted - $completedQty);
+                } else {
+                    return max(0, $fabCompletionQty - $completedQty);
+                }
+
+            default:
+                return 0;
+        }
+    }
+
+    public static function getPreviousTaskDetails($department, $panelId, $currentTaskCode) {
+        $sequence = self::getActiveTaskSequence($department, $panelId);
+        $currentPosition = array_search($currentTaskCode, $sequence);
+
+        if ($currentPosition === false || $currentPosition === 0) {
+            return null;
+        }
+
+        $previousTaskCode = $sequence[$currentPosition - 1];
+
+        // Get previous task completion details
+        $completedQty = self::getCompletedQtyByTask($department, $panelId, $previousTaskCode);
+        $assignedQty = self::getAssignedQtyByTask($department, $panelId, $previousTaskCode);
+        $totalQty = ProjectProductionPanels::findOne($panelId)->total_qty ?? 0;
+
+        // Get staff assigned to previous task
+        $staffAssigned = self::getStaffAssignedToTask($department, $panelId, $previousTaskCode);
+
+        // Get task name/label
+        $taskLabels = [
+            'fab' => [
+                'cutnpunch' => 'Cutting & Punching',
+                'bend' => 'Bending',
+                'weld' => 'Welding',
+                'grind' => 'Grinding',
+                'powcoat' => 'Powder Coating',
+                'assemble' => 'Assembling',
+            ],
+            'elec' => [
+                'busbar' => 'Busbar Work',
+                'mount' => 'Components Mounting',
+                'wire' => 'Wiring',
+                'test' => 'Testing',
+            ],
+        ];
+
+        $taskName = $taskLabels[$department][$previousTaskCode] ?? ucfirst($previousTaskCode);
+
+        return [
+            'taskCode' => $previousTaskCode,
+            'taskName' => $taskName,
+            'completedQty' => $completedQty,
+            'assignedQty' => $assignedQty,
+            'totalQty' => $totalQty,
+            'remainingToComplete' => $assignedQty - $completedQty,
+            'staffAssigned' => $staffAssigned,
+            'message' => "Previous task '{$taskName}' has no completed units yet. " .
+            "Completed: {$completedQty} / Assigned: {$assignedQty}"
+        ];
+    }
+
+// New method to get staff assigned to a specific task
+    public static function getStaffAssignedToTask($department, $panelId, $taskCode) {
+        $staffList = [];
+
+        try {
+            if ($department === 'fab') {
+                $taskAssign = fabrication\ProductionFabTasks::find()
+                        ->where([
+                            'proj_prod_panel_id' => $panelId,
+                            'fab_task_code' => $taskCode
+                        ])
+                        ->one();
+
+                if (!$taskAssign) {
+                    return [];
+                }
+
+                $assignments = \frontend\models\projectproduction\fabrication\TaskAssignFab::find()
+                        ->with(['taskAssignFabStaff', 'taskAssignFabStaff.user'])
+                        ->where(['prod_fab_task_id' => $taskAssign->id])
+                        ->andWhere(['deactivated_at' => null])
+                        ->andWhere(['deactivated_by' => null])
+                        ->all();
+
+                // Fix for fabrication section in getStaffAssignedToTask()
+                foreach ($assignments as $assignment) {
+                    $taskAssignFabStaffs = $assignment->taskAssignFabStaff;
+                    foreach ($taskAssignFabStaffs as $taskFabStaff) {
+                        $staff = $taskFabStaff->user;
+                        if ($staff) {
+                            $completedQty = $taskFabStaff->complete_qty ?? 0;
+                            $assignedQty = $assignment->quantity ?? 0;
+                            $remainingQty = $assignedQty - $completedQty;
+
+                            $staffList[] = [
+                                'id' => $staff->id,
+                                'name' => $staff->fullname,
+                                'assigned_qty' => $assignedQty,
+                                'completed_qty' => $completedQty,
+                                'remaining_qty' => $remainingQty,
+                                'is_completed' => $remainingQty <= 0,
+                            ];
+                        }
+                    }
+                }
+            } else { // electrical
+                $taskAssign = electrical\ProductionElecTasks::find()
+                        ->where([
+                            'proj_prod_panel_id' => $panelId,
+                            'elec_task_code' => $taskCode
+                        ])
+                        ->one();
+
+                if (!$taskAssign) {
+                    return [];
+                }
+
+                $assignments = \common\models\TaskAssignElec::find()
+                        ->with(['taskAssignElecStaff', 'taskAssignElecStaff.user'])
+                        ->where(['prod_elec_tasks_id' => $taskAssign->id])
+                        ->all();
+
+                foreach ($assignments as $assignment) {
+                    if ($assignment->taskAssignElecStaff && $assignment->taskAssignElecStaff->user) {
+                        $staff = $assignment->taskAssignElecStaff->user;
+                        $completedQty = $assignment->taskAssignElecStaff->completed_qty ?? 0;
+                        $assignedQty = $assignment->quantity ?? 0;
+                        $remainingQty = $assignedQty - $completedQty;
+
+                        $staffList[] = [
+                            'id' => $staff->id,
+                            'name' => $staff->fullname,
+                            'assigned_qty' => $assignedQty,
+                            'completed_qty' => $completedQty,
+                            'remaining_qty' => $remainingQty,
+                            'is_completed' => $remainingQty <= 0,
+                        ];
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            return [];
+        }
+
+        return $staffList;
     }
 }

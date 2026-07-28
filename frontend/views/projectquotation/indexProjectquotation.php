@@ -1,5 +1,6 @@
 <?php
 
+//indexProjectquotation.php
 use yii\helpers\Html;
 use yii\grid\GridView;
 use frontend\models\projectquotation\ProjectQTypes;
@@ -39,58 +40,80 @@ $this->params['breadcrumbs'][] = $this->title;
         </div>
         <div class="col-md-9">
             <div class="float-right">
-                <div class="d-inline-block mr-2">
-                    <label for="export-start-date" class="d-block mb-1" style="font-size: 12px;">Quotation Date From</label>
-                    <?=
-                    DatePicker::widget([
-                        'name' => 'export_start_date',
-                        'id' => 'export-start-date',
-                        'options' => ['class' => 'form-control', 'placeholder' => 'dd/mm/yyyy', 'style' => 'width: 140px;'],
-                        'dateFormat' => 'dd/MM/yyyy',
-                        'clientOptions' => [
-                            'showButtonPanel' => true,
-                            'closeText' => 'Close',
-                        ],
-                    ]);
+                <!--                <div class="d-inline-block mr-2">
+                                    <label for="export-start-date" class="d-block mb-1" style="font-size: 12px;">Quotation Date From</label>
+                <?php
+//                    =
+//                    DatePicker::widget([
+//                        'name' => 'export_start_date',
+//                        'id' => 'export-start-date',
+//                        'options' => ['class' => 'form-control', 'placeholder' => 'dd/mm/yyyy', 'style' => 'width: 140px;'],
+//                        'dateFormat' => 'dd/MM/yyyy',
+//                        'clientOptions' => [
+//                            'showButtonPanel' => true,
+//                            'closeText' => 'Close',
+//                        ],
+//                    ]);
+                ?>
+                                </div>
+                                <div class="d-inline-block mr-2">
+                                    <label for="export-end-date" class="d-block mb-1" style="font-size: 12px;">Quotation Date To</label>
+                <?php
+//                    =
+//                    DatePicker::widget([
+//                        'name' => 'export_end_date',
+//                        'id' => 'export-end-date',
+//                        'options' => ['class' => 'form-control', 'placeholder' => 'dd/mm/yyyy', 'style' => 'width: 140px;'],
+//                        'dateFormat' => 'dd/MM/yyyy',
+//                        'clientOptions' => [
+//                            'showButtonPanel' => true,
+//                            'closeText' => 'Close',
+//                        ],
+//                    ]);
+                ?>
+                                </div>-->
+                <!--<div class="d-inline-block" style="vertical-align: bottom;">-->
+                    <?php
+//                    =
+//                    Html::button('Export Selected to Excel <i class="fas fa-file-excel"></i>', [
+//                        'class' => 'btn btn-info',
+//                        'id' => 'export-selected',
+//                        'style' => 'margin-bottom: 0;'
+//                    ])
                     ?>
-                </div>
-                <div class="d-inline-block mr-2">
-                    <label for="export-end-date" class="d-block mb-1" style="font-size: 12px;">Quotation Date To</label>
-                    <?=
-                    DatePicker::widget([
-                        'name' => 'export_end_date',
-                        'id' => 'export-end-date',
-                        'options' => ['class' => 'form-control', 'placeholder' => 'dd/mm/yyyy', 'style' => 'width: 140px;'],
-                        'dateFormat' => 'dd/MM/yyyy',
-                        'clientOptions' => [
-                            'showButtonPanel' => true,
-                            'closeText' => 'Close',
-                        ],
-                    ]);
-                    ?>
-                </div>
-                <div class="d-inline-block" style="vertical-align: bottom;">
-                    <?=
-                    Html::button('Export Selected to Excel <i class="fas fa-file-excel"></i>', [
-                        'class' => 'btn btn-info',
-                        'id' => 'export-selected',
-                        'style' => 'margin-bottom: 0;'
-                    ])
-                    ?>
-                </div>
+                <!--</div>-->
             </div>
         </div>
     </div>
-    <div class="row mb-2">
-        <div class="col-md-12 text-right">
-            <small class="text-muted">
-                <i class="fas fa-info-circle"></i> 
-                Select quotations and optionally choose date range
-            </small>
-        </div>
-    </div>
+    <!--    <div class="row mb-2">
+            <div class="col-md-12 text-right">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> 
+                    Select quotations and optionally choose date range
+                </small>
+            </div>
+        </div>-->
 
     <?php \yii\widgets\Pjax::begin(['id' => 'pjax-quotation-grid']); ?>
+
+<!--    <div class="card mb-3" id="summary-card">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <h5 class="mb-1">Total Records</h5>
+                    <h3 class="text-primary" id="total-records"><?= $dataProvider->getTotalCount() ?></h3>
+                </div>
+                <div class="col-md-3">
+                    <h5 class="mb-1">Selected Records</h5>
+                    <h3 class="text-info" id="selected-count">0</h3>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-1">Total Amount (Selected)</h5>
+                    <h3 class="text-success" id="total-amount">-</h3>
+                </div>
+            </div>
+        </div>
+    </div>-->
 
     <?=
     GridView::widget([
@@ -128,7 +151,7 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'contentOptions' => ['class' => 'col-sm-1'],
                 'attribute' => 'status',
-                'filter' => ['QUOTATION' => 'QUOTATION', 'CONFIRMED' => 'CONFIRMED', "PUSHED" => "PUSHED"]
+                'filter' => ['QUOTATION' => 'QUOTATION', 'CONFIRMED' => 'CONFIRMED', "PUSHED" => "PUSHED", 'COMPLETED' => 'COMPLETED', "DELIVERED" => "DELIVERED"]
             ],
             [
                 'attribute' => 'clients',
@@ -150,15 +173,62 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'project_coordinator_fullname',
             ],
             [
-                'class' => 'yii\grid\CheckboxColumn',
-                'header' => Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
-                Html::checkbox('select_all', false, ['id' => 'select-all', 'style' => 'margin:0;']),
-                'headerOptions' => ['class' => 'text-center'],
-                'contentOptions' => ['class' => 'text-center'],
-                'checkboxOptions' => function ($model) {
-                    return ['value' => $model->id, 'class' => 'my-checkbox'];
+                'attribute' => 'created_at',
+                'label' => 'Created Date',
+                'format' => 'raw',
+                'contentOptions' => ['class' => 'col-sm-1'],
+                'value' => function ($model) {
+                    return $model->created_at ? date('d/m/Y', strtotime($model->created_at)) : '-';
                 },
+                'filter' => '<div style="display:flex; flex-direction:column; gap:5px;">' .
+                DatePicker::widget([
+                    'model' => $searchModel,
+                    'attribute' => 'created_at_from',
+                    'options' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'From',
+                        'style' => 'width:100%; font-size:12px; padding:4px;'
+                    ],
+                    'language' => 'en',
+                    'dateFormat' => 'php:d/m/Y',
+                    'clientOptions' => [
+                        'altFormat' => 'yy-mm-dd',
+                        'altField' => '#' . \yii\helpers\Html::getInputId($searchModel, 'created_at_from'),
+                        'showButtonPanel' => true,
+                        'changeMonth' => true,
+                        'changeYear' => true,
+                    ],
+                ]) .
+                DatePicker::widget([
+                    'model' => $searchModel,
+                    'attribute' => 'created_at_to',
+                    'options' => [
+                        'class' => 'form-control',
+                        'placeholder' => 'To',
+                        'style' => 'width:100%; font-size:12px; padding:4px;'
+                    ],
+                    'language' => 'en',
+                    'dateFormat' => 'php:d/m/Y',
+                    'clientOptions' => [
+                        'altFormat' => 'yy-mm-dd',
+                        'altField' => '#' . \yii\helpers\Html::getInputId($searchModel, 'created_at_to'),
+                        'showButtonPanel' => true,
+                        'changeMonth' => true,
+                        'changeYear' => true,
+                    ],
+                ]) .
+                '</div>',
             ],
+//            [
+//                'class' => 'yii\grid\CheckboxColumn',
+//                'header' => Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
+//                Html::checkbox('select_all', false, ['id' => 'select-all', 'style' => 'margin:0;']),
+//                'headerOptions' => ['class' => 'text-center'],
+//                'contentOptions' => ['class' => 'text-center'],
+//                'checkboxOptions' => function ($model) {
+//                    return ['value' => $model->id, 'class' => 'my-checkbox'];
+//                },
+//            ],
         ],
     ]);
     ?>
@@ -202,7 +272,40 @@ $this->params['breadcrumbs'][] = $this->title;
         padding: 1rem;
     }
 </style>
+<script>
+    function getAllFilteredIds(callback) {
 
+        const filterData = {};
+
+        $('input[name*="Search"], select[name*="Search"]').each(function () {
+            const name = $(this).attr('name');
+            const value = $(this).val();
+
+            if (name && value !== '') {
+                filterData[name] = value;
+            }
+        });
+
+        $.ajax({
+            url: '<?= \yii\helpers\Url::to(["get-all-filtered-ids"]) ?>',
+            type: 'POST',
+            data: {filters: filterData},
+
+            success: function (response) {
+
+                if (response.success && response.ids) {
+                    callback(response.ids);
+                } else {
+                    alert('Failed to load all items');
+                }
+            },
+
+            error: function () {
+                alert('Failed to load all items.');
+            }
+        });
+    }
+</script>
 <script>
     (function () {
         const pjaxContainer = '#pjax-quotation-grid';
@@ -234,38 +337,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 return e.returnValue;
             }
         });
-
-        // Function to get ALL filtered IDs from rr
-        function getAllFilteredIds(callback) {
-            showLoading('Loading all filtered items...');
-
-            const filterData = {};
-            $('input[name*="Search"], select[name*="Search"]').each(function () {
-                const name = $(this).attr('name');
-                const value = $(this).val();
-                if (name && value !== '') {
-                    filterData[name] = value;
-                }
-            });
-
-            $.ajax({
-                url: '<?= \yii\helpers\Url::to(["get-all-filtered-ids"]) ?>',
-                type: 'POST',
-                data: {filters: filterData},
-                success: function (response) {
-                    hideLoading();
-                    if (response.success && response.ids) {
-                        callback(response.ids);
-                    } else {
-                        alert('Failed to load all items: ' + (response.message || 'Unknown error'));
-                    }
-                },
-                error: function () {
-                    hideLoading();
-                    alert('Failed to load all items. Please try again.');
-                }
-            });
-        }
 
         // Update selected count display
         function updateSelectedCount() {
@@ -494,6 +565,141 @@ $this->params['breadcrumbs'][] = $this->title;
                 }
             });
         }
+
+        // Initialize selected count on page load
+        $(document).ready(function () {
+            updateSelectedCount();
+        });
+
+    })();
+</script>
+<script>
+    (function () {
+        const pjaxContainer = '#pjax-quotation-grid';
+        let isProcessing = false;
+        let isGlobalSelectAll = false;
+        let selectedIds = new Set();
+
+        // ... existing loading functions ...
+
+        // NEW: Function to calculate and update total amount
+        function updateTotalAmount() {
+            const idsToCalculate = Array.from(selectedIds);
+            const startDate = $('#export-start-date').val();
+            const endDate = $('#export-end-date').val();
+
+            if (idsToCalculate.length === 0) {
+                $('#total-amount').text('-');
+                $('#selected-count').text('0');
+                return;
+            }
+
+            $('#selected-count').text(idsToCalculate.length);
+            $('#total-amount').html('<i class="fas fa-spinner fa-spin"></i> Calculating...');
+
+            $.ajax({
+                url: '<?= \yii\helpers\Url::to(["calculate-total-amount"]) ?>',
+                type: 'POST',
+                data: {
+                    ids: JSON.stringify(idsToCalculate),
+                    startDate: startDate || '',
+                    endDate: endDate || ''
+                },
+                success: function (response) {
+                    if (response.success) {
+                        $('#total-amount').text(response.formatted);
+                    } else {
+                        $('#total-amount').text('Error calculating');
+                    }
+                },
+                error: function () {
+                    $('#total-amount').text('Error');
+                }
+            });
+        }
+
+        // Update selected count display
+        function updateSelectedCount() {
+            const count = selectedIds.size;
+            let buttonText = 'Export Selected to Excel <i class="fas fa-file-excel"></i>';
+
+            if (count > 0) {
+                buttonText += ` (${count} selected)`;
+            }
+
+            $('#export-selected').html(buttonText);
+
+            // NEW: Update total amount
+            updateTotalAmount();
+        }
+
+        // Enhanced Select All functionality
+        $(document).on('change', '#select-all', function () {
+            const isChecked = $(this).prop('checked');
+
+            if (isChecked) {
+                isGlobalSelectAll = true;
+
+                getAllFilteredIds(function (allIds) {
+                    selectedIds.clear();
+                    allIds.forEach(id => {
+                        selectedIds.add(String(id));
+                    });
+                    $(pjaxContainer).find('.my-checkbox').prop('checked', true);
+                    updateSelectedCount();
+                });
+            } else {
+                isGlobalSelectAll = false;
+                selectedIds.clear();
+                $(pjaxContainer).find('.my-checkbox').prop('checked', false);
+                updateSelectedCount();
+            }
+        });
+
+        // Individual checkbox change
+        $(document).on('change', '.my-checkbox', function () {
+            const id = String($(this).val());
+
+            if ($(this).prop('checked')) {
+                selectedIds.add(id);
+            } else {
+                selectedIds.delete(id);
+
+                if (isGlobalSelectAll) {
+                    isGlobalSelectAll = false;
+                    $('#select-all').prop('checked', false);
+                }
+            }
+
+            const visibleCheckboxes = $(pjaxContainer).find('.my-checkbox:visible');
+            const allCheckedOnPage = visibleCheckboxes.length > 0 &&
+                    visibleCheckboxes.length === visibleCheckboxes.filter(':checked').length;
+            $('#select-all').prop('checked', allCheckedOnPage);
+
+            updateSelectedCount();
+        });
+
+        // NEW: Update total amount when date changes
+        $(document).on('change', '#export-start-date, #export-end-date', function () {
+            if (selectedIds.size > 0) {
+                updateTotalAmount();
+            }
+        });
+
+        // Reapply checkbox states after Pjax reload
+        $(document).on('pjax:end', function () {
+            $(pjaxContainer).find('.my-checkbox').each(function () {
+                const id = String($(this).val());
+                $(this).prop('checked', selectedIds.has(id));
+            });
+
+            const visibleCheckboxes = $(pjaxContainer).find('.my-checkbox:visible');
+            const allCheckedOnPage = visibleCheckboxes.length > 0 &&
+                    visibleCheckboxes.length === visibleCheckboxes.filter(':checked').length;
+            $('#select-all').prop('checked', allCheckedOnPage || isGlobalSelectAll);
+
+            updateSelectedCount();
+        });
 
         // Initialize selected count on page load
         $(document).ready(function () {

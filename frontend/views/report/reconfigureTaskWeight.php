@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = "Reconfigure Task Weight";
             <?=
             Html::a('Update Section Weight (%) <i class="far fa-edit"></i>',
                     ['/reporting/update-project-q-detail'],
-                    ['class' => 'btn btn-success align-right']
+                    ['class' => 'btn btn-primary align-right']
             );
             ?>
             <?php

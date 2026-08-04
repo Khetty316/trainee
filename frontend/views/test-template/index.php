@@ -29,8 +29,18 @@ $mergeArray = array_merge($array, [TestMaster::TEMPLATE_ITP => TestMain::TEST_IT
         'filterModel' => $searchModel,
         'pager' => ['class' => yii\bootstrap4\LinkPager::class],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
-        'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll'>
+    {items}
+</div>
+{pager}
+",
+        'tableOptions' => [
+            'class' => 'table table-hover table-striped table-bordered table-sm',
+            'style' => 'min-width:1500px;',
+        ],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn',
@@ -83,20 +93,99 @@ $mergeArray = array_merge($array, [TestMaster::TEMPLATE_ITP => TestMain::TEST_IT
                 },
             ],
             [
-                'contentOptions' => ['class' => 'col-sm-1'],
-                'format' => 'raw',
                 'label' => 'Action',
+                'format' => 'raw',
+                'headerOptions' => [
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:50px; min-width:50px; max-width:50px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
+                ],
+                'contentOptions' => [
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:50px; min-width:50px; max-width:50px; white-space:nowrap;',
+                ],
                 'value' => function ($model) {
                     return
-                    Html::a('View', ['view', 'id' => $model->id], ['class' => 'btn btn-sm btn-primary', 'title' => 'Click to View']) .
-                    ' ' .
-                    Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-sm btn-success', 'title' => 'Click to Update']) .
-                    ' ' .
-                    Html::a('Delete', ['delete', 'id' => $model->id], ['class' => 'btn btn-sm btn-danger', 'title' => 'Click to Delete']);
+                    Html::a('View <i class="fas fa-eye"></i>', ['view', 'id' => $model->id], [
+                        'class' => 'btn btn-sm btn-info',
+                        'title' => 'Click to View'
+                    ]) . ' ' .
+                    Html::a('Update <i class="far fa-edit"></i>', ['update', 'id' => $model->id], [
+                        'class' => 'btn btn-sm btn-primary',
+                        'title' => 'Click to Update'
+                    ]) . ' ' .
+                    Html::a('Delete <i class="fas fa-trash"></i>', ['delete', 'id' => $model->id], [
+                        'class' => 'btn btn-sm btn-danger',
+                        'title' => 'Click to Delete'
+                    ]);
                 },
             ],
         ],
     ]);
     ?>
-
 </div>
+
+<style>
+    .table-scroll {
+        width: 100%;
+        max-height: calc(100vh - 320px);
+        overflow-x: auto;
+        overflow-y: auto;
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        min-width: 1500px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll th,
+    .table-scroll td {
+        white-space: nowrap;
+        vertical-align: middle;
+        padding: 4px !important;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-scroll .filters input,
+    .table-scroll .filters select {
+        height: 30px !important;
+        padding: 4px 6px;
+    }
+
+    /* Sticky Action column */
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .table-scroll thead th.sticky-action {
+        z-index: 10;
+    }
+
+    .table-scroll tr.filters th.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        z-index: 9;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 2;
+    }
+</style>

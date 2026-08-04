@@ -35,7 +35,7 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <div class="row mb-3 align-items-end">
         <div class="col-md-3">
-            <?= Html::a('Create Quotation', ['create-projectquotation'], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Create Quotation <i class="fas fa-plus"></i>', ['create-projectquotation'], ['class' => 'btn btn-success']) ?>
             <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
         </div>
         <div class="col-md-9">
@@ -73,14 +73,14 @@ $this->params['breadcrumbs'][] = $this->title;
                 ?>
                                 </div>-->
                 <!--<div class="d-inline-block" style="vertical-align: bottom;">-->
-                    <?php
+                <?php
 //                    =
 //                    Html::button('Export Selected to Excel <i class="fas fa-file-excel"></i>', [
 //                        'class' => 'btn btn-info',
 //                        'id' => 'export-selected',
 //                        'style' => 'margin-bottom: 0;'
 //                    ])
-                    ?>
+                ?>
                 <!--</div>-->
             </div>
         </div>
@@ -96,33 +96,47 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?php \yii\widgets\Pjax::begin(['id' => 'pjax-quotation-grid']); ?>
 
-<!--    <div class="card mb-3" id="summary-card">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-3">
-                    <h5 class="mb-1">Total Records</h5>
-                    <h3 class="text-primary" id="total-records"><?= $dataProvider->getTotalCount() ?></h3>
-                </div>
-                <div class="col-md-3">
-                    <h5 class="mb-1">Selected Records</h5>
-                    <h3 class="text-info" id="selected-count">0</h3>
-                </div>
-                <div class="col-md-6">
-                    <h5 class="mb-1">Total Amount (Selected)</h5>
-                    <h3 class="text-success" id="total-amount">-</h3>
+    <!--    <div class="card mb-3" id="summary-card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h5 class="mb-1">Total Records</h5>
+                        <h3 class="text-primary" id="total-records"><?= $dataProvider->getTotalCount() ?></h3>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="mb-1">Selected Records</h5>
+                        <h3 class="text-info" id="selected-count">0</h3>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="mb-1">Total Amount (Selected)</h5>
+                        <h3 class="text-success" id="total-amount">-</h3>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>-->
+        </div>-->
 
     <?=
     GridView::widget([
         'id' => 'quotation-grid',
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll'>
+    {items}
+</div>
+{pager}
+",
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
@@ -708,3 +722,52 @@ $this->params['breadcrumbs'][] = $this->title;
 
     })();
 </script>
+
+<style>
+    .table-scroll {
+        overflow-x: auto;
+    }
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow-y: auto;
+    }
+
+
+    .table-scroll thead tr.filters th {
+        position: sticky;
+        top: 48px;   /* Adjust if needed */
+        background: #fff;
+        z-index: 19;
+    }
+
+    .table-scroll thead tr.filters th {
+        position: sticky;
+        top: 45px;
+        background: #fff;
+        z-index: 9;
+    }
+
+    .grid-view .summary {
+        margin-bottom: 10px;
+    }
+
+    .grid-view .pagination {
+        margin: 10px 0;
+    }
+
+    .table-scroll {
+        margin-bottom: 20px;
+        margin-top: 20px;
+    }
+
+    .table-scroll thead tr.my-thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 10;
+    }
+
+    .table-scroll thead tr.filters th {
+        position: static;
+    }
+</style>

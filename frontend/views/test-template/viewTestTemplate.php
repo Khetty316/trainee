@@ -23,9 +23,9 @@ $this->params['breadcrumbs'][] = $mergeArray[$model->formcode];
             <fieldset class="form-group border p-3">
                 <legend class="w-auto px-2 m-0">Test Template Detail</legend>
                 <p>
-                    <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-success']) ?>
+                    <?= Html::a('Update <i class="far fa-edit"></i>', ['update', 'id' => $model->id], ['class' => 'btn btn-success']) ?>
                     <?=
-                    Html::a('Delete', ['delete', 'id' => $model->id], [
+                    Html::a('Delete <i class="fas fa-trash"></i>', ['delete', 'id' => $model->id], [
                         'class' => 'btn btn-danger',
                         'data' => [
                             'confirm' => 'Are you sure you want to delete this item?',

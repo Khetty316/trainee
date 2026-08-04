@@ -13,11 +13,11 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="ref-currencies-index">
 
-    <!--<h3><?php //= Html::encode($this->title)   ?></h3>-->
+    <!--<h3><?php //= Html::encode($this->title)      ?></h3>-->
 
     <p>
         <?=
-        Html::a('Create New', "javascript:void(0)", [
+        Html::a('Create New <i class="fas fa-plus"></i>', "javascript:void(0)", [
             'title' => "Create New",
             'value' => yii\helpers\Url::to(['create']),
             'class' => 'modalButtonMedium btn btn-success text-center',
@@ -32,9 +32,23 @@ $this->params['breadcrumbs'][] = $this->title;
     GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
@@ -47,7 +61,6 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'exchange_rate',
                 'contentOptions' => ['class' => 'col-sm-1 text-right'],
                 'format' => 'raw',
-                
             ],
             [
                 'attribute' => 'active',
@@ -80,7 +93,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'contentOptions' => ['class' => 'col-sm-1'],
                 'format' => 'raw',
                 'value' => function ($model) {
-                        return ($model->created_at === '0000-00-00 00:00:00' ? null :  MyFormatter::asDateTime_ReaddmYHi($model->created_at));
+                    return ($model->created_at === '0000-00-00 00:00:00' ? null : MyFormatter::asDateTime_ReaddmYHi($model->created_at));
                 },
                 'filter' => yii\jui\DatePicker::widget([
                     'model' => $searchModel,
@@ -94,7 +107,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     ],
                 ]),
             ],
-                        [
+            [
                 'attribute' => 'updated_by',
                 'label' => 'Updated By',
                 'headerOptions' => ['style' => 'width: 180px;'],
@@ -108,7 +121,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'contentOptions' => ['class' => 'col-sm-1'],
                 'format' => 'raw',
                 'value' => function ($model) {
-                        return ($model->updated_at === '0000-00-00 00:00:00' ? null :  MyFormatter::asDateTime_ReaddmYHi($model->updated_at));
+                    return ($model->updated_at === '0000-00-00 00:00:00' ? null : MyFormatter::asDateTime_ReaddmYHi($model->updated_at));
                 },
                 'filter' => yii\jui\DatePicker::widget([
                     'model' => $searchModel,
@@ -124,20 +137,74 @@ $this->params['breadcrumbs'][] = $this->title;
             ],
             [
                 'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center'],
+                'headerOptions' => [
+                    'class' => 'sticky-action',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
+                ],
+                'contentOptions' => [
+                    'class' => 'text-center sticky-action',
+                ],
                 'value' => function ($model) {
-                    return Html::a('Update <i class="fa fa-edit"></i>', "javascript:void(0)", [
-                        'title' => "Update Detail",
-                        'value' => yii\helpers\Url::to(['update', 'id' => $model->currency_id]),
-                        'class' => 'modalButtonMedium btn btn-sm btn-success text-center',
-                        'data-modaltitle' => 'Update Detail',
-                    ]);
+                    return Html::a(
+                            'Update <i class="fa fa-edit"></i>',
+                            "javascript:void(0)",
+                            [
+                                'title' => "Update Detail",
+                                'value' => yii\helpers\Url::to(['update', 'id' => $model->currency_id]),
+                                'class' => 'modalButtonMedium btn btn-sm btn-primary text-center',
+                                'data-modaltitle' => 'Update Detail',
+                            ]
+                    );
                 }
             ],
 //            ['class' => 'yii\grid\ActionColumn'],
         ],
     ]);
     ?>
-
-
 </div>
+<style>
+    .table-scroll {
+        width: 100%;
+        max-height: 600px;
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        min-width: 1400px;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 3;
+    }
+
+    .grid-view {
+        overflow: visible;
+    }
+
+    .grid-view table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .table-scroll thead th.sticky-action,
+    .table-scroll thead td.sticky-action {
+        z-index: 5;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 2;
+    }
+</style>

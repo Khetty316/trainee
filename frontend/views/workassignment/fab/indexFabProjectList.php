@@ -17,6 +17,25 @@ use common\models\myTools\MyFormatter;
     </p>
     <?php
     echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
+        'tableOptions' => [
+            'class' => 'table table-hover table-striped table-bordered table-sm',
+        ],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -145,8 +164,16 @@ use common\models\myTools\MyFormatter;
             ],
             [
                 'attribute' => 'current_target_date',
+                'headerOptions' => [
+                    'class' => 'sticky-target',
+                ],
                 'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center'],
+                'contentOptions' => [
+                    'class' => 'text-center sticky-target',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-target',
+                ],
                 'value' => function ($model) {
                     if (!$model->current_target_date) {
                         return '-';
@@ -207,3 +234,49 @@ use common\models\myTools\MyFormatter;
     ?>
 
 </div>
+
+<style>
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        min-width: 1800px;   /* adjust later if necessary */
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+    }
+    
+    /* Sticky last column - header */
+.table-scroll thead th.sticky-target {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    z-index: 30;
+}
+
+/* Sticky last column - filter */
+.table-scroll thead td.sticky-target,
+.table-scroll thead th.sticky-target.filters {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    z-index: 29;
+}
+
+/* Sticky last column - body */
+.table-scroll tbody td.sticky-target {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    z-index: 10;
+}
+</style>

@@ -14,13 +14,11 @@ $this->params['breadcrumbs'][] = $this->title;
 ?>
 <link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
 <?php
-//$this->registerCss("
-//.table td,
-//.table th {
-//    padding: 18px !important;
-//    font-size: 17px !important;
-//}
-//");
+$this->registerCss("
+.grid-view > .pagination:last-child {
+    margin-bottom: 20px;
+}
+");
 ?>
 <div class="clients-index">
     <?= $this->render('_navbarClient', ['pageKey' => '1']) ?>
@@ -44,7 +42,6 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php } ?>
         </div>
     </div>
-
     <?=
     GridView::widget([
         'layout' => "
@@ -57,7 +54,14 @@ $this->params['breadcrumbs'][] = $this->title;
 ",
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
         'columns' => [
@@ -264,3 +268,8 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
             </div>-->
 
+    <style>
+        .table-scroll {
+            margin-bottom: 20px;
+        }
+    </style>

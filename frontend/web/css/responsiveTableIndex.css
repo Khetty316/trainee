@@ -3,11 +3,12 @@
     overflow: auto;
 }
 
-.table-scroll table{
-    width:max-content;
-    min-width:1400px;
-    border-collapse:separate;
-    border-spacing:0;
+.table-scroll table {
+    width: max-content;
+    /*    min-width: 1400px;*/
+    /*let each page decide its own width*/
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .table-scroll thead th {
@@ -15,42 +16,39 @@
     top: 0;
     background: #fff;
     z-index: 5;
+    border-bottom: 1px solid #dee2e6;
 }
 
-.grid-view th:last-child {
+.table-scroll th.sticky-action,
+.table-scroll td.sticky-action {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    white-space: nowrap;
+}
+
+.table-scroll thead th.sticky-action {
     z-index: 7;
 }
 
+.table-scroll tbody td.sticky-action {
+    z-index: 2;
+}
+
 .table td,
-.table th{
-    padding:4px !important;
-    /*font-size:13px;*/
-    /*line-height:1.2;*/
-    /*vertical-align:middle;*/
+.table th {
+    padding: 4px !important;
 }
 
 .filters input,
-.filters select{
-    height:30px !important;
-    /*font-size:12px;*/
-    padding:4px 6px;
+.filters select {
+    height: 30px !important;
+    padding: 4px 6px;
 }
 
-.pagination>li>a,
-.pagination>li>span{
-    padding:4px 10px;
-    /*font-size:12px;*/
-}
-
-.table-scroll {
-    /*max-height: auto;*/
-    overflow: auto;
-}
-
-.table-scroll thead th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #fff;
-    border-bottom: 1px solid #dee2e6;
+.pagination .page-item:first-child .page-link,
+.pagination .page-item:nth-child(2) .page-link,
+.pagination .page-item:nth-last-child(2) .page-link,
+.pagination .page-item:last-child .page-link {
+    min-width: unset;
 }

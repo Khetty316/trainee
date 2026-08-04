@@ -27,50 +27,87 @@ $gridId = 'quotation-grid';
 
 <div class="quotation-pdf-masters-index">
 
-    <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary mb-2']) ?>
-    <?= Html::button('Approve Selected', [
+    <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary mb-2']) ?>
+    <?=
+    Html::button('Approve Selected', [
         'class' => 'btn btn-success float-right mb-2',
         'id' => 'approve-selected'
-    ]) ?>
+    ])
+    ?>
 
     <?php \yii\widgets\Pjax::begin(['id' => 'pjax-quotation-grid']); ?>
 
-    <?= GridView::widget([
+    <?=
+    GridView::widget([
         'id' => $gridId,
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
             ['class' => 'yii\grid\SerialColumn'],
-
             [
                 'attribute' => 'quotation_no',
                 'format' => 'raw',
+                'headerOptions' => [
+                    'style' => 'width:260px;',
+                ],
+                'contentOptions' => [
+                    'style' => 'min-width:260px;',
+                ],
                 'value' => function ($model) {
-                    return $model->quotation_no . ' ' . Html::a('<i class="far fa-file-pdf fa-lg"></i>', 
-                        ['/projectqrevision/read-pdf', 'id' => $model->id],
-                        ['class' => 'text-red float-right', 'title' => 'View Quotation', 'target' => '_blank', 'data-pjax' => '0']
+                    return $model->quotation_no . ' ' . Html::a('<i class="far fa-file-pdf fa-lg"></i>',
+                            ['/projectqrevision/read-pdf', 'id' => $model->id],
+                            ['class' => 'text-red float-right', 'title' => 'View Quotation', 'target' => '_blank', 'data-pjax' => '0']
                     );
                 }
             ],
             [
                 'attribute' => 'project_q_client_id',
                 'format' => 'raw',
+                'headerOptions' => [
+                    'style' => 'width:360px;',
+                ],
+                'contentOptions' => [
+                    'style' => 'min-width:360px;',
+                ],
                 'value' => fn($model) => $model->projectQClient->client->company_name ?? '-'
             ],
             [
                 'attribute' => 'proj_title',
                 'format' => 'raw',
-                'contentOptions' => ['style' => 'white-space:normal!important'],
-                'value' => fn($model) => $model->proj_title
+                'headerOptions' => [
+                    'style' => 'width:450px;',
+                ],
+                'contentOptions' => [
+                    'style' => 'min-width:450px; white-space:normal;',
+                ],
+                'value' => fn($model) => $model->proj_title,
             ],
             [
                 'attribute' => 'created_at',
                 'format' => 'raw',
+                'headerOptions' => [
+                    'style' => 'width:320px;',
+                ],
+                'contentOptions' => [
+                    'style' => 'min-width:320px;',
+                ],
                 'value' => fn($model) => 'by ' . $model->createdBy->fullname . ' @ ' . MyFormatter::asDateTime_ReaddmYHi($model->created_at),
                 'filter' => yii\jui\DatePicker::widget([
                     'model' => $searchModel,
@@ -82,17 +119,28 @@ $gridId = 'quotation-grid';
             ],
             [
                 'format' => 'raw',
-                'contentOptions' => ['class' => 'col-sm-1 text-center'],
+                // Approve column
+                'headerOptions' => [
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:200px; min-width:200px; max-width:200px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
+                ],
+                'contentOptions' => [
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:200px; min-width:200px; max-width:200px;',
+                ],
                 'value' => function ($model) {
                     if ($model->md_approval_status == \frontend\models\projectquotation\QuotationPdfMasters::QUOTATION_DIRECTOR_APPROVED) {
-                        return '<span class="text-success">Approved by ' . $model->mdUser->fullname . 
-                            '<br>@ ' . MyFormatter::asDateTime_ReaddmYHi($model->md_approval_date) . '</span>';
+                        return '<span class="text-success">Approved by ' . $model->mdUser->fullname .
+                                '<br>@ ' . MyFormatter::asDateTime_ReaddmYHi($model->md_approval_date) . '</span>';
                     } elseif ($model->md_approval_status == \frontend\models\projectquotation\QuotationPdfMasters::QUOTATION_GET_DIRECTOR_APPROVAL) {
                         return Html::a('Approve', ['director-approve-one-quotation', 'id' => $model->id], [
-                            'class' => 'btn btn-sm btn-success',
-                            'title' => 'Approve this quotation',
-                            'data-confirm' => 'Are you sure you want to approve this quotation?',
-                            'data-method' => 'post'
+                                    'class' => 'btn btn-sm btn-success',
+                                    'title' => 'Approve this quotation',
+                                    'data-confirm' => 'Are you sure you want to approve this quotation?',
+                                    'data-method' => 'post'
                         ]);
                     }
                     return null;
@@ -100,222 +148,292 @@ $gridId = 'quotation-grid';
             ],
             [
                 'class' => 'yii\grid\CheckboxColumn',
-                'header' => Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
-                    Html::checkbox('select_all', false, ['id' => 'select-all', 'style' => 'margin:0;']),
-                'headerOptions' => ['class' => 'col-sm-1 text-center'],
-                'contentOptions' => ['class' => 'col-sm-1 text-center'],
+                'headerOptions' => [
+                    'class' => 'sticky-checkbox text-center',
+                    'style' => 'width:15px; min-width:15px; max-width:15px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-checkbox',
+                ],
+                'contentOptions' => [
+                    'class' => 'sticky-checkbox text-center',
+                    'style' => 'width:15px; min-width:15px; max-width:15px;',
+                ],
                 'checkboxOptions' => function ($model) {
                     if ($model->md_approval_status == \frontend\models\projectquotation\QuotationPdfMasters::QUOTATION_GET_DIRECTOR_APPROVAL) {
-                        return ['value' => $model->id, 'class' => 'my-checkbox'];
+                        return [
+                            'value' => $model->id,
+                            'class' => 'my-checkbox',
+                        ];
                     }
+
                     return ['style' => 'display:none'];
                 },
             ],
         ],
-    ]); ?>
+    ]);
+    ?>
 
     <?php \yii\widgets\Pjax::end(); ?>
 </div>
 
 <style>
-/* Loading Overlay Styles */
-#loading-overlay {
-    display: none;
-}
+    /* Loading Overlay Styles */
+    #loading-overlay {
+        display: none;
+    }
 
-#loading-overlay.active {
-    display: flex !important;
-}
+    #loading-overlay.active {
+        display: flex !important;
+    }
 
-/* Prevent scrolling when loading */
-body.loading-active {
-    overflow: hidden;
-}
+    /* Prevent scrolling when loading */
+    body.loading-active {
+        overflow: hidden;
+    }
 
-/* Pulse animation for loading spinner */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
+    /* Pulse animation for loading spinner */
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
 
-#loading-overlay .fa-spinner {
-    animation: pulse 1.5s ease-in-out infinite;
-}
+    #loading-overlay .fa-spinner {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
 </style>
 
 <script>
-(function () {
-    const pjaxContainer = '#pjax-quotation-grid';
-    let selectedIds = new Set();
-    let selectAllActive = false;
-    let excludedIds = new Set();
+    (function () {
+        const pjaxContainer = '#pjax-quotation-grid';
+        let selectedIds = new Set();
+        let selectAllActive = false;
+        let excludedIds = new Set();
 
-    // ✅ Loading overlay functions
-    function showLoading(message = 'Processing...') {
-        $('#loading-overlay').addClass('active');
-        $('body').addClass('loading-active');
-        $('#progress-text').text(message);
-    }
-
-    function hideLoading() {
-        $('#loading-overlay').removeClass('active');
-        $('body').removeClass('loading-active');
-    }
-
-    function updateLoadingMessage(message) {
-        $('#progress-text').text(message);
-    }
-
-    // Prevent page navigation during processing
-    let isProcessing = false;
-
-    window.addEventListener('beforeunload', function (e) {
-        if (isProcessing) {
-            e.preventDefault();
-            e.returnValue = 'Processing is in progress. Are you sure you want to leave?';
-            return e.returnValue;
+        // ✅ Loading overlay functions
+        function showLoading(message = 'Processing...') {
+            $('#loading-overlay').addClass('active');
+            $('body').addClass('loading-active');
+            $('#progress-text').text(message);
         }
-    });
 
-    function reapplyChecks() {
-        const $checkboxes = $(pjaxContainer).find('.my-checkbox');
+        function hideLoading() {
+            $('#loading-overlay').removeClass('active');
+            $('body').removeClass('loading-active');
+        }
 
-        $checkboxes.each(function () {
+        function updateLoadingMessage(message) {
+            $('#progress-text').text(message);
+        }
+
+        // Prevent page navigation during processing
+        let isProcessing = false;
+
+        window.addEventListener('beforeunload', function (e) {
+            if (isProcessing) {
+                e.preventDefault();
+                e.returnValue = 'Processing is in progress. Are you sure you want to leave?';
+                return e.returnValue;
+            }
+        });
+
+        function reapplyChecks() {
+            const $checkboxes = $(pjaxContainer).find('.my-checkbox');
+
+            $checkboxes.each(function () {
+                const id = String($(this).val());
+                if (selectAllActive) {
+                    $(this).prop('checked', !excludedIds.has(id));
+                } else {
+                    $(this).prop('checked', selectedIds.has(id));
+                }
+            });
+
+            $(pjaxContainer).find('#select-all').prop('checked', selectAllActive);
+        }
+
+        $(document).on('change', pjaxContainer + ' .my-checkbox', function () {
             const id = String($(this).val());
             if (selectAllActive) {
-                $(this).prop('checked', !excludedIds.has(id));
+                if (this.checked)
+                    excludedIds.delete(id);
+                else
+                    excludedIds.add(id);
             } else {
-                $(this).prop('checked', selectedIds.has(id));
+                if (this.checked)
+                    selectedIds.add(id);
+                else
+                    selectedIds.delete(id);
+                const visible = $(pjaxContainer).find('.my-checkbox:visible');
+                const allChecked = visible.length > 0 && visible.length === visible.filter(':checked').length;
+                $(pjaxContainer).find('#select-all').prop('checked', allChecked);
             }
         });
 
-        $(pjaxContainer).find('#select-all').prop('checked', selectAllActive);
+        $(document).on('change', '#select-all', function () {
+            const checked = this.checked;
+            selectAllActive = checked;
+
+            if (checked) {
+                excludedIds.clear();
+                selectedIds.clear();
+                $(pjaxContainer).find('.my-checkbox').prop('checked', true);
+            } else {
+                excludedIds.clear();
+                selectedIds.clear();
+                $(pjaxContainer).find('.my-checkbox').prop('checked', false);
+            }
+        });
+
+        $(document).on('pjax:end', function () {
+            setTimeout(reapplyChecks, 50);
+        });
+
+        // Approve selected with enhanced loading feedback
+        $(document).on('click', '#approve-selected', function (e) {
+            e.preventDefault();
+
+            let dataToSend = {};
+            let confirmMessage = '';
+            let itemCount = 0;
+
+            if (selectAllActive) {
+                dataToSend.selectAll = true;
+                dataToSend.excludedIds = Array.from(excludedIds);
+
+                const excludeCount = excludedIds.size;
+                confirmMessage = excludeCount > 0
+                        ? `Are you sure you want to approve ALL quotations except ${excludeCount} unchecked item(s)?`
+                        : 'Are you sure you want to approve ALL active quotations?';
+
+                itemCount = 'all';
+            } else {
+                const ids = Array.from(selectedIds);
+                if (ids.length === 0) {
+                    alert('Please select at least one quotation to approve.');
+                    return;
+                }
+                dataToSend.ids = ids;
+                itemCount = ids.length;
+                confirmMessage = `Are you sure you want to approve ${ids.length} selected quotation(s)?`;
+            }
+
+            if (!confirm(confirmMessage))
+                return;
+
+            const $button = $(this);
+            const originalText = $button.html();
+
+            // Disable button and show loading
+            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
+            isProcessing = true;
+
+            // Show loading overlay
+            if (itemCount === 'all') {
+                showLoading('Processing all quotations... This may take a while.');
+            } else {
+                showLoading(`Processing ${itemCount} quotation(s)...`);
+            }
+
+            $.ajax({
+                url: '<?= \yii\helpers\Url::to(['director-approve-quotation']) ?>',
+                type: 'POST',
+                data: dataToSend,
+                dataType: 'json',
+                timeout: 300000, // 5 minutes timeout for large batches
+                success: function (response) {
+                    updateLoadingMessage('Approval successful! Reloading page...');
+
+                    // ✅ Clear selections
+                    selectedIds.clear();
+                    selectAllActive = false;
+                    excludedIds.clear();
+                    isProcessing = false;
+
+                    // ✅ Short delay before reload to show success message
+                    setTimeout(function () {
+                        location.reload(); // triggers FlashHandler::success()
+                    }, 1000);
+                },
+                error: function (xhr, status, error) {
+                    isProcessing = false;
+                    hideLoading();
+
+                    let errorMessage = 'Server error while approving: ';
+
+                    // ✅ Better error handling
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage += xhr.responseJSON.message;
+                    } else if (status === 'timeout') {
+                        errorMessage += 'Request timeout. The operation may still be processing. Please refresh the page.';
+                    } else if (xhr.status === 0) {
+                        errorMessage += 'Network error. Please check your connection.';
+                    } else {
+                        errorMessage += error || 'Unknown error';
+                    }
+
+                    alert(errorMessage);
+                    $button.prop('disabled', false).html(originalText);
+                },
+                complete: function () {
+                    // Note: don't hide loading here because we're reloading the page on success
+                }
+            });
+        });
+
+    })();
+</script>
+
+<style>
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
     }
 
-    $(document).on('change', pjaxContainer + ' .my-checkbox', function () {
-        const id = String($(this).val());
-        if (selectAllActive) {
-            if (this.checked) excludedIds.delete(id);
-            else excludedIds.add(id);
-        } else {
-            if (this.checked) selectedIds.add(id);
-            else selectedIds.delete(id);
-            const visible = $(pjaxContainer).find('.my-checkbox:visible');
-            const allChecked = visible.length > 0 && visible.length === visible.filter(':checked').length;
-            $(pjaxContainer).find('#select-all').prop('checked', allChecked);
-        }
-    });
+    .table-scroll table {
+        width: max-content;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        min-width: 1500px;
+    }
 
-    $(document).on('change', '#select-all', function () {
-        const checked = this.checked;
-        selectAllActive = checked;
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+        border-bottom: 1px solid #dee2e6;
+    }
 
-        if (checked) {
-            excludedIds.clear();
-            selectedIds.clear();
-            $(pjaxContainer).find('.my-checkbox').prop('checked', true);
-        } else {
-            excludedIds.clear();
-            selectedIds.clear();
-            $(pjaxContainer).find('.my-checkbox').prop('checked', false);
-        }
-    });
+    .table-scroll th.sticky-checkbox,
+    .table-scroll td.sticky-checkbox {
+        position: sticky;
+        right: 0;
+        width: 50px;
+        min-width: 50px;
+        max-width: 50px;
+        background: #fff !important;
+        z-index: 20;
+    }
 
-    $(document).on('pjax:end', function () {
-        setTimeout(reapplyChecks, 50);
-    });
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 50px;
+        width: 80px;
+        min-width: 80px;
+        max-width: 80px;
+        background: #fff !important;
+        z-index: 19;
+    }
 
-    // Approve selected with enhanced loading feedback
-    $(document).on('click', '#approve-selected', function (e) {
-        e.preventDefault();
-
-        let dataToSend = {};
-        let confirmMessage = '';
-        let itemCount = 0;
-
-        if (selectAllActive) {
-            dataToSend.selectAll = true;
-            dataToSend.excludedIds = Array.from(excludedIds);
-
-            const excludeCount = excludedIds.size;
-            confirmMessage = excludeCount > 0
-                ? `Are you sure you want to approve ALL quotations except ${excludeCount} unchecked item(s)?`
-                : 'Are you sure you want to approve ALL active quotations?';
-            
-            itemCount = 'all';
-        } else {
-            const ids = Array.from(selectedIds);
-            if (ids.length === 0) {
-                alert('Please select at least one quotation to approve.');
-                return;
-            }
-            dataToSend.ids = ids;
-            itemCount = ids.length;
-            confirmMessage = `Are you sure you want to approve ${ids.length} selected quotation(s)?`;
-        }
-
-        if (!confirm(confirmMessage))
-            return;
-
-        const $button = $(this);
-        const originalText = $button.html();
-        
-        // Disable button and show loading
-        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processing...');
-        isProcessing = true;
-        
-        // Show loading overlay
-        if (itemCount === 'all') {
-            showLoading('Processing all quotations... This may take a while.');
-        } else {
-            showLoading(`Processing ${itemCount} quotation(s)...`);
-        }
-
-        $.ajax({
-            url: '<?= \yii\helpers\Url::to(['director-approve-quotation']) ?>',
-            type: 'POST',
-            data: dataToSend,
-            dataType: 'json',
-            timeout: 300000, // 5 minutes timeout for large batches
-            success: function (response) {
-                updateLoadingMessage('Approval successful! Reloading page...');
-                
-                // ✅ Clear selections
-                selectedIds.clear();
-                selectAllActive = false;
-                excludedIds.clear();
-                isProcessing = false;
-                
-                // ✅ Short delay before reload to show success message
-                setTimeout(function() {
-                    location.reload(); // triggers FlashHandler::success()
-                }, 1000);
-            },
-            error: function (xhr, status, error) {
-                isProcessing = false;
-                hideLoading();
-                
-                let errorMessage = 'Server error while approving: ';
-                
-                // ✅ Better error handling
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage += xhr.responseJSON.message;
-                } else if (status === 'timeout') {
-                    errorMessage += 'Request timeout. The operation may still be processing. Please refresh the page.';
-                } else if (xhr.status === 0) {
-                    errorMessage += 'Network error. Please check your connection.';
-                } else {
-                    errorMessage += error || 'Unknown error';
-                }
-                
-                alert(errorMessage);
-                $button.prop('disabled', false).html(originalText);
-            },
-            complete: function () {
-                // Note: don't hide loading here because we're reloading the page on success
-            }
-        });
-    });
-
-})();
-</script>
+    .table-scroll thead th.sticky-checkbox,
+    .table-scroll thead th.sticky-action {
+        z-index: 30;
+    }
+</style>

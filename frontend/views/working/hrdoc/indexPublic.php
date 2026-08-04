@@ -22,13 +22,25 @@ $this->params['breadcrumbs'][] = $this->title;
 
     <?=
     GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll'>
+    {items}
+</div>
+{pager}
+",
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+                'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+                'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+                'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+                'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+                'maxButtonCount' => 5,],
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
-        'options' => ['style' => 'overflow-x: auto;'], // Enable horizontal scrolling if needed
+//        'options' => ['style' => 'overflow-x: auto;'], // Enable horizontal scrolling if needed
         'columns' => [
 //            ['class' => 'yii\grid\SerialColumn'],
             [
@@ -110,3 +122,44 @@ $this->params['breadcrumbs'][] = $this->title;
 
 
 </div>
+
+<style>
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+        margin: 20px 0;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        min-width: 1200px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 20;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table td,
+    .table th {
+        padding: 4px !important;
+    }
+
+    .filters input,
+    .filters select {
+        height: 30px !important;
+        padding: 4px 6px;
+    }
+
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:nth-child(2) .page-link,
+    .pagination .page-item:nth-last-child(2) .page-link,
+    .pagination .page-item:last-child .page-link {
+        min-width: unset;
+    }
+</style>

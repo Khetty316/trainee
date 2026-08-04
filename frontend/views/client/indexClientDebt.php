@@ -69,13 +69,18 @@ $this->registerCss("
     <div class='table-scroll'>
         {items}
     </div>
-    {pager}
+    <div class='bottom-pager'>
+        {pager}
+    </div>
 ",
             'dataProvider' => $dataProvider,
             'filterModel' => $searchModel,
-            'pager' => [
-                'class' => yii\bootstrap4\LinkPager::class
-            ],
+            'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+                'firstPageLabel' => '<i class="fa fa-angle-double-left mr-1"></i> First Page',
+                'prevPageLabel' => '<i class="fa fa-angle-left mr-1"></i>Prev',
+                'nextPageLabel' => 'Next<i class="fa fa-angle-right ml-1"></i>',
+                'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right ml-1"></i>',
+                'maxButtonCount' => 5,],
             'formatter' => [
                 'class' => 'yii\i18n\Formatter',
                 'nullDisplay' => ' - '
@@ -292,6 +297,9 @@ $this->registerCss("
     .table-scroll th:nth-child(9),
     .table-scroll td:nth-child(9) {
         min-width: 140px;
+    }
+    .bottom-pager {
+        margin-top: 20px;
     }
 </style>
 <script>

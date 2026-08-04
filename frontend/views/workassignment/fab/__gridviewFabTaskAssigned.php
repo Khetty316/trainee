@@ -9,6 +9,25 @@ use common\modules\auth\models\AuthItem;
 echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
     'filterModel' => $searchModel,
     'dataProvider' => $dataProvider,
+    'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
+    'pager' => [
+        'class' => yii\bootstrap4\LinkPager::class,
+        'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+        'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+        'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+        'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+        'maxButtonCount' => 5,
+    ],
+    'tableOptions' => [
+        'class' => 'table table-hover table-striped table-bordered table-sm',
+    ],
     'columns' => [
         ['class' => 'yii\grid\SerialColumn'],
         [
@@ -201,17 +220,80 @@ echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
         //'updated_by',
         [
             'format' => 'raw',
-            'headerOptions' => ['class' => 'tdnowrap'],
+            'header' => 'Action',
+            'headerOptions' => [
+                'class' => 'sticky-action text-center',
+                'style' => 'width:90px;',
+            ],
+            'filterOptions' => [
+                'class' => 'sticky-action',
+            ],
+            'contentOptions' => [
+                'class' => 'sticky-action text-center',
+                'style' => 'width:90px; min-width:90px; max-width:90px;',
+            ],
             'value' => function ($model) use ($toIndex) {
                 if ((Yii::$app->user->can(AuthItem::ROLE_PrdnFab_Executive) || $model->created_by == Yii::$app->user->id) && $model->active_sts) {
-                    return Html::a("<i class='far fa-edit text-success'></i>", ['update-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")], ['class' => 'mx-1'])
-                            . Html::a('<i class="fas fa-times-circle text-danger"></i>', ['deactivate-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")], ['data' => ['method' => 'post', 'confirm' => 'Are you sure to deactivate?'], 'class' => 'mx-1']);
-                } else {
-                    return "<i class='far fa-edit text-secondary'></i>" . '<i class="fas fa-times-circle text-secondary mx-2"></i>';
+                    return Html::a(
+                                    "<i class='far fa-edit text-success'></i>",
+                                    ['update-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")],
+                                    ['class' => 'mx-1']
+                            )
+                            . Html::a(
+                                    '<i class="fas fa-times-circle text-danger"></i>',
+                                    ['deactivate-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")],
+                                    [
+                                        'class' => 'mx-1',
+                                        'data' => [
+                                            'method' => 'post',
+                                            'confirm' => 'Are you sure to deactivate?',
+                                        ],
+                                    ]
+                            );
                 }
+
+                return "<i class='far fa-edit text-secondary'></i>"
+                . '<i class="fas fa-times-circle text-secondary mx-2"></i>';
             }
         ],
 //                    ['class' => 'yii\grid\ActionColumn'],
     ],
 ]))
 ?>
+
+<style>
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        min-width: 2000px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+    }
+
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .table-scroll thead th.sticky-action {
+        z-index: 7;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 2;
+    }
+</style>

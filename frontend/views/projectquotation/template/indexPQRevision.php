@@ -6,16 +6,14 @@ use common\models\myTools\MyFormatter;
 
 $this->title = 'Quotation Templates';
 $this->params['breadcrumbs'][] = $this->title;
-
 $deactivateUrl = \yii\helpers\Url::to(['deactivate-selected']);
 $gridId = 'template-grid';
 ?>
 
 <div class="project-qrevisions-template-index">
-
     <h3><?= Html::encode($this->title) ?></h3>
 
-    <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary mb-2']) ?>
+    <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary mb-2']) ?>
     <?=
     Html::button('Deactivate Selected', [
         'class' => 'btn btn-warning float-right mb-2',
@@ -29,9 +27,21 @@ $gridId = 'template-grid';
         'id' => $gridId,
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll mb-3'>
+    {items}
+</div>
+{pager}
+",
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
@@ -73,20 +83,40 @@ $gridId = 'template-grid';
             [
                 'attribute' => 'is_active',
                 'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center'],
-                'headerOptions' => ['class' => 'text-center'],
+                'contentOptions' => [
+                    'class' => 'sticky-active text-center',
+                    'style' => 'width:100px; min-width:100px; max-width:100px;',
+                ],
+                'headerOptions' => [
+                    'class' => 'sticky-active text-center',
+                    'style' => 'width:100px; min-width:100px; max-width:100px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-active',
+                ],
                 'filter' => \frontend\models\projectquotation\ProjectQRevisionsTemplate::IS_ACTIVE,
-                'value' => fn($model) => \frontend\models\projectquotation\ProjectQRevisionsTemplate::IS_ACTIVE_HTML[$model->is_active] ?? null,
+                'value' => fn($model) =>
+                \frontend\models\projectquotation\ProjectQRevisionsTemplate::IS_ACTIVE_HTML[$model->is_active] ?? null,
             ],
             [
                 'class' => 'yii\grid\CheckboxColumn',
-                'header' => Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
+                'header' =>
+                Html::tag('div', 'Select All', ['style' => 'margin-bottom:5px;']) .
                 Html::checkbox('select_all', false, [
                     'id' => 'select-all',
-                    'style' => 'margin:0;'
+                    'style' => 'margin:0;',
                 ]),
-                'headerOptions' => ['class' => 'col-sm-1 text-center'],
-                'contentOptions' => ['class' => 'col-sm-1 text-center'],
+                'headerOptions' => [
+                    'class' => 'sticky-checkbox text-center',
+                    'style' => 'width:60px; min-width:60px; max-width:60px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-checkbox',
+                ],
+                'contentOptions' => [
+                    'class' => 'sticky-checkbox text-center',
+                    'style' => 'width:60px; min-width:60px; max-width:60px;',
+                ],
                 'checkboxOptions' => function ($model) {
                     return $model->is_active == 1 ? ['value' => $model->id, 'class' => 'my-checkbox'] : ['style' => 'display:none'];
                 },
@@ -94,10 +124,8 @@ $gridId = 'template-grid';
         ],
     ]);
     ?>
-
     <?php \yii\widgets\Pjax::end(); ?>
 </div>
-
 <script>
     (function () {
         const pjaxContainer = '#pjax-template-grid';
@@ -225,3 +253,63 @@ $gridId = 'template-grid';
         });
     })();
 </script>
+<style>
+    .table-scroll {
+        width: 100%;
+        max-height: 600px;
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        width: 100%;
+        min-width: 1400px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+    }
+
+    /* Checkbox column */
+    .table-scroll th.sticky-checkbox,
+    .table-scroll td.sticky-checkbox {
+        position: sticky;
+        right: 0;
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+        background: #fff !important;
+        z-index: 20;
+        background-clip: padding-box;
+    }
+
+    /* Is Active column */
+    .table-scroll th.sticky-active,
+    .table-scroll td.sticky-active {
+        position: sticky;
+        right: 60px;
+        width: 100px;
+        min-width: 100px;
+        max-width: 100px;
+        background: #fff !important;
+        z-index: 19;
+        background-clip: padding-box;
+    }
+
+    /* Header */
+    .table-scroll thead th.sticky-checkbox,
+    .table-scroll thead th.sticky-active {
+        z-index: 30;
+    }
+
+    /* Filter row */
+    .table-scroll .filters .sticky-checkbox,
+    .table-scroll .filters .sticky-active {
+        background: #fff !important;
+        z-index: 25;
+    }
+</style>

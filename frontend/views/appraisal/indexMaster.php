@@ -41,7 +41,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             ['export-to-csv', 'mainId' => $main->id],
                             [
                                 'target' => '_blank',
-                                'class' => 'btn btn-primary'
+                                'class' => 'btn btn-info'
                             ]
                     );
                 }

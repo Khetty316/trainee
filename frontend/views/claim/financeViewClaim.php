@@ -301,7 +301,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <div class="form-group mt-3 text-right">
         <?php
         if ($model->claim_status === \frontend\models\RefGeneralStatus::STATUS_GetFinanceApproval || $model->claim_status === \frontend\models\RefGeneralStatus::STATUS_WaitingForPayment) {
-            echo Html::submitButton('Save', ['class' => 'btn btn-success px-3']);
+            echo Html::submitButton('Save <i class="fas fa-check"></i>', ['class' => 'btn btn-success px-3']);
         }
         ?>
     </div>

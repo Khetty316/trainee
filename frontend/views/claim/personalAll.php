@@ -9,8 +9,8 @@ $this->params['breadcrumbs'][] = $this->title;
     <?= $this->render('__claimNavBar', ['module' => 'personal', 'pageKey' => '2']) ?>
 
     <p>
-        <?= Html::a('Create a Claim', ['create-claim'], ['class' => 'btn btn-success']) ?>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
+        <?= Html::a('Create a Claim <i class="fas fa-plus"></i>', ['create-claim'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
         <?=
         Html::a(
                 'User Manual <i class="fas fa-book"></i>',

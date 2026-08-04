@@ -32,14 +32,19 @@ GridView::widget([
     'layout' => "
     {summary}
     {pager}
-    <div class='table-scroll'>
+    <div class='table-scroll' style='margin-bottom:15px;'>
         {items}
     </div>
     {pager}
 ",
     'dataProvider' => $dataProvider,
     'filterModel' => $searchModel,
-    'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+    'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+        'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+        'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+        'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+        'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+        'maxButtonCount' => 5,],
     'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
     'tableOptions' => ['class' => 'table table-striped table-bordered table-sm'],
     'columns' => [

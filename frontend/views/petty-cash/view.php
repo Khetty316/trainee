@@ -32,7 +32,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     </div>
                     <div class="col-md-4">
                         <strong class="text-muted">Voucher No.:</strong>
-                        <span class="ml-2 text-dark font-weight-bold"><?= Html::encode($model->voucher_no ) ?></span>
+                        <span class="ml-2 text-dark font-weight-bold"><?= Html::encode($model->voucher_no) ?></span>
                     </div>
                     <div class="col-md-4">
                         <strong class="text-muted">Status:</strong>
@@ -41,7 +41,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             if ($model->deleted_by !== null) {
                                 $status = ($model->status0->status_name . ' by ' . $model->deletedBy->fullname . ' @ ' . MyFormatter::asDateTime_ReaddmYHi($model->deleted_at));
                             } else {
-                            $status = ($model->status0->status_name);
+                                $status = ($model->status0->status_name);
                             }
                             ?>
                             <?= $status ?>
@@ -59,17 +59,17 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="col-md-12 mt-3 ml-2">
             <?php
             if ($module === 'personal' && $model->status == frontend\models\RefGeneralStatus::STATUS_GetFinanceApproval && $model->deleted_by === null) {
-                echo Html::a("Update",
+                echo Html::a('Update <i class="far fa-edit"></i>',
                         "javascript:",
                         [
                             "onclick" => "event.preventDefault();",
                             "value" => \yii\helpers\Url::to(['update', 'id' => $model->id]),
-                            "class" => "modalButtonMedium btn btn-primary",
+                            "class" => "modalButtonMedium btn btn-primary ",
                             'data-modaltitle' => "Update Petty Cash Request Form"
                         ]
                 );
 
-                echo Html::a("Cancel",
+                echo Html::a('Cancel <i class="fas fa-times"></i>',
                         ['cancel-form-pre', 'id' => $model->id, 'module' => 'personal'],
                         [
                             'class' => 'btn btn-danger ml-1',
@@ -78,7 +78,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         ]
                 );
             }
-            
+
             if ($module === 'finance' && $model->status == frontend\models\RefGeneralStatus::STATUS_PendingSupportedDocument && $model->deleted_by === null && $model->finance_id == Yii::$app->user->identity->id) {
                 echo Html::a("Cancel",
                         ['cancel-form-pre', 'id' => $model->id, 'module' => 'finance'],

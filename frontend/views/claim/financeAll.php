@@ -7,7 +7,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="claim-master-index">
     <?= $this->render('__claimNavBar', ['module' => 'finance', 'pageKey' => '2']) ?>
     <p>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
+        <?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
         <?=
         Html::a(
                 'User Manual <i class="fas fa-book"></i>',

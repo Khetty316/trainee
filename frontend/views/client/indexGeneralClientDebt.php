@@ -9,6 +9,13 @@ use common\models\myTools\MyFormatter;
 $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
 ?>
 <link rel="stylesheet" type="text/css" href="/css/responsiveTableIndex.css">
+<?php
+$this->registerCss("
+.grid-view > .pagination:last-child {
+    margin-bottom: 20px;
+}
+");
+?>
 <div class="client-general-debt-index">
     <?= $this->render('_navbarClient', ['pageKey' => '2']) ?>
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -79,16 +86,19 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
             'layout' => "
     {summary}
     {pager}
-    <div class='table-scroll'>
+    <div class='table-scroll' style='margin-bottom:20px;'>
         {items}
     </div>
     {pager}
 ",
             'dataProvider' => $dataProvider,
             'filterModel' => $searchModel,
-            'pager' => [
-                'class' => yii\bootstrap4\LinkPager::class
-            ],
+            'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+                'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+                'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+                'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+                'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+                'maxButtonCount' => 5,],
             'formatter' => [
                 'class' => 'yii\i18n\Formatter',
                 'nullDisplay' => ' - '
@@ -221,10 +231,15 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
                     'header' => 'Action',
                     'format' => 'raw',
                     'headerOptions' => [
-                    'style' => 'width:85px; text-align:center;',
-                ],
+                        'class' => 'sticky-action',
+                        'style' => 'width:180px; text-align:center;',
+                    ],
+                    'filterOptions' => [
+                        'class' => 'sticky-action',
+                    ],
                     'contentOptions' => [
-                        'style' => 'min-width:180px; text-align:center; white-space:nowrap;',
+                        'class' => 'sticky-action text-center',
+                        'style' => 'min-width:180px; white-space:nowrap;',
                     ],
                     'value' => function ($model) {
                         $updateBtn = Html::a(
@@ -261,56 +276,3 @@ $this->params['breadcrumbs'][] = ['label' => 'Clients', 'url' => ['index']];
         ]);
         ?>
     </div>
-    <style>
-        .table-scroll {
-            width: 100%;
-            max-height: 600px;
-            overflow: auto;
-        }
-        .table-scroll table{
-            min-width: 1400px;
-        }
-        .table-scroll thead th {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 3;
-        }
-        .button-bar{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:15px;
-        }
-        .grid-view {
-            overflow: visible;
-        }
-        .grid-table-wrapper {
-            overflow: visible;
-        }
-        .grid-view table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        .grid-view th:last-child,
-        .grid-view td:last-child {
-            position: sticky;
-            right: 0;
-            background: #fff;
-            z-index: 2;
-            white-space: nowrap;
-        }
-        .grid-view th:last-child {
-            z-index: 3;
-        }
-        .grid-view th:last-child,
-        .grid-view td:last-child {
-            position: sticky;
-            right: 0;
-            background: #fff;
-            z-index: 6;
-        }
-        .grid-view th:last-child {
-            z-index: 7;
-        }
-    </style>

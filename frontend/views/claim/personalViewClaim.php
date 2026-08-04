@@ -34,13 +34,13 @@ $this->params['breadcrumbs'][] = $this->title;
         <div class="col-md-4 text-right">
             <?php
             if ($model->is_deleted == 0) {
-                echo Html::a('Update', ['claimant-update-claim', 'id' => $model->id], ['class' => 'btn btn-primary mr-1']);
+                echo Html::a('Update <i class="far fa-edit"></i>', ['claimant-update-claim', 'id' => $model->id], ['class' => 'btn btn-primary mr-1']);
             }
             ?>
 
             <?php
             if ($model->has_payment == 0 && $model->is_deleted == 0) {
-                echo Html::a("Cancel",
+                echo Html::a('Cancel <i class="fas fa-times"></i>',
                         "javascript:",
                         [
                             "onclick" => "event.preventDefault();",
@@ -213,7 +213,7 @@ $this->params['breadcrumbs'][] = $this->title;
             ?>
             <?php
         }
-    }else if ($model->claim_type === RefClaimType::codeProdOTMeal) {
+    } else if ($model->claim_type === RefClaimType::codeProdOTMeal) {
         $record = frontend\models\office\prodOtMealRecord\ProdOtMealRecordMaster::findOne(['ref_code' => $model->ref_code]);
         if ($record !== null) {
             ?>

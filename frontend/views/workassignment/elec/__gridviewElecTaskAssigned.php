@@ -7,6 +7,25 @@ use common\models\User;
 use common\modules\auth\models\AuthItem;
 
 echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
+    'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
+    'pager' => [
+        'class' => yii\bootstrap4\LinkPager::class,
+        'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+        'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+        'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+        'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+        'maxButtonCount' => 5,
+    ],
+    'tableOptions' => [
+        'class' => 'table table-hover table-striped table-bordered table-sm',
+    ],
     'filterModel' => $searchModel,
     'dataProvider' => $dataProvider,
     'columns' => [
@@ -66,15 +85,25 @@ echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
                 ]
             ]),
         ],
+        //testing - Target Completion Date
         [
             'attribute' => 'current_target_date',
             'format' => 'raw',
-            'contentOptions' => ['class' => 'text-center'],
+            'headerOptions' => [
+                'class' => 'sticky-target-completion-date text-center',
+                'style' => 'width:220px; min-width:220px; max-width:220px;',
+            ],
+            'filterOptions' => [
+                'class' => 'sticky-target-completion-date',
+            ],
+            'contentOptions' => [
+                'class' => 'sticky-target-completion-date text-center',
+                'style' => 'width:160px; min-width:160px; max-width:160px;',
+            ],
             'value' => function ($model) {
                 if (!$model->current_target_date) {
                     return '-';
                 }
-
                 $today = new \DateTime();
                 $target = new \DateTime($model->current_target_date);
 
@@ -199,14 +228,40 @@ echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
         ],
         [
             'format' => 'raw',
-            'headerOptions' => ['class' => 'tdnowrap'],
+            'header' => 'Action',
+            'headerOptions' => [
+                'class' => 'sticky-action text-center',
+                'style' => 'width:80px;',
+            ],
+            'filterOptions' => [
+                'class' => 'sticky-action',
+            ],
+            'contentOptions' => [
+                'class' => 'sticky-action text-center',
+                'style' => 'width:80px; min-width:80px; max-width:80px;',
+            ],
             'value' => function ($model) use ($toIndex) {
                 if ((Yii::$app->user->can(AuthItem::ROLE_PrdnElec_Executive) || $model->created_by == Yii::$app->user->id) && $model->active_sts) {
-                    return Html::a("<i class='far fa-edit text-success'></i>", ['update-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")], ['class' => 'mx-1'])
-                            . Html::a('<i class="fas fa-times-circle text-danger"></i>', ['deactivate-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")], ['data' => ['method' => 'post', 'confirm' => 'Are you sure to deactivate?'], 'class' => 'mx-1']);
-                } else {
-                    return "<i class='far fa-edit text-secondary'></i>" . '<i class="fas fa-times-circle text-secondary mx-2"></i>';
+                    return Html::a(
+                                    "<i class='far fa-edit text-success'></i>",
+                                    ['update-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")],
+                                    ['class' => 'mx-1']
+                            )
+                            . Html::a(
+                                    '<i class="fas fa-times-circle text-danger"></i>',
+                                    ['deactivate-assign-task', 'taskAssignId' => $model->id, 'toIndex' => ($toIndex ?? "")],
+                                    [
+                                        'class' => 'mx-1',
+                                        'data' => [
+                                            'method' => 'post',
+                                            'confirm' => 'Are you sure to deactivate?',
+                                        ],
+                                    ]
+                            );
                 }
+
+                return "<i class='far fa-edit text-secondary'></i>"
+                . '<i class="fas fa-times-circle text-secondary mx-2"></i>';
             }
         ],
 //                    ['class' => 'yii\grid\ActionColumn'],
@@ -214,4 +269,56 @@ echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
 ]))
 ?>
 
+<style>
+    .table-scroll {
+        width: 100%;
+        max-height: calc(100vh - 320px);
+        overflow-x: auto;
+        overflow-y: auto;
+        position: relative;
+    }
 
+    .table-scroll table {
+        width: max-content;
+        min-width: 1800px; /* Adjust based on your columns */
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .table-scroll th,
+    .table-scroll td {
+        white-space: nowrap;
+        padding: 4px !important;
+        vertical-align: middle;
+    }
+
+    .table-scroll .filters input,
+    .table-scroll .filters select {
+        height: 30px !important;
+        padding: 4px 6px;
+    }
+
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .table-scroll thead th.sticky-action {
+        z-index: 7;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 2;
+    }
+</style>

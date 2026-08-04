@@ -28,21 +28,28 @@ document.addEventListener('click', function (e) {
     <?=
     GridView::widget([
         'layout' => "
-    {summary}
-    {pager}
-    <div class='table-scroll table-responsive mb-2'>
-        {items}
-    </div>
-    {pager}
+{summary}
+{pager}
+<div class='table-scroll mb-2'>
+    {items}
+</div>
+{pager}
 ",
         'dataProvider' => $emailLogDataProvider,
         'filterModel' => $emailLogSearchModel,
         'pager' => [
-            'class' => \yii\widgets\LinkPager::class,
-            'options' => ['class' => 'pagination'],
+            'class' => yii\bootstrap4\LinkPager::class,
+            'options' => [
+                'class' => 'pagination',
+            ],
             'linkOptions' => [
                 'class' => 'page-link',
             ],
+            'firstPageLabel' => '<i class="fa fa-angle-double-left" style="margin-right:4px;"></i>First',
+            'prevPageLabel' => '<i class="fa fa-angle-left" style="margin-right:4px;"></i>Prev',
+            'nextPageLabel' => 'Next<i class="fa fa-angle-right" style="margin-left:4px;"></i>',
+            'lastPageLabel' => 'Last<i class="fa fa-angle-double-right" style="margin-left:4px;"></i>',
+            'maxButtonCount' => 5,
         ],
         'summary' => 'Showing <b>{begin}-{end}</b> of <b>{totalCount}</b> items.',
         'tableOptions' => [
@@ -168,10 +175,15 @@ document.addEventListener('click', function (e) {
                 'header' => 'Action',
                 'template' => '{view}',
                 'headerOptions' => [
+                    'class' => 'sticky-action',
                     'style' => 'width:90px; min-width:90px; max-width:90px; text-align:center;',
                 ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
+                ],
                 'contentOptions' => [
-                    'style' => 'width:90px; min-width:90px; max-width:90px; text-align:center; vertical-align:middle;',
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:90px; min-width:90px; max-width:90px; vertical-align:middle;',
                 ],
                 'buttons' => [
                     'view' => function ($url, $model) {
@@ -195,17 +207,29 @@ document.addEventListener('click', function (e) {
 </div>
 
 <style>
-    .table-scroll table {
-        width: max-content;
-        min-width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
+    .table-scroll {
+        width: 100%;
+        max-height: 600px;
+        overflow: auto;
+    }
+    
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 3;
     }
 
-    #emailLog .table-scroll th:last-child,
-    #emailLog .table-scroll td:last-child {
-        position: sticky;
-        right: 0;
-        background: #fff;
+    .grid-view {
+        overflow: visible;
+    }
+
+    .grid-table-wrapper {
+        overflow: visible;
+    }
+
+    .grid-view table {
+        border-collapse: separate;
+        border-spacing: 0;
     }
 </style>

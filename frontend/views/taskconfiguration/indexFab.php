@@ -21,7 +21,7 @@ use yii\grid\GridView;
     <?= $this->render('../workassignment/fab/__navbarWorkAssignment', ['pageKey' => '4']) ?>
 
     <p>
-        <?= Html::a('Edit <i class="far fa-edit"></i>', ['update-fab'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Edit <i class="far fa-edit"></i>', ['update-fab'], ['class' => 'btn btn-primary']) ?>
     </p>
 
     <div class="px-0 mb-2 col-md-7">

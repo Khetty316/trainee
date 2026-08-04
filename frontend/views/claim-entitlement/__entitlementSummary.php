@@ -24,11 +24,11 @@ if (!empty($month) && isset($monthMap[$month])) {
 }
 
 if ($module !== 'finance') {
-            unset($claimTypes[\frontend\models\office\claim\RefClaimType::codeDirector]);
-            $claimTypes = $claimTypes;
-        } else {
-            $claimTypes = $claimTypes;
-        }
+    unset($claimTypes[\frontend\models\office\claim\RefClaimType::codeDirector]);
+    $claimTypes = $claimTypes;
+} else {
+    $claimTypes = $claimTypes;
+}
 ?>
 
 <div class="claim-master-index">
@@ -85,7 +85,7 @@ if ($module !== 'finance') {
                 'Export to CSV <i class="fas fa-file-csv fa-lg"></i>',
                 '#',
                 [
-                    'class' => 'btn btn-primary float-right',
+                    'class' => 'btn btn-info float-right',
                     'id' => 'exportCsvButton',
                 ]
         );
@@ -98,12 +98,12 @@ if ($module !== 'finance') {
 </div>
 
 <div class="view">
-    <div class="wrapper">
+    <div class="table-scroll">
         <table class="table table-sm table-bordered">
             <thead>
                 <tr>
-                    <td class="text-center align-bottom font-weight-bold" rowspan="2" style="min-width: 50px;">Staff ID</td>
-                    <td class="text-center align-bottom font-weight-bold" rowspan="2" style="min-width: 200px;">Staff Name</td>
+                    <td class="text-center align-bottom font-weight-bold" rowspan="2" style="width:65px; min-width:65px; max-width:65px;">Staff ID</td>
+                    <td class="text-center align-bottom font-weight-bold" rowspan="2" style="width:200px; min-width:200px; max-width:200px;">Staff Name</td>
                     <?php
                     foreach ($displayMonths as $monthName) {
                         ?>
@@ -295,18 +295,23 @@ if ($module !== 'finance') {
     .view {
         margin: auto;
     }
-    .wrapper{
-        /*         position: relative;
-                         overflow: auto;*/
-        white-space: nowrap;
+
+    .table-scroll{
+        width:100%;
+        max-height:calc(100vh - 320px);
+        overflow:auto;
+        white-space:nowrap;
     }
-    table{
-        overflow: hidden;
-    }
-    td, th{
-        font-weight: normal ;
+
+    td{
+        font-weight: normal;
         position: relative;
     }
+
+    th{
+        font-weight: normal;
+    }
+
     .table thead{
         background-color: #e9ecef;
         color: #495057;
@@ -327,24 +332,6 @@ if ($module !== 'finance') {
         text-align: center;
     }
 
-    /* REMOVED: The old hardcoded .num0, .num7, etc. selectors */
-
-    tbody tr:hover td, tbody tr:hover th {
-        background-color: rgba(0,162,226,0.5) !important;
-    }
-    tbody td:hover::after {
-        content: '';
-        height: 700vh;
-        left: 0;
-        position: absolute;
-        top: -350vh;
-        width: 100%;
-        z-index: -1;
-    }
-    td:hover::after{
-        background-color: rgba(0,162,226,0.5) !important;
-    }
-
     /* ADDED/UNCOMMENTED: Use this class for the left border of the first column of each month */
     .section-border {
         border-left-width: 10px !important;
@@ -356,59 +343,167 @@ if ($module !== 'finance') {
         border-left-width: 10px !important;
         border-left-color: #e9ecef !important;
     }
+    .table-scroll thead tr:nth-child(2) th{
+        position: sticky;
+        top: 38px;     /* adjust if necessary */
+        background: #e9ecef;
+        z-index: 29;
+    }
+    .table-scroll thead tr:first-child th,
+    .table-scroll thead tr:first-child td{
+        position: sticky;
+        top: 0;
+        background: #e9ecef;
+        z-index: 30;
+    }
+    .table-scroll thead tr:first-child td:first-child{
+        left: 0;
+        z-index: 120;
+        background: #e9ecef;
+    }
+    .table-scroll thead tr:first-child td:nth-child(2){
+        left: 65px;
+        z-index: 119;
+        background: #e9ecef;
+    }
+    .table-scroll tbody th:first-child{
+        position: sticky;
+        left: 0;
+        z-index: 50;
+        background: #fff;
+        background-clip: padding-box;
+    }
+    .table-scroll tbody th:nth-child(2){
+        position: sticky;
+        left:65px;
+        background:#fff;
+        z-index:49;
+    }
+    .table-scroll tbody tr:hover th:first-child,
+    .table-scroll tbody tr:hover th:nth-child(2){
+        background: rgba(0,162,226,0.5) !important;
+        z-index: 20;
+    }
+    .table-scroll thead td:first-child,
+    .table-scroll thead td:nth-child(2){
+        z-index: 120;
+    }
+    .table-scroll tbody th:nth-child(2),
+    .table-scroll thead td:nth-child(2){
+        width:300px;
+        min-width:300px;
+        max-width:300px;
+    }
+    .table-scroll tbody th:first-child,
+    .table-scroll tbody th:nth-child(2){
+        position: sticky;
+        background: #fff;
+        isolation: isolate;
+    }
+    .table-scroll tbody th:first-child{
+        border-right: 1px solid #dee2e6;
+    }
+    .table-scroll tbody th:nth-child(2){
+        border-right: 1px solid #dee2e6;
+    }
+    .table-scroll table{
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .table-scroll tbody tr:hover th:first-child,
+    .table-scroll tbody tr:hover th:nth-child(2){
+        background-color: #7fd3f7 !important;
+        z-index: 9999;
+    }
+    .table-scroll tbody tr:hover th:first-child{
+        background:#7fd3f7 !important;
+        z-index:60;
+    }
+    .table-scroll tbody tr:hover th:nth-child(2){
+        background:#7fd3f7 !important;
+        z-index:59;
+    }
+    .table-scroll tbody tr:hover td,
+    .table-scroll tbody tr:hover th {
+        background-color: #7fd3f7;
+    }
+    .table-scroll tbody .column-hover{
+        background-color: #7fd3f7 !important;
+    }
+    .table-scroll tbody tr:hover th:first-child{
+        background:#7fd3f7 !important;
+        z-index:60;
+    }
 </style>
 <script>
-$(document).ready(function () {
-    $('#exportCsvButton').on('click', function (e) {
-        e.preventDefault();
-        
-        var data = {
-            claimSummarys: JSON.stringify(<?= json_encode($claimSummarys) ?>),
-            intMonth: JSON.stringify(<?= json_encode($intMonth) ?>),
-            monthlist: JSON.stringify(<?= json_encode($monthList ?? []) ?>),
-            year: '<?= $year ?>',
-            month: '<?= $month ?>',
-            claimType: '<?= $claimType ?>',
-            staff: '<?= $staff ?>',
-            hasEntitlement: '<?= $hasEntitlement ?>',
-            _csrf: yii.getCsrfToken()
-        };
-        
-        $.ajax({
-            url: '/office/claim-entitlement/export-to-excel',
-            type: 'POST',
-            data: data,
-            xhrFields: {
-                responseType: 'blob'
-            },
-            success: function (response, status, xhr) {
-                // Get filename from server response header
-                var filename = 'Claim_Summary_Report.xls'; // Fallback only
-                var disposition = xhr.getResponseHeader('Content-Disposition');
-                if (disposition) {
-                    var matches = /filename="([^"]*)"/.exec(disposition);
-                    if (matches && matches[1]) {
-                        filename = matches[1];
+    $(document).ready(function () {
+        $('#exportCsvButton').on('click', function (e) {
+            e.preventDefault();
+
+            var data = {
+                claimSummarys: JSON.stringify(<?= json_encode($claimSummarys) ?>),
+                intMonth: JSON.stringify(<?= json_encode($intMonth) ?>),
+                monthlist: JSON.stringify(<?= json_encode($monthList ?? []) ?>),
+                year: '<?= $year ?>',
+                month: '<?= $month ?>',
+                claimType: '<?= $claimType ?>',
+                staff: '<?= $staff ?>',
+                hasEntitlement: '<?= $hasEntitlement ?>',
+                _csrf: yii.getCsrfToken()
+            };
+
+            $.ajax({
+                url: '/office/claim-entitlement/export-to-excel',
+                type: 'POST',
+                data: data,
+                xhrFields: {
+                    responseType: 'blob'
+                },
+                success: function (response, status, xhr) {
+                    // Get filename from server response header
+                    var filename = 'Claim_Summary_Report.xls'; // Fallback only
+                    var disposition = xhr.getResponseHeader('Content-Disposition');
+                    if (disposition) {
+                        var matches = /filename="([^"]*)"/.exec(disposition);
+                        if (matches && matches[1]) {
+                            filename = matches[1];
+                        }
                     }
+
+                    // Trigger download
+                    var blob = new Blob([response], {type: 'application/vnd.ms-excel'});
+                    var link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+
+                    // Cleanup
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Export failed:', error);
+                    alert('Failed to export file. Please try again.');
                 }
-                
-                // Trigger download
-                var blob = new Blob([response], {type: 'application/vnd.ms-excel'});
-                var link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                
-                // Cleanup
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            },
-            error: function (xhr, status, error) {
-                console.error('Export failed:', error);
-                alert('Failed to export file. Please try again.');
-            }
+            });
         });
     });
-});
+
+    $(function () {
+        $('.table-scroll tbody').on('mouseenter', 'td', function () {
+            var colIndex = this.cellIndex;
+            if (colIndex < 2)
+                return;
+            $('.table-scroll tbody tr').each(function () {
+                $(this).children().removeClass('column-hover');
+                if (this.cells[colIndex]) {
+                    this.cells[colIndex].classList.add('column-hover');
+                }
+            });
+        });
+        $('.table-scroll tbody').on('mouseleave', function () {
+            $('.column-hover').removeClass('column-hover');
+        });
+    });
 </script>

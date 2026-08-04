@@ -27,27 +27,52 @@ $this->params['breadcrumbs'][] = $this->title;
     echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,],
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll'>
+    {items}
+</div>
+{pager}
+",
         'columns' => [
             [
                 'class' => 'yii\grid\ActionColumn',
                 'template' => '{delete}',
-                'headerOptions' => ['style' => 'width:100px'],
                 'buttons' => [
                     'delete' => function ($url, $model, $key) {
 
                         if ($model->active_sts == 0) {
                             return '<i class="far fa-trash-alt text-secondary"></i>';
                         } else {
-                            return Html::a('<i class="far fa-trash-alt text-danger"></i>', ['/working/hr-employee-document/inactivate', 'id' => $model->id], ['data-confirm' => 'Are you sure to delete the file?']);
+                            return Html::a(
+                                            '<i class="far fa-trash-alt text-danger"></i>',
+                                            ['/working/hr-employee-document/inactivate', 'id' => $model->id],
+                                            ['data-confirm' => 'Are you sure to delete the file?']
+                                    );
                         }
                     },
                 ],
-                'contentOptions' => ['class' => 'd-none d-md-table-cell'],
-                'headerOptions' => ['class' => 'd-none d-md-table-cell']
+                'headerOptions' => [
+                    'class' => 'd-none d-md-table-cell sticky-action',
+                    'style' => 'width:50px',
+                ],
+                'contentOptions' => [
+                    'class' => 'text-center sticky-action',
+                    'style' => 'width:90px; min-width:90px; max-width:90px;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
+                    'style' => 'width:90px; min-width:90px; max-width:90px;',
+                ],
             ],
             [
                 'attribute' => 'hr_doctype',
@@ -130,6 +155,78 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]));
     ?>
-
-
 </div>
+
+<style>
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        width: 90px;
+        min-width: 90px;
+        max-width: 90px;
+        background: #fff;
+        border-left: 1px solid #dee2e6;
+    }
+
+    .table-scroll thead th.sticky-action {
+        z-index: 30;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 10;
+        border-right: 1px solid #dee2e6;
+    }
+
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+        margin: 20px 0;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        min-width: 1200px;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table td,
+    .table th {
+        padding: 4px !important;
+    }
+
+    .filters input,
+    .filters select {
+        height: 30px !important;
+        padding: 4px 6px;
+    }
+
+    .pagination .page-item:first-child .page-link,
+    .pagination .page-item:nth-child(2) .page-link,
+    .pagination .page-item:nth-last-child(2) .page-link,
+    .pagination .page-item:last-child .page-link {
+        min-width: unset;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 20;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .action-col {
+        width: 45px;
+        min-width: 45px;
+        max-width: 45px;
+        text-align: center;
+    }
+
+    .sticky-action {
+        position: sticky;
+        left: 0;
+        background: #fff;
+    }
+</style>

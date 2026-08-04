@@ -13,18 +13,29 @@ $this->params['breadcrumbs'][] = ['label' => 'Panel Task Weight'];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="project-production-master-index">
-
     <h3><?= Html::encode($this->title) ?></h3>
-    <p>
-        <?= Html::a('Reset <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> 
-    </p>
+    <p><?= Html::a('Reset Filter <i class="fas fa-search-minus"></i>', '?', ['class' => 'btn btn-primary']) ?> </p>
     <?=
     GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => ['class' => yii\bootstrap4\LinkPager::class],
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
         'headerRowOptions' => ['class' => 'my-thead'],
-        'layout' => "{summary}\n{pager}\n{items}\n{pager}",
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
         'tableOptions' => ['class' => 'table-hover table table-striped table-bordered table-sm'],
         'formatter' => ['class' => 'yii\i18n\Formatter', 'nullDisplay' => ' - '],
         'columns' => [
@@ -92,6 +103,28 @@ $this->params['breadcrumbs'][] = $this->title;
         ],
     ]);
     ?>
-
-
 </div>
+
+<style>
+    .table-scroll {
+        width: 100%;
+        max-height: 600px;
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        min-width: 1400px;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 3;
+    }
+
+    .grid-view table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+</style>

@@ -35,19 +35,24 @@ $this->params['breadcrumbs'][] = [
         'layout' => "
     {summary}
     {pager}
-    <div class='table-scroll'>
+    <div class='table-scroll mb-3'>
         {items}
     </div>
-    {pager}
+    <div class='mt-3'>
+            {pager}
+    </div>
 ",
         'options' => [
             'class' => 'grid-view',
         ],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
-        'pager' => [
-            'class' => yii\bootstrap4\LinkPager::class
-        ],
+        'pager' => ['class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,],
         'formatter' => [
             'class' => 'yii\i18n\Formatter',
             'nullDisplay' => ' - '
@@ -201,10 +206,15 @@ $this->params['breadcrumbs'][] = [
                 'template' => '{view}',
                 'header' => 'Action',
                 'headerOptions' => [
-                    'style' => 'width:85px; text-align:center;',
+                    'class' => 'sticky-action',
+                    'style' => 'width:90px; text-align:center;',
+                ],
+                'filterOptions' => [
+                    'class' => 'sticky-action',
                 ],
                 'contentOptions' => [
-                    'style' => 'width:85px; min-width:85px; max-width:85px; text-align:center; vertical-align:middle;',
+                    'class' => 'sticky-action text-center',
+                    'style' => 'width:90px; min-width:90px; max-width:90px; vertical-align:middle;',
                 ],
                 'buttons' => [
                     'view' => function ($url, $model) {
@@ -226,55 +236,9 @@ $this->params['breadcrumbs'][] = [
     ]);
     ?>
 </div>
+
 <style>
     .table-scroll table {
-        width: 100%;
-        min-width: 1200px;
-    }
-    .table-scroll {
-        max-height: calc(100vh - 320px);
-        overflow: auto;
-    }
-    /* Sticky Header */
-    .table-scroll thead th {
-        position: sticky;
-        top: 0;
-        background: #fff;
-        z-index: 5;
-    }
-    /* Sticky Action Column */
-    .grid-view th:last-child,
-    .grid-view td:last-child {
-        position: sticky;
-        right: 0;
-        background: #fff;
-        z-index: 6;
-        width: 90px;
-        min-width: 90px;
-        max-width: 90px;
-        text-align: center;
-        vertical-align: middle;
-    }
-    .grid-view th:last-child {
-        z-index: 7;
-    }
-    .grid-view .btn {
-        white-space: nowrap;
-    }
-    .grid-view tbody tr:nth-child(odd) td:last-child{
-        background:#fff;
-    }
-    .grid-view tbody tr:nth-child(even) td:last-child{
-        background:#f8f9fa;
-    }
-    .grid-view thead th:last-child{
-        background:#fff;
-    }
-    .grid-view .filters td:last-child {
-        background: #fff;
-        padding: 4px;
-    }
-    .grid-view tbody td:last-child {
-        background: #fff !important;
-    }
+    min-width: 2400px;
+}
 </style>

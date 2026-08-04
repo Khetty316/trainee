@@ -31,6 +31,25 @@ $this->registerCss("
     </p>
     <?php
     echo GridView::widget(array_merge(Yii::$app->params['gridViewCommonOption'], [
+        'layout' => "
+{summary}
+{pager}
+<div class='table-scroll' style='margin-bottom:20px;'>
+    {items}
+</div>
+{pager}
+",
+        'pager' => [
+            'class' => yii\bootstrap4\LinkPager::class,
+            'firstPageLabel' => '<i class="fa fa-angle-double-left"></i> First Page',
+            'prevPageLabel' => '<i class="fa fa-angle-left"></i> Prev',
+            'nextPageLabel' => 'Next <i class="fa fa-angle-right"></i>',
+            'lastPageLabel' => 'Last Page <i class="fa fa-angle-double-right"></i>',
+            'maxButtonCount' => 5,
+        ],
+        'tableOptions' => [
+            'class' => 'table table-hover table-striped table-bordered table-sm',
+        ],
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
         'columns' => [
@@ -158,49 +177,62 @@ $this->registerCss("
                 }
             ],
             [
-                'attribute' => 'current_target_date',
-                'format' => 'raw',
-                'contentOptions' => ['class' => 'text-center'],
-                'value' => function ($model) {
-                    if (!$model->current_target_date) {
-                        return '-';
-                    }
+    'attribute' => 'current_target_date',
+    'format' => 'raw',
 
-                    $today = new \DateTime('today');
-                    $target = (new \DateTime($model->current_target_date))->setTime(0, 0);
-                    $diff = (int) $today->diff($target)->format('%r%a');
+    'headerOptions' => [
+        'class' => 'sticky-target-completion-date text-center',
+        'style' => 'width:180px; min-width:180px;',
+    ],
 
-                    // Determine actual percent considering has_tasks
-                    $elecPercent = ($model->has_elec_tasks == 0) ? 100 : ($model->production_elec_complete_percent ?? $model->elec_complete_percent);
+    'filterOptions' => [
+        'class' => 'sticky-target-completion-date',
+    ],
 
-                    // default styles
-                    $bg = 'transparent';
-                    $clr = '#000';
+    'contentOptions' => [
+        'class' => 'sticky-target-completion-date text-center',
+        'style' => 'width:180px; min-width:180px;',
+    ],
 
-                    $noTasksAtAll = ($model->has_elec_tasks == 0 && $model->has_fab_tasks == 0);
+    'value' => function ($model) {
+        if (!$model->current_target_date) {
+            return '-';
+        }
 
-                    if (!$noTasksAtAll && $elecPercent == 100) {
-                        $bg = '#28a745'; // green
-                        $clr = '#fff';
-                    } else {
-                        if ($diff < 0) {
-                            $bg = '#dc3545'; // red
-                            $clr = '#fff';
-                        } elseif ($diff <= 4) {
-                            $bg = '#ffc107'; // yellow
-                            $clr = '#000';
-                        }
-                    }
+        $today = new \DateTime('today');
+        $target = (new \DateTime($model->current_target_date))->setTime(0, 0);
+        $diff = (int) $today->diff($target)->format('%r%a');
 
-                    return Html::tag(
-                            'span',
-                            MyFormatter::asDate_Read($model->current_target_date),
-                            [
-                                'class' => 'text-center',
-                                'style' => "background-color: {$bg}; color: {$clr}; padding: 3px 8px; border-radius: 4px;"
-                            ]
-                    );
-                },
+        $elecPercent = ($model->has_elec_tasks == 0)
+                ? 100
+                : ($model->production_elec_complete_percent ?? $model->elec_complete_percent);
+
+        $bg = 'transparent';
+        $clr = '#000';
+
+        $noTasksAtAll = ($model->has_elec_tasks == 0 && $model->has_fab_tasks == 0);
+
+        if (!$noTasksAtAll && $elecPercent == 100) {
+            $bg = '#28a745';
+            $clr = '#fff';
+        } else {
+            if ($diff < 0) {
+                $bg = '#dc3545';
+                $clr = '#fff';
+            } elseif ($diff <= 4) {
+                $bg = '#ffc107';
+                $clr = '#000';
+            }
+        }
+
+        return Html::tag(
+            'span',
+            MyFormatter::asDate_Read($model->current_target_date),
+            [
+                'style' => "background-color: {$bg}; color: {$clr}; padding:3px 8px; border-radius:4px;",
+            ]
+        );
+    },
                 'filter' => yii\jui\DatePicker::widget([
                     'model' => $searchModel,
                     'attribute' => 'current_target_date',
@@ -219,7 +251,81 @@ $this->registerCss("
             ],
     ]]));
     ?>
-
-
-
 </div>
+
+<style>
+    .table-scroll {
+        max-height: calc(100vh - 320px);
+        overflow: auto;
+    }
+
+    .table-scroll table {
+        width: max-content;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .table-scroll thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 5;
+    }
+
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        position: sticky;
+        right: 0;
+        background: #fff;
+        white-space: nowrap;
+    }
+
+    .table-scroll thead th.sticky-action {
+        z-index: 7;
+    }
+
+    .table-scroll tbody td.sticky-action {
+        z-index: 2;
+    }
+
+    .table-scroll th.sticky-action,
+    .table-scroll td.sticky-action {
+        box-shadow: -2px 0 6px rgba(0,0,0,.12);
+    }
+    
+    .table-scroll th.sticky-target-completion-date,
+.table-scroll td.sticky-target-completion-date {
+    position: sticky;
+    right: 80px;
+    background: #fff;
+    z-index: 6;
+}
+
+.table-scroll th.sticky-action,
+.table-scroll td.sticky-action {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    z-index: 7;
+}
+
+.table-scroll th.sticky-target-completion-date,
+.table-scroll td.sticky-target-completion-date {
+    position: sticky;
+    right: 0;
+    background: #fff;
+    z-index: 6;
+}
+
+.table-scroll th.sticky-target-completion-date,
+.table-scroll td.sticky-target-completion-date {
+    position: sticky;
+    right: 0;              /* Last column */
+    background: #fff;
+    z-index: 6;
+}
+
+.table-scroll thead th.sticky-target-completion-date {
+    z-index: 7;
+}
+</style>

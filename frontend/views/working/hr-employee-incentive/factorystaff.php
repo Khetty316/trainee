@@ -58,7 +58,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                 'Export to CSV <i class="fas fa-file-csv fa-lg"></i>',
                                 '#',
                                 [
-                                    'class' => 'btn btn-primary float-right mb-3 mt-4',
+                                    'class' => 'btn btn-info float-right mb-3 mt-4',
                                     'id' => 'exportCsvButton',
                                 ]
                         )
@@ -135,7 +135,7 @@ $this->params['breadcrumbs'][] = $this->title;
                                 $range = number_format($tier['threshold']) . ' - ' . number_format($tiers[$index + 1]['threshold'] - 1);
                             } else if ($index === 1) {
                                 $range = number_format($tier['threshold']) . ' - ' . number_format($tiers[$index + 1]['threshold'] - 1);
-                            }else {
+                            } else {
                                 $range = number_format($tier['threshold']) . '+';
                             }
                             ?>
